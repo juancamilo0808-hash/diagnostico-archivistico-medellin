@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from pathlib import Path
@@ -9,6 +9,8 @@ from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 import json
 import os
+import csv
+import unicodedata
 
 BASE_DIR=Path(__file__).resolve().parent
 app=Flask(__name__)
@@ -148,6 +150,127 @@ def calcular(form):
 
 @app.route('/')
 def index(): return render_template('index.html')
+
+
+
+# ============================================================
+# DIRECTORIO DE ENTIDADES
+# Búsqueda por nombre o sigla desde el archivo CSV
+# ============================================================
+
+def normalizar_texto(texto):
+    """Normaliza texto para buscar sin distinguir mayúsculas ni tildes."""
+    texto = str(texto or '').strip().lower()
+    texto = unicodedata.normalize('NFD', texto)
+    return ''.join(
+        caracter for caracter in texto
+        if unicodedata.category(caracter) != 'Mn'
+    )
+
+
+def obtener_directorio():
+    """Lee el directorio CSV ubicado junto a app.py."""
+    ruta = BASE_DIR / 'directorio_entidades.csv'
+
+    if not ruta.exists():
+        app.logger.warning(
+            "No se encontró el archivo del directorio: %s", ruta
+        )
+        return []
+
+    try:
+        with ruta.open(
+            mode='r',
+            encoding='utf-8-sig',
+            newline=''
+        ) as archivo:
+            lector = csv.DictReader(archivo)
+
+            if not lector.fieldnames:
+                return []
+
+            return [
+                {
+                    str(clave).strip(): str(valor or '').strip()
+                    for clave, valor in fila.items()
+                    if clave
+                }
+                for fila in lector
+            ]
+
+    except (OSError, csv.Error):
+        app.logger.exception(
+            "No fue posible leer el directorio de entidades."
+        )
+        return []
+
+
+def buscar_entidades_directorio(termino):
+    """Busca coincidencias por nombre de entidad o sigla."""
+    busqueda = normalizar_texto(termino)
+
+    if len(busqueda) < 2:
+        return []
+
+    resultados = []
+
+    for fila in obtener_directorio():
+        campos = {
+            normalizar_texto(clave): valor
+            for clave, valor in fila.items()
+        }
+
+        nombre = next(
+            (
+                valor for clave, valor in campos.items()
+                if 'entidad' in clave or 'nombre' in clave
+            ),
+            ''
+        )
+
+        sigla = next(
+            (
+                valor for clave, valor in campos.items()
+                if 'sigla' in clave
+            ),
+            ''
+        )
+
+        if (
+            busqueda in normalizar_texto(nombre)
+            or busqueda in normalizar_texto(sigla)
+        ):
+            resultados.append({
+                'nombre': nombre,
+                'sigla': sigla,
+                'datos': fila
+            })
+
+        if len(resultados) >= 10:
+            break
+
+    return resultados
+
+
+@app.route('/api/buscar-entidades')
+def api_buscar_entidades():
+    """Devuelve coincidencias para el buscador del formulario."""
+    termino = request.args.get('q', '').strip()
+
+    if len(termino) < 2:
+        return jsonify([])
+
+    resultados = buscar_entidades_directorio(termino)
+
+    return jsonify([
+        {
+            'nombre': resultado['nombre'],
+            'sigla': resultado['sigla'],
+            'datos': resultado['datos']
+        }
+        for resultado in resultados
+    ])
+
 
 @app.route('/diagnostico',methods=['GET','POST'])
 def censo():
