@@ -9,8 +9,14 @@
 (function () {
   const campo = document.getElementById('nombre_entidad');
   const lista = document.getElementById('sugerencias-entidades');
-  if (!campo || !lista) return;
+  const nit = document.getElementById('nit_entidad');
+  const naturaleza = document.querySelector('[name="naturaleza"]');
+  const sector = document.querySelector('[name="sector"]');
+  const responsable = document.getElementById('responsable_nombre');
+  const cargo = document.getElementById('responsable_cargo');
+  const correo = document.getElementById('responsable_correo');
 
+  if (!campo || !lista) return;
   let temporizador = null;
   let solicitud = 0;
 
@@ -19,11 +25,28 @@
     lista.style.display = 'none';
   }
 
+  function asignarSiHayDato(elemento, valor) {
+    if (elemento && valor && String(valor).trim()) {
+      elemento.value = String(valor).trim();
+      elemento.dispatchEvent(new Event('input', { bubbles: true }));
+      elemento.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+
   function elegirEntidad(entidad) {
-    campo.value = entidad.nombre || '';
+    const datos = entidad.datos || {};
+    asignarSiHayDato(campo, entidad.nombre);
+
+    // El CSV sí contiene responsable, cargo y correo.
+    asignarSiHayDato(responsable, datos['Responsable de gestión documental']);
+    asignarSiHayDato(cargo, datos['Cargo Responsable GD']);
+    asignarSiHayDato(correo, datos['Correo Responsable GD']);
+
+    // No se completan NIT ni sector: el CSV no tiene esas columnas.
+    // La clasificación preliminar no se convierte automáticamente en naturaleza
+    // porque no equivale necesariamente a las opciones del formulario.
+
     cerrarSugerencias();
-    campo.dispatchEvent(new Event('input', { bubbles: true }));
-    campo.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
   campo.addEventListener('input', function () {
@@ -50,7 +73,6 @@
 
         entidades.forEach(function (entidad) {
           if (!entidad.nombre) return;
-
           const opcion = document.createElement('button');
           opcion.type = 'button';
           opcion.className = 'list-group-item list-group-item-action';
@@ -88,9 +110,7 @@
   });
 
   document.addEventListener('click', function (evento) {
-    if (!lista.contains(evento.target) && evento.target !== campo) {
-      cerrarSugerencias();
-    }
+    if (!lista.contains(evento.target) && evento.target !== campo) cerrarSugerencias();
   });
 })();
 </script>
