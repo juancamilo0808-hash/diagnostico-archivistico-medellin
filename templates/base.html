@@ -33,7 +33,10 @@
                     <a class="nav-link {% if request.endpoint == 'censo' %}active{% endif %}" href="{{ url_for('censo') }}"><i class="bi bi-file-earmark-text"></i> Diagnóstico</a>
                     <a class="nav-link {% if request.endpoint in ['resultado', 'admin'] %}active{% endif %}" href="{{ url_for('admin') }}"><i class="bi bi-bar-chart-line"></i> Resultados</a>
                     <a class="nav-link {% if request.endpoint == 'normatividad' %}active{% endif %}" href="{{ url_for('normatividad') }}"><i class="bi bi-journal-text"></i> Normatividad</a>
-                    <a class="nav-link" href="#" onclick="alert('La sección de ayuda se habilitará en la siguiente fase.'); return false;"><i class="bi bi-question-circle"></i> Ayuda</a>
+                   <a class="nav-link {% if request.endpoint == 'ayuda' %}active{% endif %}"
+   href="{{ url_for('ayuda') }}">
+    <i class="bi bi-question-circle"></i> Ayuda
+</a>
                     <a class="btn btn-nav" href="{{ url_for('admin') }}"><i class="bi bi-gear"></i> Administración</a>
                 </div>
             </div>
