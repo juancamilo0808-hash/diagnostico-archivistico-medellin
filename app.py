@@ -12,7 +12,7 @@ import os
 
 BASE_DIR=Path(__file__).resolve().parent
 app=Flask(__name__)
-app.config.update(SECRET_KEY=os.environ.get("SECRET_KEY", "solo-desarrollo-cambiar-SECRET_KEY"), SQLALCHEMY_DATABASE_URI=os.environ.get("DATABASE_URL", f"sqlite:///{BASE_DIR/'censo_cda.db'}").replace("postgres://", "postgresql://", 1), SQLALCHEMY_TRACK_MODIFICATIONS=False, SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=os.environ.get("RENDER", "").lower() == "true")
+app.config.update(SECRET_KEY=os.environ.get("SECRET_KEY", "solo-desarrollo-cambiar-SECRET_KEY"), SQLALCHEMY_DATABASE_URI=os.environ.get("DATABASE_URL", f"sqlite:///{BASE_DIR/'diagnostico_archivistico.db'}").replace("postgres://", "postgresql://", 1), SQLALCHEMY_TRACK_MODIFICATIONS=False, SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=os.environ.get("RENDER", "").lower() == "true")
 db=SQLAlchemy(app)
 
 # En Render configura SECRET_KEY y ADMIN_PASSWORD en Environment.
@@ -149,17 +149,17 @@ def calcular(form):
 @app.route('/')
 def index(): return render_template('index.html')
 
-@app.route('/censo',methods=['GET','POST'])
+@app.route('/diagnostico',methods=['GET','POST'])
 def censo():
     if request.method=='POST':
         campos_responsable = ['responsable_nombre', 'responsable_cargo', 'responsable_correo']
         if any(not request.form.get(x, '').strip() for x in ['nombre_entidad','nit_entidad','naturaleza','sector', *campos_responsable]):
             flash('Complete el nombre, cargo y correo institucional del responsable, además de los demás campos obligatorios de identificación.','danger')
-            return render_template('censo.html',instrumentos=INSTRUMENTOS,instrumento_opciones=INSTRUMENTO_OPCIONES)
+            return render_template('diagnostico.html',instrumentos=INSTRUMENTOS,instrumento_opciones=INSTRUMENTO_OPCIONES)
         correo_responsable = request.form.get('responsable_correo', '').strip()
         if '@' not in correo_responsable or '.' not in correo_responsable.rsplit('@', 1)[-1]:
             flash('Ingrese un correo institucional válido.','danger')
-            return render_template('censo.html',instrumentos=INSTRUMENTOS,instrumento_opciones=INSTRUMENTO_OPCIONES)
+            return render_template('diagnostico.html',instrumentos=INSTRUMENTOS,instrumento_opciones=INSTRUMENTO_OPCIONES)
         responsable_completo = ' | '.join([
             request.form.get('responsable_nombre', '').strip(),
             request.form.get('responsable_cargo', '').strip(),
@@ -173,15 +173,15 @@ def censo():
         try:
             db.session.add(r)
             db.session.commit()
-            app.logger.info("Censo guardado correctamente. ID=%s, entidad=%s", r.id, r.nombre_entidad)
-            flash('Censo guardado correctamente. El registro quedó almacenado en la base de datos.', 'success')
+            app.logger.info("Diagnóstico guardado correctamente. ID=%s, entidad=%s", r.id, r.nombre_entidad)
+            flash('Diagnóstico guardado correctamente. El registro quedó almacenado en la base de datos.', 'success')
             return redirect(url_for('resultado', censo_id=r.id))
         except Exception:
             db.session.rollback()
             app.logger.exception("No fue posible guardar el censo en SQLite")
-            flash('No fue posible guardar el censo. Revisa la ventana de PowerShell para ver el detalle del error.', 'danger')
-            return render_template('censo.html', instrumentos=INSTRUMENTOS, instrumento_opciones=INSTRUMENTO_OPCIONES), 500
-    return render_template('censo.html',instrumentos=INSTRUMENTOS,instrumento_opciones=INSTRUMENTO_OPCIONES)
+            flash('No fue posible guardar el diagnóstico. Revisa los registros de la aplicación para ver el detalle del error.', 'danger')
+            return render_template('diagnostico.html', instrumentos=INSTRUMENTOS, instrumento_opciones=INSTRUMENTO_OPCIONES), 500
+    return render_template('diagnostico.html',instrumentos=INSTRUMENTOS,instrumento_opciones=INSTRUMENTO_OPCIONES)
 
 @app.route('/resultado/<int:censo_id>')
 def resultado(censo_id): return render_template('resultado.html',censo=Censo.query.get_or_404(censo_id))
@@ -282,7 +282,7 @@ def admin():
 @app.route('/admin/exportar-excel')
 @admin_required
 def exportar_excel():
-    """Exporta los registros del censo a un libro Excel con dos hojas."""
+    """Exporta los registros del diagnóstico a un libro Excel con dos hojas."""
     registros = Censo.query.order_by(Censo.fecha.desc()).all()
     wb = Workbook()
     ws = wb.active
@@ -358,7 +358,7 @@ def exportar_excel():
     output = BytesIO()
     wb.save(output)
     output.seek(0)
-    nombre_archivo = f"censo_cda_matriz_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    nombre_archivo = f"diagnostico_archivistico_matriz_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
     return send_file(
         output,
         as_attachment=True,
