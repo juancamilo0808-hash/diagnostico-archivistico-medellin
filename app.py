@@ -189,6 +189,10 @@ def resultado(censo_id): return render_template('resultado.html',censo=Censo.que
 @app.route('/normatividad')
 def normatividad(): return render_template('normatividad.html',normatividad=NORMATIVIDAD)
 
+@app.route('/ayuda')
+def ayuda():
+    return render_template('ayuda.html')
+
 
 
 def admin_required(view):
