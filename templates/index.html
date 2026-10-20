@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Inicio | Diagnóstico Archivístico{% endblock %}
+{% block body_class %}home-page{% endblock %}
+{% block content %}
+<section class="hero-home">
+    <div class="hero-overlay"></div><div class="hero-wave"></div>
+    <div class="container hero-container">
+        <div class="hero-copy">
+            <div class="eyebrow"><span></span> CONSEJO DISTRITAL DE ARCHIVOS DE MEDELLÍN</div>
+            <h1>DIAGNÓSTICO ARCHIVÍSTICO<br><span>DEL DISTRITO DE MEDELLÍN</span></h1>
+            <h2>Instrumento de diagnóstico de la gestión documental y archivística</h2>
+            <p class="hero-lead">Aplicación para el levantamiento, análisis y seguimiento de información sobre la gestión documental y la administración de archivos.</p>
+            <a href="{{ url_for('censo') }}" class="btn btn-primary btn-lg hero-button"><i class="bi bi-file-earmark-text"></i> INICIAR DIAGNÓSTICO <i class="bi bi-chevron-right"></i></a>
+        </div>
+        <div class="hero-side-rail">
+            <div class="rail-item"><span class="rail-icon"><i class="bi bi-file-earmark-text"></i></span><span>Gestión<br>documental</span></div>
+            <div class="rail-item"><span class="rail-icon"><i class="bi bi-bar-chart-line-fill"></i></span><span>Análisis<br>y seguimiento</span></div>
+            <div class="rail-item"><span class="rail-icon"><i class="bi bi-people-fill"></i></span><span>Fortalecimiento<br>institucional</span></div>
+        </div>
+        <div class="row g-4 hero-features">
+            <div class="col-lg-4"><div class="feature-card"><div class="feature-number">01</div><div class="feature-icon"><i class="bi bi-file-earmark-text"></i></div><div class="feature-body"><h3>Recopilación</h3><p>Registro estructurado de la información de cada entidad.</p></div><div class="feature-progress blue"></div></div></div>
+            <div class="col-lg-4"><div class="feature-card gold"><div class="feature-number">02</div><div class="feature-icon"><i class="bi bi-bar-chart-fill"></i></div><div class="feature-body"><h3>Medición IMA</h3><p>Cálculo automático del Índice de Madurez Archivística.</p></div><div class="feature-progress gold"></div></div></div>
+            <div class="col-lg-4"><div class="feature-card green"><div class="feature-number">03</div><div class="feature-icon"><i class="bi bi-bullseye"></i></div><div class="feature-body"><h3>Seguimiento</h3><p>Consolidación de resultados para análisis y toma de decisiones.</p></div><div class="feature-progress green"></div></div></div>
+        </div>
+    </div>
+</section>
+<section class="institution-strip"><div class="container-fluid px-4 px-lg-5"><div class="row g-0">
+    <div class="col-md-3 strip-item"><i class="bi bi-people-fill"></i><div><strong>Entidades del Distrito</strong><span>Diagnóstico archivístico integral</span></div></div>
+    <div class="col-md-3 strip-item"><i class="bi bi-shield-check"></i><div><strong>Gestión documental</strong><span>Transparencia y acceso a la información</span></div></div>
+    <div class="col-md-3 strip-item"><i class="bi bi-bar-chart-line-fill"></i><div><strong>Toma de decisiones</strong><span>Con base en datos confiables</span></div></div>
+    <div class="col-md-3 strip-item"><i class="bi bi-file-earmark-text"></i><div><strong>Fortalecimiento institucional</strong><span>Acompañamiento y mejora continua</span></div></div>
+</div></div></section>
+{% endblock %}

@@ -1,0 +1,440 @@
+/* =========================================================
+   Diagnóstico Archivísticos DEL DISTRITO DE MEDELLÍN
+   Hoja de estilos completa
+   Conserva los estilos generales y cambia el fondo de portada
+   a static/images/medellin_portada.png.
+   ========================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Open+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+    --cda-blue: #123b65;
+    --cda-blue-dark: #092947;
+    --cda-blue-mid: #1c5688;
+    --cda-blue-light: #eaf3fb;
+    --cda-gold: #d6a62c;
+    --cda-green: #27845b;
+    --cda-text: #243447;
+    --cda-muted: #667789;
+    --cda-bg: #f3f6fa;
+    --cda-border: #dce4ec;
+    --cda-white: #ffffff;
+    --cda-shadow: 0 12px 32px rgba(13, 42, 72, .12);
+    --cda-radius: 16px;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+    margin: 0;
+    color: var(--cda-text);
+    background: var(--cda-bg);
+    font-family: 'Open Sans', Arial, sans-serif;
+    line-height: 1.6;
+}
+body, button, input, select, textarea { font-family: 'Open Sans', Arial, sans-serif; }
+h1, h2, h3, h4, h5, h6, .navbar-brand { font-family: 'Montserrat', Arial, sans-serif; }
+a { color: var(--cda-blue-mid); }
+a:hover { color: var(--cda-blue-dark); }
+
+/* Navegación institucional */
+.cda-nav {
+    position: relative;
+    z-index: 20;
+    background: linear-gradient(110deg, var(--cda-blue-dark), var(--cda-blue));
+    box-shadow: 0 5px 18px rgba(4, 28, 50, .2);
+}
+.cda-nav .navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #fff;
+    font-size: .98rem;
+    font-weight: 800;
+    letter-spacing: .02em;
+    white-space: normal;
+}
+.official-alcaldia-logo {
+    display: block;
+    width: auto;
+    max-width: 185px;
+    max-height: 64px;
+    object-fit: contain;
+}
+/* Identidad institucional del encabezado */
+.cda-nav-inner {
+    max-width: 1600px;
+    min-height: 82px;
+    padding-top: .65rem;
+    padding-bottom: .65rem;
+}
+.brand-divider {
+    display: block;
+    flex: 0 0 1px;
+    height: 48px;
+    background: rgba(255,255,255,.35);
+}
+.brand-cda {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #fff;
+}
+.brand-cda > i {
+    color: #f0cb65;
+    font-size: 1.55rem;
+}
+.brand-cda-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    line-height: 1.2;
+}
+.brand-cda-line {
+    display: block;
+    font-size: .78rem;
+    font-weight: 800;
+    letter-spacing: .035em;
+}
+.btn-nav {
+    color: #fff !important;
+    background: rgba(255,255,255,.10);
+    border: 1px solid rgba(255,255,255,.30);
+    padding: .62rem .9rem;
+    white-space: nowrap;
+}
+.btn-nav:hover, .btn-nav:focus {
+    color: #fff !important;
+    background: rgba(255,255,255,.20);
+    border-color: rgba(255,255,255,.55);
+}
+
+.cda-nav .navbar-toggler { border-color: rgba(255,255,255,.45); }
+.cda-nav .navbar-toggler:focus { box-shadow: 0 0 0 .2rem rgba(255,255,255,.2); }
+.cda-nav .navbar-toggler-icon { filter: brightness(0) invert(1); }
+.cda-nav .nav-link {
+    color: rgba(255,255,255,.9);
+    font-size: .88rem;
+    font-weight: 700;
+    padding: .7rem .85rem !important;
+    border-radius: 9px;
+    transition: background .2s ease, color .2s ease;
+}
+.cda-nav .nav-link:hover, .cda-nav .nav-link:focus,
+.cda-nav .nav-link.active { color: #fff; background: rgba(255,255,255,.13); }
+
+/* Botones */
+.btn { border-radius: 9px; font-weight: 700; transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
+.btn:hover { transform: translateY(-1px); }
+.btn-primary { background: var(--cda-blue); border-color: var(--cda-blue); }
+.btn-primary:hover, .btn-primary:focus { background: var(--cda-blue-dark); border-color: var(--cda-blue-dark); }
+.btn-success { background: var(--cda-green); border-color: var(--cda-green); }
+.btn-warning { color: #1e293b; background: var(--cda-gold); border-color: var(--cda-gold); }
+.btn-outline-primary { color: var(--cda-blue); border-color: var(--cda-blue); }
+.btn-outline-primary:hover { background: var(--cda-blue); border-color: var(--cda-blue); }
+
+/* Portada principal */
+.hero-home {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    min-height: 760px;
+    padding: 88px 0 78px;
+    background-color: #173b5a;
+    background-image: url("images/Panorama%20de%20Medell%C3%ADn%20con%20Metro%20y%20Monta%C3%B1as.png");
+    background-size: cover;
+    background-position: center 48%;
+    background-repeat: no-repeat;
+}
+.hero-overlay {
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    background: linear-gradient(90deg, rgba(7,31,55,.93) 0%, rgba(10,43,72,.79) 43%, rgba(9,37,62,.38) 76%, rgba(7,31,55,.28) 100%);
+}
+.hero-wave {
+    position: absolute;
+    z-index: -1;
+    left: -5%;
+    right: -5%;
+    bottom: -100px;
+    height: 170px;
+    border-radius: 50% 50% 0 0;
+    background: var(--cda-bg);
+    opacity: .98;
+}
+.hero-container { position: relative; z-index: 1; }
+.hero-copy { max-width: 820px; color: #fff; }
+.eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 22px;
+    color: #f1d37c;
+    font-size: .76rem;
+    font-weight: 800;
+    letter-spacing: .13em;
+}
+.eyebrow span { width: 30px; height: 3px; background: var(--cda-gold); border-radius: 5px; }
+.hero-copy h1 {
+    margin: 0 0 18px;
+    color: #fff;
+    font-size: clamp(2.4rem, 5vw, 4.55rem);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -.035em;
+    text-shadow: 0 3px 18px rgba(0,0,0,.22);
+}
+.hero-copy h1 span { color: #f0cb65; }
+.hero-copy h2 {
+    max-width: 760px;
+    margin: 0 0 17px;
+    color: rgba(255,255,255,.96);
+    font-size: clamp(1.15rem, 2vw, 1.65rem);
+    font-weight: 600;
+    line-height: 1.4;
+}
+.hero-lead {
+    max-width: 700px;
+    margin: 0 0 28px;
+    color: rgba(255,255,255,.86);
+    font-size: 1.02rem;
+    line-height: 1.85;
+}
+.hero-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 15px 23px;
+    color: #172b3c;
+    background: linear-gradient(135deg, #f4d77e, #d6a62c);
+    border: 0;
+    box-shadow: 0 9px 25px rgba(0,0,0,.22);
+    font-size: .85rem;
+    letter-spacing: .035em;
+}
+.hero-button:hover, .hero-button:focus { color: #172b3c; background: #f5dc91; box-shadow: 0 12px 28px rgba(0,0,0,.28); }
+.hero-side-rail {
+    position: absolute;
+    top: 18px;
+    right: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-width: 180px;
+}
+.rail-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 13px;
+    color: #fff;
+    background: rgba(8,35,59,.56);
+    border: 1px solid rgba(255,255,255,.22);
+    border-radius: 12px;
+    backdrop-filter: blur(7px);
+    font-size: .73rem;
+    font-weight: 700;
+    line-height: 1.35;
+}
+.rail-icon { display: grid; place-items: center; flex: 0 0 36px; height: 36px; color: #f2d276; background: rgba(255,255,255,.12); border-radius: 10px; font-size: 1.1rem; }
+.hero-features { margin-top: 66px; }
+.feature-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-height: 148px;
+    height: 100%;
+    padding: 25px 22px;
+    overflow: hidden;
+    background: rgba(255,255,255,.96);
+    border: 1px solid rgba(255,255,255,.65);
+    border-radius: var(--cda-radius);
+    box-shadow: 0 15px 36px rgba(0,0,0,.17);
+    transition: transform .2s ease, box-shadow .2s ease;
+}
+.feature-card:hover { transform: translateY(-5px); box-shadow: 0 20px 42px rgba(0,0,0,.22); }
+.feature-number { position: absolute; top: 8px; right: 13px; color: #e4eaf0; font-family: 'Montserrat',sans-serif; font-size: 2.1rem; font-weight: 800; line-height: 1; }
+.feature-icon { display: grid; place-items: center; flex: 0 0 54px; width: 54px; height: 54px; color: #fff; background: var(--cda-blue); border-radius: 15px; font-size: 1.45rem; }
+.feature-card.gold .feature-icon { background: var(--cda-gold); color: #263442; }
+.feature-card.green .feature-icon { background: var(--cda-green); }
+.feature-body { position: relative; z-index: 1; }
+.feature-body h3 { margin: 0 0 7px; color: var(--cda-blue-dark); font-size: 1.02rem; font-weight: 800; }
+.feature-body p { margin: 0; color: var(--cda-muted); font-size: .84rem; line-height: 1.55; }
+.feature-progress { position: absolute; right: 0; bottom: 0; left: 0; height: 4px; background: var(--cda-blue); }
+.feature-progress.gold { background: var(--cda-gold); }
+.feature-progress.green { background: var(--cda-green); }
+
+/* Franja institucional */
+.institution-strip { position: relative; z-index: 2; padding: 24px 0; background: #fff; border-bottom: 1px solid var(--cda-border); }
+.strip-item { display: flex; align-items: center; gap: 13px; min-height: 66px; padding: 10px 20px; border-right: 1px solid var(--cda-border); }
+.strip-item:last-child { border-right: 0; }
+.strip-item > i { flex: 0 0 auto; color: var(--cda-blue-mid); font-size: 1.65rem; }
+.strip-item strong, .strip-item span { display: block; }
+.strip-item strong { color: var(--cda-blue-dark); font-size: .84rem; font-weight: 800; }
+.strip-item span { margin-top: 3px; color: var(--cda-muted); font-size: .73rem; line-height: 1.45; }
+
+/* Contenido y encabezados internos */
+main.container, .page-container { padding-top: 38px; padding-bottom: 55px; }
+.section-header { margin-bottom: 25px; }
+.section-header h1, .section-header h2 { margin: 0 0 8px; color: var(--cda-blue-dark); font-weight: 800; }
+.section-header p { margin: 0; color: var(--cda-muted); }
+.form-card, .result-card, .info-card, .method-card {
+    margin-bottom: 24px;
+    padding: 26px;
+    background: #fff;
+    border: 1px solid var(--cda-border);
+    border-radius: var(--cda-radius);
+    box-shadow: 0 7px 22px rgba(16,48,78,.06);
+}
+.form-card h2, .form-card h3, .result-card h2, .info-card h2, .method-card h3 { color: var(--cda-blue-dark); font-weight: 800; }
+.form-label { margin-bottom: 7px; color: #31475b; font-size: .88rem; font-weight: 700; }
+.form-control, .form-select { min-height: 44px; border-color: #ccd8e3; border-radius: 8px; }
+.form-control:focus, .form-select:focus { border-color: #5a8fbd; box-shadow: 0 0 0 .2rem rgba(28,86,136,.13); }
+.form-text, .text-muted { color: var(--cda-muted) !important; }
+.alert { border-radius: 10px; }
+
+/* Tablas y matrices */
+.table { --bs-table-bg: transparent; vertical-align: middle; }
+.table thead th, .matrix th {
+    color: #fff;
+    background: var(--cda-blue);
+    border-color: rgba(255,255,255,.15);
+    font-size: .82rem;
+    font-weight: 700;
+    vertical-align: middle;
+}
+.table td, .table th { padding: .8rem .85rem; }
+.table-bordered { border-color: var(--cda-border); }
+.table-striped > tbody > tr:nth-of-type(odd) > * { --bs-table-accent-bg: #f5f8fb; }
+.matrix { width: 100%; border-collapse: separate; border-spacing: 0; overflow: hidden; border: 1px solid var(--cda-border); border-radius: 10px; }
+.matrix th, .matrix td { padding: 12px; border-right: 1px solid var(--cda-border); border-bottom: 1px solid var(--cda-border); }
+.matrix tr:last-child td { border-bottom: 0; }
+.matrix th:last-child, .matrix td:last-child { border-right: 0; }
+
+/* Resultados e indicadores */
+.ima-number { color: var(--cda-blue); font-family: 'Montserrat',sans-serif; font-size: clamp(2.2rem, 5vw, 3.8rem); font-weight: 800; line-height: 1.1; }
+.metric { height: 100%; padding: 20px; background: #fff; border: 1px solid var(--cda-border); border-radius: 13px; box-shadow: 0 6px 18px rgba(16,48,78,.05); }
+.metric .metric-label { color: var(--cda-muted); font-size: .82rem; font-weight: 700; }
+.metric .metric-value { display: block; margin-top: 5px; color: var(--cda-blue-dark); font-family: 'Montserrat',sans-serif; font-size: 1.8rem; font-weight: 800; }
+.progress { height: 10px; overflow: hidden; background: #e5edf4; border-radius: 30px; }
+.progress-bar { background: linear-gradient(90deg, var(--cda-blue-mid), var(--cda-green)); border-radius: 30px; }
+.sticky-progress { position: sticky; top: 12px; z-index: 5; padding: 12px 16px; background: rgba(255,255,255,.96); border: 1px solid var(--cda-border); border-radius: 12px; box-shadow: 0 5px 18px rgba(16,48,78,.08); }
+.method-card { border-top: 4px solid var(--cda-blue); }
+
+/* Fondos de páginas internas */
+.diagnostico-page { min-height: 100vh; background: linear-gradient(rgba(243,246,250,.94), rgba(243,246,250,.96)), url("images/fondo_diagnostico.jpg") center/cover fixed; }
+.result-page { min-height: 100vh; background: linear-gradient(rgba(243,246,250,.94), rgba(243,246,250,.96)), url("images/fondo_resultados.jpg") center/cover fixed; }
+
+/* Administración */
+.admin-card { padding: 24px; background: #fff; border: 1px solid var(--cda-border); border-radius: var(--cda-radius); box-shadow: var(--cda-shadow); }
+.admin-card h2, .admin-card h3 { color: var(--cda-blue-dark); font-weight: 800; }
+
+/* Pie de página */
+.cda-footer { color: rgba(255,255,255,.82); background: #082642; }
+.cda-footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 22px; padding-top: 25px; padding-bottom: 25px; }
+.cda-footer strong { color: #fff; }
+.cda-footer p { margin: 4px 0 0; font-size: .8rem; }
+.footer-links { display: flex; flex-wrap: wrap; gap: 15px; }
+.footer-links a { color: rgba(255,255,255,.82); font-size: .82rem; text-decoration: none; }
+.footer-links a:hover { color: #f0cb65; }
+
+/* Ajustes adaptables */
+@media (max-width: 1200px) {
+    .hero-side-rail { right: 0; max-width: 165px; }
+    .hero-copy { max-width: 72%; }
+    .hero-features { margin-top: 55px; }
+    .feature-card { padding: 22px 17px; gap: 12px; }
+    .strip-item { padding-right: 12px; padding-left: 12px; }
+}
+@media (max-width: 992px) {
+    .official-alcaldia-logo { max-width: 145px; max-height: 50px; }
+    .hero-home { min-height: auto; padding: 70px 0 65px; background-position: center; }
+    .hero-copy { max-width: 100%; padding-right: 0; }
+    .hero-side-rail { position: relative; top: auto; right: auto; flex-direction: row; flex-wrap: wrap; max-width: none; margin-top: 28px; }
+    .rail-item { flex: 1 1 155px; }
+    .hero-features { margin-top: 38px; }
+    .feature-card { min-height: 135px; }
+    .strip-item { border-right: 0; }
+    .institution-strip .row > div:nth-child(odd) { background: #fbfcfe; }
+}
+@media (max-width: 768px) {
+    .brand-divider { display: none; }
+    .brand-cda-line { font-size: .68rem; }
+    .cda-nav-inner { min-height: 70px; }
+}
+
+@media (max-width: 768px) {
+    .cda-nav .navbar-brand { font-size: .84rem; }
+    .official-alcaldia-logo { max-width: 120px; max-height: 44px; }
+    .hero-home { padding: 52px 0 55px; background-position: 58% center; }
+    .hero-overlay { background: linear-gradient(90deg, rgba(7,31,55,.92), rgba(9,37,62,.7)); }
+    .eyebrow { font-size: .66rem; letter-spacing: .08em; line-height: 1.6; }
+    .hero-copy h1 { font-size: clamp(2rem, 9vw, 3.1rem); }
+    .hero-copy h2 { font-size: 1.08rem; }
+    .hero-lead { font-size: .92rem; }
+    .hero-button { width: 100%; justify-content: center; padding: 14px 12px; font-size: .76rem; }
+    .hero-side-rail { gap: 8px; }
+    .rail-item { flex-basis: 100%; }
+    .hero-features { margin-top: 30px; }
+    .feature-card { min-height: 118px; padding: 20px 17px; }
+    .feature-number { font-size: 1.7rem; }
+    .strip-item { padding: 12px 5px; }
+    .cda-footer-inner { align-items: flex-start; flex-direction: column; }
+    .form-card, .result-card, .info-card, .method-card { padding: 19px; }
+    main.container, .page-container { padding-top: 25px; padding-bottom: 35px; }
+}
+@media (max-width: 420px) {
+    .hero-copy h1 { font-size: 1.9rem; }
+    .feature-card { align-items: flex-start; gap: 12px; }
+    .feature-icon { flex-basis: 45px; width: 45px; height: 45px; font-size: 1.2rem; }
+    .feature-body h3 { font-size: .93rem; }
+    .feature-body p { font-size: .78rem; }
+}
+
+/* Ajuste final: enlace de Administración en blanco */
+.cda-nav a,
+.cda-nav a:visited,
+.cda-nav a:hover,
+.cda-nav a:focus,
+.cda-nav a:active,
+.cda-nav .nav-link,
+.cda-nav .nav-link:hover,
+.cda-nav .nav-link:focus,
+.cda-nav .nav-link.active {
+    color: #ffffff !important;
+}
+
+
+/* Corrección de fondos: usa la fotografía existente en static/images para las páginas internas. */
+body:not(.home-page) {
+    background-color: #edf2f7;
+    background-image: linear-gradient(rgba(243,246,250,.90), rgba(243,246,250,.94)), url("images/Panorama%20de%20Medell%C3%ADn%20con%20Metro%20y%20Monta%C3%B1as.png");
+    background-size: cover;
+    background-position: center center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+}
+body:not(.home-page) main {
+    min-height: calc(100vh - 180px);
+}
+body:not(.home-page) main.container,
+body:not(.home-page) .page-container {
+    background: rgba(255,255,255,.91);
+    border: 1px solid rgba(220,228,236,.9);
+    border-radius: 16px;
+    box-shadow: 0 12px 32px rgba(13,42,72,.10);
+    margin-top: 28px;
+    margin-bottom: 32px;
+    padding: 28px;
+}
+/* Evita que tarjetas/formularios pierdan contraste sobre la fotografía. */
+.form-card, .result-card, .info-card, .method-card, .admin-card, .metric {
+    background-color: rgba(255,255,255,.97);
+}
+@media (max-width: 768px) {
+    body:not(.home-page) { background-attachment: scroll; }
+    body:not(.home-page) main.container,
+    body:not(.home-page) .page-container { margin: 16px 10px; padding: 18px; }
+}

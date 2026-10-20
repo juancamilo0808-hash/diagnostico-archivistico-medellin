@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Resultados | Diagnóstico Archivístico{% endblock %}
+{% block content %}
+<style>
+.results-hero{background:linear-gradient(125deg,#062d4e,#0b527c 68%,#167d91);color:#fff;border-radius:22px;padding:30px;box-shadow:0 14px 35px #0b35551c}
+.results-hero .eyebrow{letter-spacing:.14em;font-size:.76rem;font-weight:800;opacity:.78}
+.results-card{background:#fff;border:1px solid #e4ebf1;border-radius:18px;box-shadow:0 7px 24px #0a2c4610;height:100%}
+.results-card h2{font-size:1.05rem;font-weight:800;color:#123852}
+.metric-card{background:#fff;border:1px solid #e4ebf1;border-radius:16px;padding:20px;height:100%;box-shadow:0 6px 20px #0a2c460a}
+.metric-card .metric-value{font-size:2rem;font-weight:900;color:#0b426c;line-height:1.2}
+.metric-card .metric-label{font-size:.88rem;color:#617487}
+.metric-heading{display:flex;align-items:center;gap:11px;font-size:.9rem;font-weight:600;color:#526780;margin-bottom:14px}
+.metric-icon{width:44px;height:44px;flex:0 0 44px;border-radius:13px;display:inline-flex;align-items:center;justify-content:center}
+.metric-icon i{font-size:1.35rem;line-height:1}
+.metric-icon.blue{background:#e5efff;color:#145b91}
+.metric-icon.green{background:#dff5eb;color:#16845b}
+.metric-icon.gold{background:#fff0d7;color:#b66a00}
+.metric-icon.purple{background:#eee7ff;color:#7041b8}
+.traffic-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.traffic-item{border:1px solid #e5ebf0;border-radius:14px;padding:15px 12px;display:flex;align-items:center;gap:10px;background:#fff}
+.traffic-light{width:18px;height:18px;border-radius:50%;flex:0 0 18px;box-shadow:0 0 0 5px color-mix(in srgb,var(--light-color) 14%,transparent);background:var(--light-color)}
+.traffic-count{font-weight:900;font-size:1.35rem;color:#15344d;line-height:1.2}
+.traffic-label{font-size:.78rem;color:#627487}
+.chart-wrap{position:relative;min-height:280px}
+.status-pill{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:999px;font-size:.78rem;font-weight:800;white-space:nowrap}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--status-color)}
+.table thead th{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:#617487;background:#f5f8fb;white-space:nowrap}
+.filter-control{border:1px solid #d8e2eb;border-radius:10px;padding:10px 12px;width:100%;background:#fff}
+@media(max-width:900px){.traffic-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.results-hero{padding:22px}}
+@media(max-width:480px){.traffic-grid{grid-template-columns:1fr}}
+</style>
+<div class="container-fluid px-lg-5 py-4 py-lg-5">
+  <section class="results-hero mb-4">
+    <div class="row align-items-center g-3">
+      <div class="col-lg-8"><div class="eyebrow mb-2">CONSEJO DISTRITAL DE ARCHIVOS · MEDELLÍN</div><h1 class="fw-bold mb-2">Panel de resultados archivísticos</h1><p class="mb-0 opacity-75">Vista consolidada del Índice de Madurez Archivística, distribución por niveles y seguimiento a entidades evaluadas.</p></div>
+      <div class="col-lg-4 text-lg-end">
+        <div class="d-flex flex-wrap justify-content-lg-end gap-2">
+          <a href="{{ url_for('exportar_excel') }}" class="btn btn-success fw-bold"><i class="bi bi-file-earmark-excel me-2"></i>Descargar Excel</a>
+          <a href="{{ url_for('censo') }}" class="btn btn-light fw-bold"><i class="bi bi-plus-circle me-2"></i>Registrar entidad</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-xl-3"><div class="metric-card">
+      <div class="metric-heading"><span class="metric-icon blue"><i class="bi bi-buildings" aria-hidden="true"></i></span><span>Entidades registradas</span></div>
+      <div class="metric-value">{{ registros|length }}</div><div class="metric-label mt-1">Registros guardados en el diagnóstico</div>
+    </div></div>
+    <div class="col-6 col-xl-3"><div class="metric-card">
+      <div class="metric-heading"><span class="metric-icon green"><i class="bi bi-graph-up-arrow" aria-hidden="true"></i></span><span>IMA promedio</span></div>
+      <div class="metric-value">{{ '%.1f'|format(promedio) }}<span class="fs-5">%</span></div><div class="metric-label mt-1">Promedio simple de entidades registradas</div>
+    </div></div>
+    <div class="col-6 col-xl-3"><div class="metric-card">
+      <div class="metric-heading"><span class="metric-icon gold"><i class="bi bi-shield-exclamation" aria-hidden="true"></i></span><span>Atención prioritaria</span></div>
+      <div class="metric-value">{{ semaforos['Crítico'] + semaforos['Bajo'] }}</div><div class="metric-label mt-1">Entidades en nivel crítico o bajo</div>
+    </div></div>
+    <div class="col-6 col-xl-3"><div class="metric-card">
+      <div class="metric-heading"><span class="metric-icon purple"><i class="bi bi-diagram-3-fill" aria-hidden="true"></i></span><span>Sectores representados</span></div>
+      <div class="metric-value">{{ sectores|length }}</div><div class="metric-label mt-1">Sectores con al menos un registro</div>
+    </div></div>
+  </div>
+
+  <section class="results-card p-3 p-lg-4 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3"><div><h2 class="mb-1">Semáforo de madurez archivística</h2><p class="text-secondary small mb-0">Clasificación visual por IMA. Rangos de referencia configurados en la aplicación.</p></div><span class="small text-secondary">{{ registros|length }} entidad(es) evaluada(s)</span></div>
+    <div class="traffic-grid">
+      {% set estados = [('Crítico','#dc3545'),('Bajo','#fd7e14'),('En desarrollo','#e0a800'),('Satisfactorio','#198754'),('Avanzado','#0d6efd')] %}
+      {% for estado,color in estados %}<div class="traffic-item"><span class="traffic-light" style="--light-color:{{ color }}"></span><div><div class="traffic-count">{{ semaforos[estado] }}</div><div class="traffic-label">{{ estado }}</div></div></div>{% endfor %}
+    </div>
+    <div class="small text-secondary mt-3">Crítico: 0–20 % · Bajo: &gt;20–40 % · En desarrollo: &gt;40–60 % · Satisfactorio: &gt;60–80 % · Avanzado: &gt;80–100 %. Estos umbrales deben validarse contra la metodología oficial antes de uso normativo.</div>
+  </section>
+
+  <div class="row g-4 mb-4">
+    <div class="col-xl-5"><section class="results-card p-3 p-lg-4"><h2>Distribución por semáforo</h2><p class="small text-secondary">Cantidad de entidades en cada nivel.</p><div class="chart-wrap"><canvas id="distributionChart" aria-label="Distribución de entidades por nivel de IMA"></canvas></div></section></div>
+    <div class="col-xl-7"><section class="results-card p-3 p-lg-4"><h2>Ranking de entidades por IMA</h2><p class="small text-secondary">Comparación de resultados; se muestran hasta 12 entidades.</p><div class="chart-wrap"><canvas id="rankingChart" aria-label="Ranking de entidades por IMA"></canvas></div></section></div>
+  </div>
+
+  <section class="results-card p-3 p-lg-4 mb-4"><h2>Cumplimiento de instrumentos archivísticos</h2><p class="small text-secondary">Promedio porcentual de las respuestas puntuables de la pregunta 6. Las respuestas N/A no se incluyen.</p><div class="chart-wrap"><canvas id="instrumentsChart" aria-label="Cumplimiento promedio por instrumento archivístico"></canvas>{% if not instrumentos_labels %}<div class="text-center text-secondary small mt-2">El gráfico aparecerá cuando existan censos con respuestas registradas en la pregunta 6.</div>{% endif %}</div></section>
+
+  <section class="results-card p-3 p-lg-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3"><div><h2 class="mb-1">Seguimiento de entidades</h2><p class="small text-secondary mb-0">Busca, filtra por sector o nivel y consulta los resultados registrados.</p></div><span class="badge text-bg-light">{{ registros|length }} registro(s)</span></div>
+    <div class="row g-2 mb-3"><div class="col-md-5"><label class="form-label small fw-bold" for="searchEntity">Buscar entidad</label><input id="searchEntity" class="filter-control" placeholder="Nombre de entidad o NIT…"></div><div class="col-md-4"><label class="form-label small fw-bold" for="filterSector">Sector</label><select id="filterSector" class="filter-control"><option value="">Todos los sectores</option>{% for sector in sectores %}<option value="{{ sector }}">{{ sector }}</option>{% endfor %}</select></div><div class="col-md-3"><label class="form-label small fw-bold" for="filterLevel">Semáforo</label><select id="filterLevel" class="filter-control"><option value="">Todos los niveles</option><option>Crítico</option><option>Bajo</option><option>En desarrollo</option><option>Satisfactorio</option><option>Avanzado</option></select></div></div>
+    <div class="table-responsive"><table class="table table-hover align-middle" id="entitiesTable"><thead><tr><th>Fecha</th><th>Entidad / NIT</th><th>Sector</th><th>IMA</th><th>Semáforo</th><th>Clasificación IMA</th></tr></thead><tbody>
+      {% for r in registros %}{% set estado=semaforo_fn(r.ima or 0) %}<tr data-entity="{{ r.nombre_entidad|lower }}" data-sector="{{ r.sector or 'Sin sector' }}" data-level="{{ estado.label }}"><td class="text-nowrap">{{ r.fecha.strftime('%d/%m/%Y') }}</td><td class="fw-semibold">{{ r.nombre_entidad }}</td><td>{{ r.sector or 'Sin sector' }}</td><td class="fw-bold">{{ '%.2f'|format(r.ima or 0) }}%</td><td><span class="status-pill" style="background:{{ estado.color }}18;color:{{ estado.color }};--status-color:{{ estado.color }}"><span class="status-dot"></span>{{ estado.label }}</span></td><td>{{ r.nivel or 'Sin clasificar' }}</td></tr>{% else %}<tr><td colspan="6" class="text-center py-5 text-secondary"><i class="bi bi-clipboard2-data fs-2 d-block mb-2"></i>Aún no hay registros. Registra una entidad para visualizar resultados.</td></tr>{% endfor %}
+    </tbody></table></div><div id="noMatches" class="alert alert-light text-center d-none">No hay entidades que coincidan con los filtros.</div>
+  </section>
+  <p class="small text-secondary mt-3 mb-0"><i class="bi bi-info-circle me-1"></i>Los gráficos se construyen con los registros disponibles en la base de datos local. El ranking y los promedios no sustituyen la revisión técnica de la evaluación.</p>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+const colors=['#dc3545','#fd7e14','#e0a800','#198754','#0d6efd'];
+const levelLabels=['Crítico','Bajo','En desarrollo','Satisfactorio','Avanzado'];
+const distribution={{ [semaforos['Crítico'], semaforos['Bajo'], semaforos['En desarrollo'], semaforos['Satisfactorio'], semaforos['Avanzado']]|tojson }};
+const ranking={{ ranking[:12]|tojson }};
+const instrumentLabels={{ instrumentos_labels|tojson }};
+const instrumentValues={{ instrumentos_valores|tojson }};
+if (window.Chart) {
+  new Chart(document.getElementById('distributionChart'),{type:'doughnut',data:{labels:levelLabels,datasets:[{data:distribution,backgroundColor:colors,borderColor:'#fff',borderWidth:3,hoverOffset:7}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'},tooltip:{callbacks:{label:c=>`${c.label}: ${c.raw} entidad(es)`}}},cutout:'62%'}});
+  new Chart(document.getElementById('rankingChart'),{type:'bar',data:{labels:ranking.map(x=>x.nombre.length>34?x.nombre.slice(0,31)+'…':x.nombre),datasets:[{label:'IMA (%)',data:ranking.map(x=>x.ima),backgroundColor:ranking.map(x=>colors[levelLabels.indexOf(x.semaforo)]||'#0d6efd'),borderRadius:6,maxBarThickness:24}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'},grid:{color:'#edf1f5'}},y:{grid:{display:false}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`IMA: ${c.raw}%`}}}}});
+  new Chart(document.getElementById('instrumentsChart'),{type:'bar',data:{labels:instrumentLabels,datasets:[{label:'Cumplimiento promedio (%)',data:instrumentValues,backgroundColor:'#0b6a8f',borderRadius:5}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,scales:{x:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'},grid:{color:'#edf1f5'}},y:{grid:{display:false}}},plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`Promedio: ${c.raw}%`}}}}});
+}
+const search=document.getElementById('searchEntity'),sector=document.getElementById('filterSector'),level=document.getElementById('filterLevel'),rows=[...document.querySelectorAll('#entitiesTable tbody tr[data-entity]')],noMatches=document.getElementById('noMatches');
+function filterRows(){let shown=0;rows.forEach(r=>{const okName=r.dataset.entity.includes(search.value.trim().toLowerCase());const okSector=!sector.value||r.dataset.sector===sector.value;const okLevel=!level.value||r.dataset.level===level.value;r.classList.toggle('d-none',!(okName&&okSector&&okLevel));if(okName&&okSector&&okLevel)shown++});noMatches.classList.toggle('d-none',shown!==0||rows.length===0)}
+[search,sector,level].forEach(el=>el.addEventListener(el===search?'input':'change',filterRows));
+</script>
+{% endblock %}

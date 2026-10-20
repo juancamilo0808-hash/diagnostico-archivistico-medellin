@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#063b66">
+    <title>{% block title %}Diagnóstico Archivístico{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20261014c">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+    <nav class="navbar navbar-expand-lg navbar-dark cda-nav">
+        <div class="container-fluid cda-nav-inner">
+            <a class="navbar-brand d-flex align-items-center gap-3" href="{{ url_for('index') }}" aria-label="Inicio Diagnóstico Archivístico CDA Medellín">
+                <img class="official-alcaldia-logo" src="{{ url_for('static', filename='logo_alcaldia_original.png') }}" alt="Alcaldía de Medellín — Distrito de Ciencia, Tecnología e Innovación">
+                <span class="brand-divider"></span>
+                <span class="brand-cda">
+    <i class="bi bi-file-earmark-text"></i>
+    <span class="brand-cda-text">
+        <span class="brand-cda-line">CONSEJO DISTRITAL</span>
+        <span class="brand-cda-line">DE ARCHIVOS</span>
+        <span class="brand-cda-line">MEDELLÍN</span>
+    </span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#cdaMenu" aria-controls="cdaMenu" aria-expanded="false" aria-label="Abrir menú"><span class="navbar-toggler-icon"></span></button>
+            <div class="collapse navbar-collapse" id="cdaMenu">
+                <div class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
+                    <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}"><i class="bi bi-house-door"></i> Inicio</a>
+                    <a class="nav-link {% if request.endpoint == 'censo' %}active{% endif %}" href="{{ url_for('censo') }}"><i class="bi bi-file-earmark-text"></i> Diagnóstico</a>
+                    <a class="nav-link {% if request.endpoint in ['resultado', 'admin'] %}active{% endif %}" href="{{ url_for('admin') }}"><i class="bi bi-bar-chart-line"></i> Resultados</a>
+                    <a class="nav-link" href="/expedientes"><i class="bi bi-folder2-open"></i> Expedientes digitales</a>
+                    <a class="nav-link {% if request.endpoint == 'normatividad' %}active{% endif %}" href="{{ url_for('normatividad') }}"><i class="bi bi-journal-text"></i> Normatividad</a>
+                    <a class="nav-link" href="#" onclick="alert('La sección de ayuda se habilitará en la siguiente fase.'); return false;"><i class="bi bi-question-circle"></i> Ayuda</a>
+                    <a class="btn btn-nav" href="{{ url_for('admin') }}"><i class="bi bi-gear"></i> Administración</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {% with messages=get_flashed_messages(with_categories=true) %}
+        {% for cat,msg in messages %}
+        <div class="container mt-3 position-relative" style="z-index:20"><div class="alert alert-{{ cat }} shadow-sm">{{ msg }}</div></div>
+        {% endfor %}
+    {% endwith %}
+    <main>{% block content %}{% endblock %}</main>
+    <footer class="cda-footer">
+        <div class="container-fluid cda-footer-inner">
+            <div>© 2026 <strong>Consejo Distrital de Archivos de Medellín</strong><p>Alcaldía de Medellín · Distrito de Ciencia, Tecnología e Innovación</p></div>
+            <div class="footer-links"><a href="{{ url_for('normatividad') }}">Normatividad</a><a href="#">Política de privacidad</a><a href="#">Términos de uso</a><span>Versión 1.0</span></div>
+        </div>
+    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

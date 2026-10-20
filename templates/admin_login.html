@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acceso administrativo | CONSEJO DISTRITAL DE ARCHIVOS · MEDELLÍN</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f2f5f9;font-family:Arial,sans-serif;color:#183153;padding:20px}
+    .card{width:100%;max-width:430px;background:#fff;border-radius:16px;padding:30px;box-shadow:0 12px 35px #18315318;border:1px solid #e1e8f0}
+    h1{font-size:23px;margin:0 0 8px}p{color:#5d6b7b;line-height:1.5}label{display:block;font-weight:bold;margin:20px 0 8px}
+    input{width:100%;padding:13px;border:1px solid #bdc9d8;border-radius:8px;font-size:16px}button{margin-top:16px;width:100%;padding:13px;border:0;border-radius:8px;background:#17365d;color:white;font-size:16px;font-weight:bold;cursor:pointer}
+    .msg{padding:10px;border-radius:7px;background:#fff0f0;color:#9a2222;margin:12px 0}.brand{font-size:12px;letter-spacing:1px;color:#356b9b;font-weight:bold;margin-bottom:12px}
+  </style>
+</head>
+<body><main class="card"><div class="brand">CONSEJO DISTRITAL DE ARCHIVOS · MEDELLÍN</div><h1>Panel administrativo</h1><p>Ingrese la contraseña autorizada para consultar los registros y exportar el informe.</p>
+  {% with messages = get_flashed_messages(with_categories=true) %}{% for category, message in messages %}<div class="msg">{{ message }}</div>{% endfor %}{% endwith %}
+  <form method="post"><label for="password">Contraseña administrativa</label><input id="password" name="password" type="password" autocomplete="current-password" required autofocus><button type="submit">Ingresar al panel</button></form>
+</main></body></html>

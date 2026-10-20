@@ -1,0 +1,68 @@
+{% extends 'base.html' %}{% block title %}Diagnóstico Archivístico{% endblock %}{% block body_class %}diagnostico-page{% endblock %}{% block content %}<div class="container py-4"><form method="post" id="censoForm" novalidate><div class="progress mb-4 sticky-progress"><div class="progress-bar" id="bar" style="width:0">0%</div></div>
+{% macro section(letter,title) %}<div class="section-header mt-4"><div><h2>{{title}}</h2></div></div>{% endmacro %}
+{{section('A','IDENTIFICACIÓN Y CARACTERIZACIÓN')}}<div class="card form-card"><div class="card-body"><div class="row g-3"><div class="col-12 col-md-8"><label class="form-label" for="nombre_entidad">1. Nombre oficial de la entidad *</label><input class="form-control" id="nombre_entidad" name="nombre_entidad" autocomplete="organization" placeholder="Escriba el nombre oficial de la entidad" required></div><div class="col-12 col-md-4"><label class="form-label" for="nit_entidad">2. NIT de la entidad *</label><input class="form-control" id="nit_entidad" name="nit_entidad" inputmode="numeric" placeholder="Ej. 890905211-1" required></div></div><label class="form-label mt-4">3. Tipo o naturaleza de la entidad *</label><select class="form-select" name="naturaleza" required><option value="">Seleccione...</option>{% for x in ['Entidad pública del nivel central','Entidad descentralizada / adscrita / vinculada','Empresa industrial y comercial del Estado','Empresa social del Estado','Sociedad de economía mixta','Entidad privada con funciones públicas','Otra'] %}<option>{{x}}</option>{% endfor %}</select><label class="form-label mt-4">4. Sector administrativo al que pertenece *</label><select class="form-select" name="sector" required><option value="">Seleccione...</option>{% for x in ['Gestión Pública','Hacienda','Planeación','Educación','Salud','Inclusión Social','Seguridad y Convivencia','Movilidad','Infraestructura','Medio Ambiente','Cultura','Desarrollo Económico','Hábitat','Otro'] %}<option>{{x}}</option>{% endfor %}</select><label class="form-label mt-4">5. Datos del responsable de la información *</label><div class="row g-3"><div class="col-12 col-md-4"><label class="form-label" for="responsable_nombre">Nombre completo *</label><input class="form-control" id="responsable_nombre" name="responsable_nombre" autocomplete="name" placeholder="Nombre y apellidos" required></div><div class="col-12 col-md-4"><label class="form-label" for="responsable_cargo">Cargo *</label><input class="form-control" id="responsable_cargo" name="responsable_cargo" autocomplete="organization-title" placeholder="Cargo institucional" required></div><div class="col-12 col-md-4"><label class="form-label" for="responsable_correo">Correo institucional *</label><input class="form-control" id="responsable_correo" name="responsable_correo" type="email" autocomplete="email" placeholder="nombre@entidad.gov.co" required></div></div></div></div>
+{{section('B','ORGANIZACIÓN E INSTRUMENTOS ARCHIVÍSTICOS')}}<div class="card form-card"><div class="card-body"><label class="form-label">5. ¿Existe una dependencia, grupo o responsable formal de gestión documental y archivo? *</label>{% for x in ['No (0)','En proceso / Parcialmente (0,5)','Sí (1)'] %}<div class="form-check"><input class="form-check-input" type="radio" name="q5" value="{{x}}" required><label>{{x}}</label></div>{% endfor %}<hr><label class="form-label">6. Para cada instrumento archivístico, indique el estado actual *</label><div class="table-responsive"><table class="table table-bordered matrix"><thead><tr><th>Instrumento</th>{% for code,label in instrumento_opciones %}<th>{{label}}</th>{% endfor %}</tr></thead><tbody>{% for n in instrumentos %}{% set instrumento_index = loop.index0 %}<tr><td>{{n}}</td>{% for code,label in instrumento_opciones %}<td class="text-center"><input type="radio" name="q6_{{instrumento_index}}" value="{{code}}" required aria-label="{{n}}: {{label}}"></td>{% endfor %}</tr>{% endfor %}</tbody></table></div>{% set qs=[('q7','7. ¿Cuál es el estado actual de las Tablas de Retención Documental (TRD)?',['No existen (0)','En elaboración, actualización, trámite de convalidación o requieren actualización (0,5)','Convalidadas y vigentes (1)']),('q8','8. ¿Está implementando actualmente las TRD?',['No / No se ha verificado (0)','Parcialmente (0,5)','Sí (1)']),('q9','9. Estado actual del Programa de Gestión Documental (PGD).',['No existe (0)','En elaboración, actualización, implementación o aprobado pero desactualizado (0,5)','Aprobado, vigente e implementado (1)']),('q10','10. Estado actual del Plan Institucional de Archivos (PINAR).',['No existe (0)','En elaboración, actualización, implementación o aprobado pero desactualizado (0,5)','Aprobado, vigente e implementado (1)'])] %}{% for key,q,opts in qs %}<label class="form-label mt-4">{{q}} *</label><select class="form-select" name="{{key}}" required><option value="">Seleccione...</option>{% for x in opts %}<option>{{x}}</option>{% endfor %}</select>{% endfor %}</div></div>
+{{section('C','ESTADO GENERAL DE LOS ARCHIVOS')}}<div class="card form-card"><div class="card-body"><label class="form-label">11. ¿Con qué tipos de archivo cuenta la entidad? *</label>{% for x in ['Archivos de gestión','Archivo central','Archivo histórico','Archivos descentralizados','Otro'] %}<div class="form-check"><input class="form-check-input" type="checkbox" name="q11" value="{{x}}"><label>{{x}}</label></div>{% endfor %}<label class="form-label mt-4">12. ¿En qué soportes se encuentra la documentación? *</label>{% for x in ['Físico/papel','Electrónico/digital','Híbrido','Fotográfico','Audiovisual/sonoro','Planos/cartográfico','Otros'] %}<div class="form-check"><input class="form-check-input" type="checkbox" name="q12" value="{{x}}"><label>{{x}}</label></div>{% endfor %}<label class="form-label mt-4">13. Indique la cantidad aproximada de fondos documentales, fecha extrema inicial más antigua y volumen aproximado de documentación física. *</label><textarea class="form-control" name="q13" rows="3" required></textarea><label class="form-label mt-4">14. ¿Cuál es el estado general de organización e inventario de los archivos? *</label><select class="form-select" name="q14" required><option value="">Seleccione...</option>{% for x in ['Con rezago significativo / No se ha diagnosticado (0)','Parcialmente o mayormente organizados (0,5)','Organizados e inventariados (1)'] %}<option>{{x}}</option>{% endfor %}</select><label class="form-label mt-4">15. ¿La entidad realiza transferencias documentales conforme a las TRD y conserva inventarios o evidencia de entrega? *</label><select class="form-select" name="q15" required><option value="">Seleccione...</option>{% for x in ['No (0)','Parcialmente (0,5)','Sí (1)','No aplica (N/A)'] %}<option>{{x}}</option>{% endfor %}</select></div></div>
+{{section('D','CONSERVACIÓN, DISPOSICIÓN Y GESTIÓN ELECTRÓNICA')}}<div class="card form-card"><div class="card-body"><label class="form-label">16. ¿Cómo califica las condiciones generales de los depósitos documentales en materia de espacio, seguridad, acceso, limpieza y condiciones ambientales? *</label><select class="form-select" name="q16" required><option value="">Seleccione...</option>{% for x in ['Inadecuadas / No se ha evaluado (0)','Parcialmente adecuadas (0,5)','Adecuadas (1)'] %}<option>{{x}}</option>{% endfor %}</select><label class="form-label mt-4">17. ¿Cuáles son los principales riesgos identificados para la documentación? *</label>{% for x in ['Humedad/inundación','Incendio','Plagas','Falta de espacio','Condiciones ambientales inadecuadas','Riesgo estructural','Acceso no autorizado','Riesgos tecnológicos/digitales','Ninguno identificado','Otros'] %}<div class="form-check"><input class="form-check-input" type="checkbox" name="q17" value="{{x}}"><label>{{x}}</label></div>{% endfor %}<label class="form-label mt-4">18. ¿La entidad aplica la disposición final establecida en las TRD/TVD y documenta las eliminaciones cuando corresponde? *</label><select class="form-select" name="q18" required><option value="">Seleccione...</option>{% for x in ['No (0)','Parcialmente (0,5)','Sí (1)','No aplica (N/A)'] %}<option>{{x}}</option>{% endfor %}</select><label class="form-label mt-4">19. ¿La entidad cuenta con SGDEA o sistema equivalente y con medidas para la preservación de documentos electrónicos? *</label><select class="form-select" name="q19" required><option value="">Seleccione...</option>{% for x in ['No (0)','En proceso / Implementación parcial (0,5)','Sí, implementado (1)'] %}<option>{{x}}</option>{% endfor %}</select></div></div>
+{{section('E','SEGUIMIENTO Y NECESIDADES')}}<div class="card form-card"><div class="card-body"><label class="form-label">20. Seleccione las principales necesidades de acompañamiento de la entidad en materia archivística. *</label>{% for x in ['TRD/TVD','PGD/PINAR','Inventarios y organización documental','Transferencias','Conservación e infraestructura','SGDEA/documentos electrónicos','Preservación digital','Disposición final y valoración','Capacitación','Normativa archivística','Otra'] %}<div class="form-check"><input class="form-check-input" type="checkbox" name="q20" value="{{x}}"><label>{{x}}</label></div>{% endfor %}<label class="form-label mt-4">21. ¿Cómo describe el estado general de la gestión documental y administración de archivos de la entidad? *</label><select class="form-select" name="q21" required><option value="">Seleccione...</option>{% for x in ['Inicial','En desarrollo','Implementado','Consolidado','No es posible determinarlo'] %}<option>{{x}}</option>{% endfor %}</select></div></div><div class="method-card mt-4"><strong>Metodología:</strong> IMA = (puntaje obtenido ÷ puntaje máximo aplicable) × 100. N/A se excluye del denominador.</div><div class="text-center my-5"><button class="btn btn-primary btn-lg px-5" type="submit">Guardar diagnóstico y calcular IMA</button></div></form></div><script>
+(function(){
+  const f=document.getElementById('censoForm');
+  const b=document.getElementById('bar');
+  const submitBtn=f.querySelector('button[type="submit"]');
+  function requiredGroups(){
+    const names=[...new Set([...f.querySelectorAll('[required]')].map(x=>x.name))];
+    return names.filter(name=>{
+      const els=[...f.querySelectorAll('[name="'+CSS.escape(name)+'"]')];
+      if(!els.length) return false;
+      const first=els[0];
+      if(first.type==='radio') return !els.some(x=>x.checked);
+      return !els.some(x=>x.value && x.value.trim()!=='');
+    });
+  }
+  function p(){
+    const required=[...f.querySelectorAll('input[required],select[required],textarea[required]')];
+    let total=0, done=0;
+    const seenRadio=new Set();
+    required.forEach(x=>{
+      if(x.type==='radio'){
+        if(seenRadio.has(x.name)) return;
+        seenRadio.add(x.name); total++;
+        if(f.querySelector('input[type="radio"][name="'+CSS.escape(x.name)+'"]:checked')) done++;
+      } else {
+        total++;
+        if(x.value && x.value.trim()!=='') done++;
+      }
+    });
+    const v=total?Math.round(done/total*100):0;
+    b.style.width=v+'%'; b.textContent=v+'%';
+  }
+  f.addEventListener('change',p); f.addEventListener('input',p);
+  f.addEventListener('submit',function(ev){
+    const missing=requiredGroups();
+    if(missing.length){
+      ev.preventDefault();
+      let first=null;
+      for(const name of missing){
+        const els=[...f.querySelectorAll('[name="'+CSS.escape(name)+'"]')];
+        if(els.length){first=els[0];break;}
+      }
+      let alertBox=document.getElementById('saveValidationMessage');
+      if(!alertBox){
+        alertBox=document.createElement('div');
+        alertBox.id='saveValidationMessage';
+        alertBox.className='alert alert-warning shadow-sm';
+        f.prepend(alertBox);
+      }
+      alertBox.textContent='No se puede guardar todavía. Faltan '+missing.length+' respuesta(s) obligatoria(s). Revisa los campos marcados y la matriz de instrumentos de la pregunta 6.';
+      alertBox.scrollIntoView({behavior:'smooth',block:'center'});
+      if(first){setTimeout(()=>first.focus({preventScroll:true}),350);}
+      return;
+    }
+    if(submitBtn){
+      submitBtn.disabled=true;
+      submitBtn.innerHTML='<span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Guardando diagnóstico...';
+    }
+  });
+  p();
+})();
+</script>{% endblock %}
