@@ -1,1 +1,283 @@
 
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container py-4">
+
+    <!-- Encabezado -->
+    <div class="p-4 p-md-5 mb-4 rounded-4 text-white"
+         style="background: linear-gradient(135deg, #102b4e, #1d527c);">
+        <div class="d-flex align-items-center gap-3 mb-3">
+            <i class="bi bi-question-circle-fill"
+               style="font-size: 3rem;"></i>
+            <div>
+                <h1 class="h2 fw-bold mb-1">Centro de Ayuda</h1>
+                <p class="mb-0">
+                    Diagnóstico Archivístico Territorial
+                </p>
+            </div>
+        </div>
+        <p class="mb-0">
+            Encuentra orientación para diligenciar el instrumento,
+            comprender sus secciones y consultar los resultados.
+        </p>
+    </div>
+
+    <!-- Introducción -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <h2 class="h4 fw-bold" style="color: #17365d;">
+                <i class="bi bi-info-circle me-2"></i>
+                ¿Cómo utilizar la herramienta?
+            </h2>
+            <p class="mb-0">
+                Esta herramienta permite recopilar información sobre
+                la gestión documental y el estado de los archivos de
+                las entidades. Para obtener información útil, responde
+                cada pregunta con base en la situación real de tu entidad
+                y en los documentos que permitan respaldar las respuestas.
+            </p>
+        </div>
+    </div>
+
+    <!-- Pasos -->
+    <h2 class="h4 fw-bold mb-3" style="color: #17365d;">
+        Pasos para realizar el diagnóstico
+    </h2>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <div class="mb-3" style="color: #b58a35;">
+                        <i class="bi bi-building" style="font-size: 2rem;"></i>
+                    </div>
+                    <h3 class="h5 fw-bold">1. Identifica la entidad</h3>
+                    <p class="mb-0">
+                        Ten disponibles los datos institucionales y la
+                        información de contacto solicitada en el formulario.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <div class="mb-3" style="color: #b58a35;">
+                        <i class="bi bi-clipboard-check"
+                           style="font-size: 2rem;"></i>
+                    </div>
+                    <h3 class="h5 fw-bold">2. Responde el instrumento</h3>
+                    <p class="mb-0">
+                        Lee cada pregunta con atención y selecciona
+                        la respuesta que corresponda a la realidad institucional.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <div class="mb-3" style="color: #b58a35;">
+                        <i class="bi bi-shield-check"
+                           style="font-size: 2rem;"></i>
+                    </div>
+                    <h3 class="h5 fw-bold">3. Verifica la información</h3>
+                    <p class="mb-0">
+                        Comprueba las respuestas antes de enviar y utiliza
+                        evidencias cuando estén disponibles.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+            <div class="card h-100 border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <div class="mb-3" style="color: #b58a35;">
+                        <i class="bi bi-graph-up-arrow"
+                           style="font-size: 2rem;"></i>
+                    </div>
+                    <h3 class="h5 fw-bold">4. Consulta los resultados</h3>
+                    <p class="mb-0">
+                        Revisa los resultados disponibles y utiliza los
+                        hallazgos para identificar oportunidades de mejora.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secciones -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <h2 class="h4 fw-bold mb-3" style="color: #17365d;">
+                <i class="bi bi-folder2-open me-2"></i>
+                ¿Qué debo tener en cuenta?
+            </h2>
+
+            <div class="accordion" id="ayudaAccordion">
+
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button" type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#ayuda1"
+                                aria-expanded="true">
+                            Información institucional
+                        </button>
+                    </h3>
+                    <div id="ayuda1"
+                         class="accordion-collapse collapse show"
+                         data-bs-parent="#ayudaAccordion">
+                        <div class="accordion-body">
+                            Registra correctamente el nombre oficial de la
+                            entidad, su identificación y los datos de contacto
+                            requeridos. Revisa la información antes de continuar.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button collapsed"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#ayuda2">
+                            Organización e instrumentos archivísticos
+                        </button>
+                    </h3>
+                    <div id="ayuda2"
+                         class="accordion-collapse collapse"
+                         data-bs-parent="#ayudaAccordion">
+                        <div class="accordion-body">
+                            Responde según el estado real de la organización
+                            documental y de los instrumentos archivísticos
+                            de la entidad. Consulta los documentos institucionales
+                            disponibles para validar tus respuestas.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button collapsed"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#ayuda3">
+                            Estado general de los archivos
+                        </button>
+                    </h3>
+                    <div id="ayuda3"
+                         class="accordion-collapse collapse"
+                         data-bs-parent="#ayudaAccordion">
+                        <div class="accordion-body">
+                            Ten en cuenta las condiciones de organización,
+                            administración, conservación y acceso a los
+                            documentos, de acuerdo con las preguntas del instrumento.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button collapsed"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#ayuda4">
+                            Documentos electrónicos y preservación digital
+                        </button>
+                    </h3>
+                    <div id="ayuda4"
+                         class="accordion-collapse collapse"
+                         data-bs-parent="#ayudaAccordion">
+                        <div class="accordion-body">
+                            Cuando corresponda, considera la gestión de
+                            documentos electrónicos, sus metadatos, los
+                            mecanismos de seguridad, la conservación y la
+                            disponibilidad de la información a largo plazo.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button collapsed"
+                                type="button"
+                                data-bs-toggle="collapse"
+                                data-bs-target="#ayuda5">
+                            Seguimiento y oportunidades de mejora
+                        </button>
+                    </h3>
+                    <div id="ayuda5"
+                         class="accordion-collapse collapse"
+                         data-bs-parent="#ayudaAccordion">
+                        <div class="accordion-body">
+                            Utiliza los hallazgos del diagnóstico para
+                            identificar necesidades y priorizar acciones de
+                            mejoramiento. Los resultados deben interpretarse
+                            según el alcance y los criterios definidos en el instrumento.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Recomendaciones -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <h2 class="h4 fw-bold mb-3" style="color: #17365d;">
+                <i class="bi bi-lightbulb me-2"></i>
+                Recomendaciones
+            </h2>
+            <ul class="mb-0">
+                <li class="mb-2">
+                    Responde con información verificable y actualizada.
+                </li>
+                <li class="mb-2">
+                    No confundas la existencia de un documento con su
+                    implementación efectiva.
+                </li>
+                <li class="mb-2">
+                    Consulta las fuentes institucionales antes de seleccionar
+                    una respuesta cuando tengas dudas.
+                </li>
+                <li>
+                    Si una pregunta no es clara, consulta al responsable de
+                    gestión documental de tu entidad antes de responder.
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Acción principal -->
+    <div class="text-center p-4 rounded-4"
+         style="background: #f3f6fa;">
+        <h2 class="h4 fw-bold" style="color: #17365d;">
+            ¿Listo para comenzar?
+        </h2>
+        <p>
+            Ingresa al formulario para iniciar o continuar el diligenciamiento.
+        </p>
+        <a href="{{ url_for('censo') }}"
+           class="btn btn-primary btn-lg px-4"
+           style="background-color: #17365d; border-color: #17365d;">
+            <i class="bi bi-clipboard-check me-2"></i>
+            Ir al diagnóstico
+        </a>
+        <div class="mt-3">
+            <a href="{{ url_for('index') }}"
+               class="text-decoration-none">
+                <i class="bi bi-house me-1"></i>
+                Volver al inicio
+            </a>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
