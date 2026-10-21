@@ -328,6 +328,13 @@ def admin_required(view):
     return wrapped_view
 
 
+# MÓDULO NUEVO: mapa de entidades. No modifica las rutas existentes.
+@app.route('/admin/mapa-entidades')
+@admin_required
+def mapa_entidades():
+    return render_template('mapa_entidades.html')
+
+
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
