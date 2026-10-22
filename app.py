@@ -30,6 +30,20 @@ class Censo(db.Model):
     q11=db.Column(db.Text); q12=db.Column(db.Text); q13=db.Column(db.Text); q14=db.Column(db.String(250)); q15=db.Column(db.String(100)); q16=db.Column(db.String(200)); q17=db.Column(db.Text); q18=db.Column(db.String(100)); q19=db.Column(db.String(200)); q20=db.Column(db.Text); q21=db.Column(db.String(100)); respuestas_json=db.Column(db.Text); codigo_entidad=db.Column(db.String(50))
     puntaje_obtenido=db.Column(db.Float,default=0); variables_aplicables=db.Column(db.Float,default=0); ima=db.Column(db.Float,default=0); nivel=db.Column(db.String(100))
 
+class UbicacionEntidad(db.Model):
+    """Caché persistente de ubicaciones resueltas bajo demanda desde una dirección.
+
+    Es una tabla independiente; no modifica ni elimina registros de Censo.
+    """
+    __tablename__ = 'ubicacion_entidad'
+    codigo_entidad = db.Column(db.String(50), primary_key=True)
+    latitud = db.Column(db.Float, nullable=False)
+    longitud = db.Column(db.Float, nullable=False)
+    direccion_geocodificada = db.Column(db.Text)
+    fuente = db.Column(db.String(100), default='Nominatim / OpenStreetMap')
+    actualizado_en = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 INSTRUMENTOS=["CCD","TRD","TVD","PGD","PINAR","Inventarios documentales","Banco terminológico","Modelo de requisitos para documentos electrónicos","Sistema Integrado de Conservación (SIC)","Plan de Conservación Documental","Plan de Preservación Digital a Largo Plazo"]
 INSTRUMENTO_OPCIONES=[("0","No cuenta"),("0.5","En elaboración, actualización o implementación parcial"),("1","Vigente / implementado"),("NA","N/A")]
 
@@ -460,8 +474,8 @@ def api_mapa_entidades():
 
     El código del directorio es el vínculo principal. Para registros históricos que
     no tengan código, se usa como respaldo el nombre normalizado de la entidad.
-    No se inventan coordenadas: el mapa muestra una referencia municipal hasta
-    que se incorporen ubicaciones verificadas por entidad.
+    Las coordenadas verificadas en el directorio tienen prioridad; las ubicaciones
+    geocodificadas bajo demanda se conservan en una tabla independiente.
     """
     directorio = obtener_directorio()
     registros = Censo.query.order_by(Censo.fecha.desc(), Censo.id.desc()).all()
@@ -503,12 +517,29 @@ def api_mapa_entidades():
             return None
 
     salida = []
+    ubicaciones_guardadas = {
+        ubicacion.codigo_entidad: ubicacion
+        for ubicacion in UbicacionEntidad.query.all()
+    }
     for fila in directorio:
         codigo = str(fila.get('Código', '') or '').strip()
         nombre = str(fila.get('Entidad', '') or '').strip()
         diagnostico = por_codigo.get(codigo) if codigo else None
         if diagnostico is None:
             diagnostico = por_nombre.get(clave_nombre(nombre))
+
+        # Si el directorio ya tiene coordenadas, estas tienen prioridad. Si no,
+        # se utilizan las coordenadas geocodificadas y guardadas previamente.
+        latitud = leer_coordenada(fila, ['Latitud', 'latitud', 'Latitude'], -90, 90)
+        longitud = leer_coordenada(fila, ['Longitud', 'longitud', 'Longitude'], -180, 180)
+        fuente_ubicacion = 'directorio' if latitud is not None and longitud is not None else ''
+        direccion_geocodificada = ''
+        ubicacion_guardada = ubicaciones_guardadas.get(codigo) if codigo else None
+        if (latitud is None or longitud is None) and ubicacion_guardada:
+            latitud = ubicacion_guardada.latitud
+            longitud = ubicacion_guardada.longitud
+            fuente_ubicacion = ubicacion_guardada.fuente or 'Nominatim / OpenStreetMap'
+            direccion_geocodificada = ubicacion_guardada.direccion_geocodificada or ''
 
         salida.append({
             'codigo': codigo,
@@ -523,10 +554,10 @@ def api_mapa_entidades():
             'correo': fila.get('Correo Responsable GD', ''),
             'telefono': fila.get('Teléfono Responsable GD', ''),
             'web': fila.get('Sitio web / fuente', ''),
-            # Solo dibuja marcadores puntuales si el directorio incorpora
-            # coordenadas explícitas y válidas; no geocodifica ni inventa lugares.
-            'latitud': leer_coordenada(fila, ['Latitud', 'latitud', 'Latitude'], -90, 90),
-            'longitud': leer_coordenada(fila, ['Longitud', 'longitud', 'Longitude'], -180, 180),
+            'latitud': latitud,
+            'longitud': longitud,
+            'ubicacion_fuente': fuente_ubicacion,
+            'direccion_geocodificada': direccion_geocodificada,
             'diagnostico': diagnostico
         })
 
@@ -536,6 +567,58 @@ def api_mapa_entidades():
         'total': len(salida),
         'con_diagnostico': con_diagnostico,
         'sin_diagnostico': len(salida) - con_diagnostico
+    })
+
+
+@app.route('/api/admin/mapa-entidades/ubicacion', methods=['POST'])
+@admin_required
+def api_guardar_ubicacion_entidad():
+    """Guarda en una tabla independiente la ubicación encontrada para una entidad.
+
+    Solo acepta códigos presentes en directorio_entidades.csv y coordenadas válidas.
+    No modifica el registro del diagnóstico ni el directorio original.
+    """
+    datos = request.get_json(silent=True) or {}
+    codigo = str(datos.get('codigo', '') or '').strip()
+    if not codigo:
+        return jsonify({'error': 'Falta el código de la entidad.'}), 400
+
+    fila = next((f for f in obtener_directorio()
+                 if str(f.get('Código', '') or '').strip() == codigo), None)
+    if not fila:
+        return jsonify({'error': 'El código no existe en el directorio.'}), 404
+
+    try:
+        latitud = float(datos.get('latitud'))
+        longitud = float(datos.get('longitud'))
+    except (TypeError, ValueError):
+        return jsonify({'error': 'Las coordenadas no son válidas.'}), 400
+
+    if not (-90 <= latitud <= 90 and -180 <= longitud <= 180):
+        return jsonify({'error': 'Las coordenadas están fuera de rango.'}), 400
+
+    ubicacion = UbicacionEntidad.query.filter_by(codigo_entidad=codigo).first()
+    if ubicacion is None:
+        ubicacion = UbicacionEntidad(codigo_entidad=codigo)
+    ubicacion.latitud = latitud
+    ubicacion.longitud = longitud
+    ubicacion.direccion_geocodificada = str(datos.get('direccion_geocodificada', '') or '')[:2000]
+    ubicacion.fuente = 'Nominatim / OpenStreetMap'
+
+    try:
+        db.session.add(ubicacion)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        app.logger.exception('No se pudo guardar la ubicación de la entidad %s', codigo)
+        return jsonify({'error': 'No se pudo guardar la ubicación.'}), 500
+
+    return jsonify({
+        'ok': True,
+        'codigo': codigo,
+        'latitud': ubicacion.latitud,
+        'longitud': ubicacion.longitud,
+        'fuente': ubicacion.fuente
     })
 
 
