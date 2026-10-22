@@ -6,34 +6,27 @@
     <div>
       <span class="badge text-bg-warning mb-2">DIRECTORIO + DIAGNÓSTICOS REGISTRADOS</span>
       <h1 class="h2 mb-1">Mapa de entidades</h1>
-      <p class="text-secondary mb-0">Busca una entidad y verifica su sede en Google Maps antes de tomar la ubicación como exacta.</p>
+      <p class="text-secondary mb-0">Ubica cada sede con coordenadas verificadas, sin conectar una API de Google que pueda generar cargos.</p>
     </div>
     <a href="{{ url_for('admin') }}" class="btn btn-outline-primary"><i class="bi bi-arrow-left"></i> Volver a resultados</a>
   </div>
 
   <div class="alert alert-info small" role="note">
-    <strong>Ubicación verificada:</strong> al seleccionar una entidad, se consulta Google Maps usando su nombre y la dirección del directorio. Si Google devuelve varias coincidencias, deberás escoger la que corresponda a la sede correcta. No se guardan permanentemente las coordenadas de Google; los marcadores elegidos se mantienen mientras esta página esté abierta.
+    <strong>Cómo se verifican las sedes:</strong> el mapa interactivo usa Leaflet y OpenStreetMap. Para verificar una sede, abre su búsqueda normal en Google Maps, copia las coordenadas decimales del lugar correcto, pégalas aquí y guarda. No se usa Google Maps Platform API ni una clave de facturación.
   </div>
-
-  {% if not google_maps_api_key %}
-  <div class="alert alert-warning" role="alert">
-    <strong>Falta configurar Google Maps.</strong> Agrega la variable de entorno <code>GOOGLE_MAPS_API_KEY</code> en tu computador y en Render. Debe tener habilitadas Maps JavaScript API y Places API (New), además de facturación activa en el proyecto de Google Cloud.
-  </div>
-  {% endif %}
-
   <div class="row g-3 mb-3">
     <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-secondary small">Entidades en directorio</div><div id="totalEntidades" class="display-6 fw-bold">—</div></div></div></div>
     <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-secondary small">Con diagnóstico relacionado</div><div id="conDiagnostico" class="display-6 fw-bold text-success">—</div></div></div></div>
     <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-secondary small">Sin diagnóstico relacionado</div><div id="sinDiagnostico" class="display-6 fw-bold text-primary">—</div></div></div></div>
-    <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-secondary small">Proveedor cartográfico</div><div class="h4 fw-bold mb-0">Google Maps</div><div class="small text-secondary">Búsqueda por nombre y dirección</div></div></div></div>
+    <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-secondary small">Sedes con coordenadas guardadas</div><div id="ubicadasEntidades" class="display-6 fw-bold">—</div></div></div></div>
   </div>
 
   <div class="row g-3">
     <div class="col-12 col-xl-7">
       <div class="card border-0 shadow-sm h-100">
-        <div class="card-header bg-white py-3"><strong><i class="bi bi-map me-2"></i>Ubicación de la entidad</strong></div>
-        <div class="card-body p-0"><div id="mapaEntidades" style="height:520px; min-height:360px; border-radius:0 0 .5rem .5rem; background:#eef3f7;"></div></div>
-        <div class="card-footer bg-white small text-secondary"><span id="notaCoordenadas">Selecciona una entidad en el directorio para buscar su ubicación en Google Maps.</span></div>
+        <div class="card-header bg-white py-3"><strong><i class="bi bi-map me-2"></i>Mapa de ubicaciones verificadas</strong></div>
+        <div class="card-body p-0"><div id="mapaEntidades" style="height:520px; min-height:360px; border-radius:0 0 .5rem .5rem;"></div></div>
+        <div class="card-footer bg-white small text-secondary" id="notaCoordenadas">Cargando directorio…</div>
       </div>
     </div>
     <div class="col-12 col-xl-5">
@@ -48,13 +41,15 @@
         </div>
       </div>
       <div id="fichaEntidadMapa" class="card border-0 shadow-sm mt-3 d-none">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center"><strong>Ficha de entidad</strong><button id="cerrarFichaMapa" class="btn btn-sm btn-outline-secondary" type="button" aria-label="Cerrar ficha">Cerrar</button></div>
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center"><strong>Ficha de entidad</strong><button id="cerrarFichaMapa" class="btn btn-sm btn-outline-secondary" type="button">Cerrar</button></div>
         <div class="card-body" id="contenidoFichaMapa"></div>
       </div>
     </div>
   </div>
 </section>
 
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script>
 (() => {
   'use strict';
@@ -64,22 +59,46 @@
   const ficha = document.getElementById('fichaEntidadMapa');
   const fichaContenido = document.getElementById('contenidoFichaMapa');
   const nota = document.getElementById('notaCoordenadas');
-  const apiKeyConfigured = {{ 'true' if google_maps_api_key else 'false' }};
   let entidades = [];
-  let mapa = null;
-  let googlePlaces = null;
-  let seleccionActual = 0;
-  let marcadorSeleccionado = null;
-  const marcadoresPorCodigo = new Map();
-  const cacheEnSesion = new Map();
-  const ubicadasEnSesion = new Set();
+  let seleccionada = null;
+  const marcadores = new Map();
+  const capaMarcadores = L.layerGroup();
+  const mapa = L.map('mapaEntidades').setView([6.2442, -75.5812], 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; OpenStreetMap contributors'
+  }).addTo(mapa);
+  capaMarcadores.addTo(mapa);
 
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const normalizar = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-  const direccionPrincipal = e => String(e.direccion || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean)[0] || '';
-  const textoBusqueda = e => [e.nombre, e.sigla, direccionPrincipal(e), 'Medellín', 'Antioquia', 'Colombia'].filter(Boolean).join(', ');
-  const mapsSearchUrl = e => 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(textoBusqueda(e));
-  const setNota = message => { if (nota) nota.textContent = message; };
+  const googleMapsUrl = e => 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent([e.nombre, e.direccion, 'Medellín', 'Antioquia', 'Colombia'].filter(Boolean).join(', '));
+  const tieneCoordenadas = e => Number.isFinite(Number(e.latitud)) && Number.isFinite(Number(e.longitud)) && e.latitud !== null && e.longitud !== null && e.latitud !== '' && e.longitud !== '';
+
+  function actualizarContadores() {
+    document.getElementById('totalEntidades').textContent = entidades.length;
+    document.getElementById('conDiagnostico').textContent = entidades.filter(e => !!e.diagnostico).length;
+    document.getElementById('sinDiagnostico').textContent = entidades.filter(e => !e.diagnostico).length;
+    document.getElementById('ubicadasEntidades').textContent = entidades.filter(tieneCoordenadas).length;
+    const pendientes = entidades.filter(e => !tieneCoordenadas(e)).length;
+    nota.textContent = `${entidades.length - pendientes} sedes con coordenadas guardadas; ${pendientes} pendientes de verificar. No se hacen consultas de geocodificación automáticas.`;
+  }
+
+  function dibujarMarcadores() {
+    capaMarcadores.clearLayers();
+    marcadores.clear();
+    entidades.forEach(e => {
+      if (!tieneCoordenadas(e)) return;
+      const lat = Number(e.latitud), lon = Number(e.longitud);
+      if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return;
+      const color = e.diagnostico ? '#198754' : '#0d6efd';
+      const marker = L.circleMarker([lat, lon], {radius: 8, color, fillColor: color, fillOpacity: 0.9, weight: 2}).addTo(capaMarcadores);
+      marker.bindPopup(`<strong>${escapeHtml(e.nombre)}</strong><br>${escapeHtml(e.codigo || '')}<br>${e.diagnostico ? 'Con diagnóstico' : 'Sin diagnóstico'}`);
+      marker.on('click', () => mostrarFicha(e, false));
+      if (e.codigo) marcadores.set(e.codigo, marker);
+    });
+    actualizarContadores();
+  }
 
   function renderLista() {
     const q = normalizar(buscador.value);
@@ -89,201 +108,101 @@
       return (!q || texto.includes(q)) && (estado === 'todas' || (estado === 'con' ? !!e.diagnostico : !e.diagnostico));
     });
     lista.innerHTML = '';
-    if (!filtradas.length) {
-      lista.innerHTML = '<div class="text-secondary py-3">No hay entidades que coincidan con la búsqueda.</div>';
-      return;
-    }
+    if (!filtradas.length) { lista.innerHTML = '<div class="text-secondary py-3">No hay entidades que coincidan con la búsqueda.</div>'; return; }
     filtradas.forEach(e => {
       const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'list-group-item list-group-item-action py-3';
-      const located = ubicadasEnSesion.has(e.codigo || e.nombre);
-      const locationText = located ? 'Ubicada en esta sesión' : (e.direccion ? 'Clic para ubicar' : 'Sin dirección registrada');
-      button.innerHTML = `<div class="d-flex justify-content-between gap-2"><strong>${escapeHtml(e.nombre)}</strong><span class="badge ${e.diagnostico ? 'text-bg-success' : 'text-bg-secondary'}">${e.diagnostico ? 'Con diagnóstico' : 'Sin diagnóstico'}</span></div><div class="small text-secondary mt-1">${escapeHtml(e.sigla || 'Sin sigla')} · ${escapeHtml(e.clasificacion || 'Clasificación pendiente')} · ${escapeHtml(locationText)}</div>`;
-      button.addEventListener('click', () => mostrarFicha(e));
+      button.type = 'button'; button.className = 'list-group-item list-group-item-action py-3';
+      const ubicacion = tieneCoordenadas(e) ? 'Ubicación guardada' : 'Pendiente de verificar ubicación';
+      button.innerHTML = `<div class="d-flex justify-content-between gap-2"><strong>${escapeHtml(e.nombre)}</strong><span class="badge ${e.diagnostico ? 'text-bg-success' : 'text-bg-secondary'}">${e.diagnostico ? 'Con diagnóstico' : 'Sin diagnóstico'}</span></div><div class="small text-secondary mt-1">${escapeHtml(e.sigla || 'Sin sigla')} · ${escapeHtml(e.clasificacion || 'Clasificación pendiente')} · ${escapeHtml(ubicacion)}</div>`;
+      button.addEventListener('click', () => mostrarFicha(e, true));
       lista.appendChild(button);
     });
   }
 
-  function initGoogleMap() {
-    mapa = new google.maps.Map(document.getElementById('mapaEntidades'), {
-      center: {lat: 6.2442, lng: -75.5812},
-      zoom: 12,
-      mapTypeControl: true,
-      streetViewControl: true,
-      fullscreenControl: true,
-      clickableIcons: true,
-      gestureHandling: 'greedy'
-    });
-    setNota('Mapa de Google Maps listo. Selecciona una entidad para buscar su sede.');
-  }
-  window.initGoogleMapsForCDA = initGoogleMap;
-
-  async function getPlacesLibrary() {
-    if (!googlePlaces) {
-      const library = await google.maps.importLibrary('places');
-      googlePlaces = library.Place;
-    }
-    return googlePlaces;
-  }
-
-  function getPlaceLocation(place) {
-    if (!place || !place.location) return null;
-    const lat = typeof place.location.lat === 'function' ? place.location.lat() : place.location.lat;
-    const lng = typeof place.location.lng === 'function' ? place.location.lng() : place.location.lng;
-    if (!Number.isFinite(Number(lat)) || !Number.isFinite(Number(lng))) return null;
-    return {lat: Number(lat), lng: Number(lng)};
-  }
-
-  function getPlaceName(place) {
-    return typeof place.displayName === 'string' ? place.displayName : (place.displayName?.text || place.name || 'Lugar encontrado en Google Maps');
-  }
-
-  function getPlaceAddress(place) { return place.formattedAddress || place.formatted_address || 'Dirección no devuelta por Google Maps'; }
-
-  async function buscarCoincidenciasGoogle(e) {
-    const cacheKey = e.codigo || e.nombre;
-    if (cacheEnSesion.has(cacheKey)) return cacheEnSesion.get(cacheKey);
-    const Place = await getPlacesLibrary();
-    const address = direccionPrincipal(e);
-    // Consultamos nombre + sigla + dirección registrada para reducir falsos positivos.
-    const query = `${e.nombre} ${e.sigla ? '(' + e.sigla + ')' : ''} ${address} Medellín Antioquia Colombia`.replace(/\s+/g, ' ').trim();
-    const response = await Place.searchByText({
-      textQuery: query,
-      fields: ['id', 'displayName', 'formattedAddress', 'location', 'businessStatus'],
-      maxResultCount: 5,
-      language: 'es-CO',
-      region: 'CO',
-      locationBias: {center: mapa.getCenter(), radius: 30000}
-    });
-    const places = (response.places || []).filter(p => getPlaceLocation(p));
-    cacheEnSesion.set(cacheKey, places);
-    return places;
-  }
-
-  function colocarMarcador(e, place) {
-    const position = getPlaceLocation(place);
-    if (!position) throw new Error('Google Maps no devolvió coordenadas válidas para esta coincidencia.');
-    const key = e.codigo || e.nombre;
-    const old = marcadoresPorCodigo.get(key);
-    if (old) old.setMap(null);
-    const marker = new google.maps.Marker({
-      map: mapa,
-      position,
-      title: e.nombre,
-      animation: google.maps.Animation.DROP,
-      label: {text: (e.sigla || e.nombre).slice(0, 8), color: '#ffffff', fontSize: '10px', fontWeight: 'bold'}
-    });
-    const displayName = getPlaceName(place);
-    const address = getPlaceAddress(place);
-    const info = new google.maps.InfoWindow({content: `<div style="max-width:260px"><strong>${escapeHtml(e.nombre)}</strong><br>${escapeHtml(displayName)}<br><small>${escapeHtml(address)}</small><br><a href="${escapeHtml(mapsSearchUrl(e))}" target="_blank" rel="noopener noreferrer">Abrir búsqueda en Google Maps</a></div>`});
-    marker.addListener('click', () => info.open({map: mapa, anchor: marker}));
-    marcadoresPorCodigo.set(key, marker);
-    marcadorSeleccionado = marker;
-    mapa.panTo(position);
-    mapa.setZoom(17);
-    info.open({map: mapa, anchor: marker});
-    setNota(`Google Maps ubicó “${displayName}”. Dirección devuelta: ${address}. Verifica que corresponda a la sede correcta.`);
-  }
-
-  function mostrarCandidatos(e, places) {
-    const contenedor = document.getElementById('candidatosGoogle');
-    if (!contenedor) return;
-    contenedor.innerHTML = '';
-    if (!places.length) {
-      contenedor.innerHTML = '<div class="alert alert-warning small mb-0">Google Maps no encontró una coincidencia para esta búsqueda. Revisa el enlace de búsqueda y la dirección del directorio; no se colocó un marcador aproximado.</div>';
-      return;
-    }
-    if (places.length > 1) {
-      const help = document.createElement('p');
-      help.className = 'small text-secondary mb-2';
-      help.textContent = 'Google Maps encontró varios resultados. Selecciona la dirección que corresponda a la sede de esta entidad; así evitamos ubicarla en otro barrio.';
-      contenedor.appendChild(help);
-    }
-    places.forEach((place, index) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'list-group-item list-group-item-action';
-      btn.innerHTML = `<div class="fw-semibold">${escapeHtml(getPlaceName(place))}</div><div class="small text-secondary">${escapeHtml(getPlaceAddress(place))}</div>`;
-      btn.addEventListener('click', () => {
-        try {
-          colocarMarcador(e, place);
-          ubicadasEnSesion.add(e.codigo || e.nombre);
-          contenedor.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-          btn.classList.add('active');
-          const estado = document.getElementById('estadoUbicacionFicha');
-          if (estado) {
-            estado.className = 'alert alert-success small';
-            estado.textContent = `Ubicación elegida en Google Maps: ${getPlaceName(place)} — ${getPlaceAddress(place)}. Revisa el marcador antes de considerarlo definitivo.`;
-          }
-          renderLista();
-        } catch (error) {
-          const estado = document.getElementById('estadoUbicacionFicha');
-          if (estado) { estado.className = 'alert alert-warning small'; estado.textContent = error.message; }
-        }
-      });
-      contenedor.appendChild(btn);
-      // Solo se autoselecciona si Google devuelve una única coincidencia.
-      if (places.length === 1) {
-        try { colocarMarcador(e, place); ubicadasEnSesion.add(e.codigo || e.nombre); btn.classList.add('active'); }
-        catch (error) { console.error(error); }
-      }
-    });
-  }
-
-  async function mostrarFicha(e) {
-    const token = ++seleccionActual;
+  function mostrarFicha(e, panear = true) {
+    seleccionada = e;
     ficha.classList.remove('d-none');
     const d = e.diagnostico;
-    const mapsUrl = mapsSearchUrl(e);
-    fichaContenido.innerHTML = `<h3 class="h5">${escapeHtml(e.nombre)}</h3><p class="small text-secondary">${escapeHtml(e.codigo)} · ${escapeHtml(e.sigla)}</p><dl class="row small"><dt class="col-5">Clasificación preliminar</dt><dd class="col-7">${escapeHtml(e.clasificacion || 'Pendiente de validar')}</dd><dt class="col-5">Ámbito</dt><dd class="col-7">${escapeHtml(e.ambito || 'No informado')}</dd><dt class="col-5">Dirección del directorio</dt><dd class="col-7">${escapeHtml(e.direccion || 'No informada')}</dd><dt class="col-5">Responsable GD</dt><dd class="col-7">${escapeHtml(e.responsable || 'No informado')}</dd><dt class="col-5">Correo</dt><dd class="col-7">${e.correo ? `<a href="mailto:${escapeHtml(e.correo)}">${escapeHtml(e.correo)}</a>` : 'No informado'}</dd><dt class="col-5">Teléfono</dt><dd class="col-7">${escapeHtml(e.telefono || 'No informado')}</dd></dl>${d ? `<div class="alert alert-success"><strong>Diagnóstico relacionado</strong><br>IMA: ${escapeHtml(d.ima)}/100<br>Nivel: ${escapeHtml(d.nivel)}<br>Fecha: ${escapeHtml(d.fecha || 'No disponible')}<br><a href="/resultado/${encodeURIComponent(d.id)}" class="btn btn-primary btn-sm mt-2">Consultar resultado</a></div>` : '<div class="alert alert-secondary">No se encontró diagnóstico relacionado por código de entidad ni por coincidencia exacta de nombre.</div>'}<div id="estadoUbicacionFicha" class="alert alert-info small">Buscando coincidencias en Google Maps…</div><div id="candidatosGoogle" class="list-group small mb-3"></div><a class="small" href="${escapeHtml(mapsUrl)}" target="_blank" rel="noopener noreferrer">Abrir búsqueda en Google Maps</a>`;
-    setNota(`Buscando la sede de ${e.nombre} en Google Maps…`);
-    renderLista();
-    try {
-      const places = await buscarCoincidenciasGoogle(e);
-      if (token !== seleccionActual) return;
-      mostrarCandidatos(e, places);
-      const state = document.getElementById('estadoUbicacionFicha');
-      if (!places.length) {
-        if (state) { state.className = 'alert alert-warning small'; state.textContent = 'Google Maps no devolvió un lugar coincidente. No se inventó ni se colocó un punto. Revisa la dirección y abre la búsqueda externa.'; }
-        setNota('No se encontró una coincidencia. Revisa la dirección en Google Maps o corrige el directorio.');
-      } else if (places.length > 1) {
-        if (state) { state.className = 'alert alert-info small'; state.textContent = 'Selecciona uno de los resultados de Google Maps que coincida con la dirección real de la sede.'; }
-      } else {
-        if (state) { state.className = 'alert alert-success small'; state.textContent = `Coincidencia única: ${getPlaceName(places[0])}. Verifica la dirección: ${getPlaceAddress(places[0])}.`; }
-        renderLista();
-      }
-    } catch (error) {
-      if (token !== seleccionActual) return;
-      const state = document.getElementById('estadoUbicacionFicha');
-      if (state) { state.className = 'alert alert-warning small'; state.textContent = 'No se pudo consultar Google Maps. Verifica la clave, las APIs habilitadas y la facturación del proyecto de Google Cloud.'; }
-      setNota('La búsqueda de Google Maps falló. Revisa la configuración de la API.');
-      console.error('Error al buscar sede en Google Maps:', error);
+    const coord = tieneCoordenadas(e) ? `${Number(e.latitud).toFixed(6)}, ${Number(e.longitud).toFixed(6)}` : '';
+    fichaContenido.innerHTML = `
+      <h3 class="h5">${escapeHtml(e.nombre)}</h3>
+      <p class="small text-secondary">${escapeHtml(e.codigo || 'Entidad sin código')} · ${escapeHtml(e.sigla || 'Sin sigla')}</p>
+      <dl class="row small">
+        <dt class="col-5">Dirección del directorio</dt><dd class="col-7">${escapeHtml(e.direccion || 'No informada')}</dd>
+        <dt class="col-5">Clasificación</dt><dd class="col-7">${escapeHtml(e.clasificacion || 'Pendiente de validar')}</dd>
+        <dt class="col-5">Responsable GD</dt><dd class="col-7">${escapeHtml(e.responsable || 'No informado')}</dd>
+        <dt class="col-5">Correo</dt><dd class="col-7">${e.correo ? `<a href="mailto:${escapeHtml(e.correo)}">${escapeHtml(e.correo)}</a>` : 'No informado'}</dd>
+      </dl>
+      ${d ? `<div class="alert alert-success small"><strong>Diagnóstico relacionado</strong><br>IMA: ${escapeHtml(d.ima)} % · ${escapeHtml(d.nivel)}<br>Fecha: ${escapeHtml(d.fecha || 'No disponible')}<br><a class="btn btn-sm btn-primary mt-2" href="/resultado/${encodeURIComponent(d.id)}">Consultar resultado</a></div>` : '<div class="alert alert-secondary small">No tiene un diagnóstico relacionado.</div>'}
+      <p class="small mb-2"><a class="btn btn-outline-primary btn-sm" href="${escapeHtml(googleMapsUrl(e))}" target="_blank" rel="noopener noreferrer"><i class="bi bi-google me-1"></i> Verificar sede en Google Maps</a></p>
+      <div class="alert ${coord ? 'alert-success' : 'alert-warning'} small" id="estadoCoordenadas">${coord ? `Coordenadas guardadas: ${escapeHtml(coord)}` : 'Esta entidad todavía no tiene coordenadas verificadas.'}</div>
+      ${e.codigo ? `
+        <label class="form-label small fw-semibold" for="coordenadasGoogle">Coordenadas copiadas desde Google Maps</label>
+        <input class="form-control form-control-sm mb-2" id="coordenadasGoogle" placeholder="Ej. 6.244200, -75.581200" value="${escapeHtml(coord)}" autocomplete="off">
+        <div class="form-text mb-2">En Google Maps, haz clic derecho sobre la sede correcta y selecciona las coordenadas decimales para copiarlas. Pégalas aquí en formato latitud, longitud.</div>
+        <button class="btn btn-primary btn-sm" id="guardarCoordenadas" type="button">Guardar ubicación verificada</button>
+      ` : '<div class="alert alert-warning small">Esta entidad no tiene código en el directorio. Asigna un código único antes de guardar una ubicación permanente.</div>'}
+    `;
+    if (tieneCoordenadas(e)) {
+      const pos = [Number(e.latitud), Number(e.longitud)];
+      if (panear) mapa.setView(pos, 17);
+      const marker = e.codigo ? marcadores.get(e.codigo) : null;
+      if (marker) marker.openPopup();
     }
+    const saveButton = document.getElementById('guardarCoordenadas');
+    if (saveButton) saveButton.addEventListener('click', () => guardarCoordenadas(e));
     ficha.scrollIntoView({behavior: 'smooth', block: 'nearest'});
   }
 
+  async function guardarCoordenadas(e) {
+    const input = document.getElementById('coordenadasGoogle');
+    const estado = document.getElementById('estadoCoordenadas');
+    const raw = (input?.value || '').trim();
+    const match = raw.match(/^\s*(-?\d+(?:\.\d+)?)\s*[,;\s]+\s*(-?\d+(?:\.\d+)?)\s*$/);
+    if (!match) {
+      estado.className = 'alert alert-warning small';
+      estado.textContent = 'No pude leer las coordenadas. Pega dos números decimales separados por coma, por ejemplo: 6.244200, -75.581200.';
+      return;
+    }
+    const latitud = Number(match[1]), longitud = Number(match[2]);
+    if (latitud < -90 || latitud > 90 || longitud < -180 || longitud > 180) {
+      estado.className = 'alert alert-warning small'; estado.textContent = 'Las coordenadas están fuera de rango.'; return;
+    }
+    const btn = document.getElementById('guardarCoordenadas'); btn.disabled = true; btn.textContent = 'Guardando…';
+    try {
+      const response = await fetch('{{ url_for("api_guardar_ubicacion_entidad") }}', {
+        method: 'POST', headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        body: JSON.stringify({codigo: e.codigo, latitud, longitud, direccion_geocodificada: e.direccion || '', fuente: 'Google Maps (verificación manual)'})
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'No se pudo guardar la ubicación.');
+      e.latitud = latitud; e.longitud = longitud; e.ubicacion_fuente = 'Google Maps (verificación manual)';
+      estado.className = 'alert alert-success small'; estado.textContent = `Ubicación guardada: ${latitud.toFixed(6)}, ${longitud.toFixed(6)}. El mapa mostrará este punto en futuras consultas.`;
+      dibujarMarcadores(); renderLista();
+      const marker = e.codigo ? marcadores.get(e.codigo) : null;
+      mapa.setView([latitud, longitud], 17); if (marker) marker.openPopup();
+    } catch (error) {
+      estado.className = 'alert alert-danger small'; estado.textContent = error.message || 'Error al guardar la ubicación.';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Guardar ubicación verificada';
+    }
+  }
+
   document.getElementById('cerrarFichaMapa').addEventListener('click', () => ficha.classList.add('d-none'));
-  buscador.addEventListener('input', renderLista);
-  filtro.addEventListener('change', renderLista);
+  buscador.addEventListener('input', renderLista); filtro.addEventListener('change', renderLista);
 
   fetch('{{ url_for("api_mapa_entidades") }}', {headers: {'Accept': 'application/json'}})
     .then(response => { if (!response.ok) throw new Error('No se pudo cargar el directorio'); return response.json(); })
     .then(data => {
       entidades = data.entidades || [];
-      document.getElementById('totalEntidades').textContent = data.total ?? entidades.length;
-      document.getElementById('conDiagnostico').textContent = data.con_diagnostico ?? 0;
-      document.getElementById('sinDiagnostico').textContent = data.sin_diagnostico ?? 0;
-      renderLista();
+      dibujarMarcadores(); renderLista();
+      const conCoords = entidades.filter(tieneCoordenadas);
+      if (conCoords.length) {
+        const group = L.featureGroup([...marcadores.values()]);
+        if (group.getLayers().length) mapa.fitBounds(group.getBounds().pad(0.15), {maxZoom: 13});
+      }
     })
-    .catch(error => { lista.innerHTML = '<div class="alert alert-danger">No se pudo cargar el directorio. Verifica que hayas iniciado sesión como administrador.</div>'; console.error(error); });
-
-  if (!apiKeyConfigured) {
-    document.getElementById('mapaEntidades').innerHTML = '<div class="h-100 d-flex align-items-center justify-content-center p-4 text-center text-secondary">Configura GOOGLE_MAPS_API_KEY para activar el mapa de Google.</div>';
-  }
+    .catch(error => { lista.innerHTML = '<div class="alert alert-danger">No se pudo cargar el directorio. Verifica que hayas iniciado sesión como administrador.</div>'; nota.textContent = error.message; console.error(error); });
 })();
 </script>
-{% if google_maps_api_key %}
-<script async src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_api_key|urlencode }}&loading=async&callback=initGoogleMapsForCDA&libraries=places&v=weekly"></script>
-{% endif %}
 {% endblock %}
