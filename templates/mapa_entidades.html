@@ -10,7 +10,7 @@
     </div>
     <a href="{{ url_for('admin') }}" class="btn btn-outline-primary"><i class="bi bi-arrow-left"></i> Volver a resultados</a>
   </div>
-  <div class="alert alert-info small" role="note"><strong>Ubicación por dirección:</strong> selecciona una entidad de la lista para localizar su dirección en el mapa. La ubicación se consulta bajo demanda en OpenStreetMap y se guarda para próximas consultas. Confirma visualmente que el punto corresponda a la sede registrada; las direcciones con varias sedes usan inicialmente la primera dirección.</div>
+  <div class="alert alert-info small d-flex flex-wrap justify-content-between align-items-center gap-2" role="note"><span><strong>Ubicación por dirección:</strong> selecciona una entidad para buscar su dirección. Si varias ubicaciones aparecen en el mismo punto, limpia las coordenadas guardadas y vuelve a consultarlas. Se eliminará únicamente la caché de ubicaciones, no los diagnósticos ni el directorio.</span><button id="reiniciarUbicaciones" class="btn btn-sm btn-outline-primary" type="button">Corregir ubicaciones guardadas</button></div>
   <div class="row g-3 mb-3">
     <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-secondary small">Entidades en directorio</div><div id="totalEntidades" class="display-6 fw-bold">—</div></div></div></div>
     <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-secondary small">Con diagnóstico relacionado</div><div id="conDiagnostico" class="display-6 fw-bold text-success">—</div></div></div></div>
@@ -105,8 +105,93 @@
     return true;
   }
 
-  async function geocodificarDireccion(e) {
-    if (tieneCoordenadas(e)) {
+  function municipioDeDireccion(e) {
+    const texto = `${e.direccion || ''} ${e.ambito || ''}`.toLocaleLowerCase('es');
+    for (const municipio of ['Bello', 'Envigado', 'Itagüí', 'Sabaneta', 'Rionegro', 'La Estrella', 'Copacabana', 'Girardota']) {
+      if (texto.includes(municipio.toLocaleLowerCase('es'))) return municipio;
+    }
+    return 'Medellín';
+  }
+
+  function limpiarDireccion(direccion) {
+    return (String(direccion || '').split(/\r?\n/).map(v => v.trim()).filter(Boolean)[0] || '')
+      .replace(/^\s*(sede\s*(ppal|principal)|direcci[oó]n)\s*:\s*/i, '')
+      .replace(/\s+/g, ' ').trim();
+  }
+
+  function firmaVia(texto) {
+    const normal = String(texto || '').toLocaleLowerCase('es').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const m = normal.match(/\b(carrera|cra\.?|cr\.?|calle|cl\.?|avenida|av\.?|diagonal|diag\.?|transversal|transv\.?|tv\.?|circular)\s*#?\s*(\d+[a-z]?)/i);
+    if (!m) return null;
+    let tipo = m[1].replace(/\./g, '');
+    if (['cra','cr'].includes(tipo)) tipo = 'carrera';
+    if (tipo === 'cl') tipo = 'calle';
+    if (tipo === 'av') tipo = 'avenida';
+    if (tipo === 'diag') tipo = 'diagonal';
+    if (['transv','tv'].includes(tipo)) tipo = 'transversal';
+    return `${tipo} ${m[2]}`;
+  }
+
+  function evaluarResultadoGeocodificacion(resultado, direccion, nombreEntidad) {
+    const tipo = String(resultado.type || '').toLowerCase();
+    const clase = String(resultado.class || resultado.category || '').toLowerCase();
+    const tipoDireccion = String(resultado.addresstype || '').toLowerCase();
+    const tiposGenericos = new Set(['country','state','region','county','city','municipality','administrative','suburb','neighbourhood','borough','postcode','continent']);
+    if (tiposGenericos.has(tipoDireccion) || (clase === 'boundary' && tipo === 'administrative')) return -1;
+
+    const address = resultado.address || {};
+    const viaResultado = firmaVia(address.road || resultado.display_name || '');
+    const viaSolicitada = firmaVia(direccion);
+    const tieneObjeto = !!(address.house_number || address.amenity || address.building || address.office || address.shop || address.university || address.hospital || address.leisure || address.tourism || address.civic || address.industrial || address.road);
+    if (!tieneObjeto) return -1;
+    if (viaSolicitada && viaResultado && viaSolicitada !== viaResultado) {
+      // No aceptar otra calle distinta solo porque está en Medellín.
+      return -1;
+    }
+    if (viaSolicitada && !viaResultado) return -1;
+
+    const nombreNorm = String(nombreEntidad || '').toLocaleLowerCase('es').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const displayNorm = String(resultado.display_name || '').toLocaleLowerCase('es').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const nombreCorto = nombreNorm.split(/[-–—,]/)[0].trim();
+    let score = 0;
+    if (viaSolicitada && viaResultado === viaSolicitada) score += 70;
+    if (address.house_number) score += 20;
+    if (address.amenity || address.building || address.office || address.university || address.hospital) score += 15;
+    if (nombreCorto.length > 5 && displayNorm.includes(nombreCorto)) score += 15;
+    if (clase === 'highway' || tipo === 'road') score += 5;
+    return score;
+  }
+
+  async function esperarTurnoNominatim() {
+    const turno = colaNominatim.then(async () => {
+      const espera = Math.max(0, 1200 - (Date.now() - ultimaConsultaNominatim));
+      if (espera) await new Promise(resolve => setTimeout(resolve, espera));
+      ultimaConsultaNominatim = Date.now();
+    });
+    colaNominatim = turno.catch(() => {});
+    await turno;
+  }
+
+  async function buscarEnNominatim(parametros, direccion, nombreEntidad) {
+    await esperarTurnoNominatim();
+    const params = new URLSearchParams({
+      format: 'jsonv2', addressdetails: '1', limit: '5', countrycodes: 'co',
+      'accept-language': 'es', ...parametros
+    });
+    const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+      headers: {'Accept': 'application/json', 'Accept-Language': 'es'}
+    });
+    if (!response.ok) throw new Error('OpenStreetMap no respondió correctamente.');
+    const resultados = await response.json();
+    if (!Array.isArray(resultados)) return null;
+    const candidatos = resultados.map(r => ({r, score: evaluarResultadoGeocodificacion(r, direccion, nombreEntidad)}))
+      .filter(x => x.score >= 10)
+      .sort((a,b) => b.score - a.score);
+    return candidatos.length ? candidatos[0].r : null;
+  }
+
+  async function geocodificarDireccion(e, forzarNueva = false) {
+    if (!forzarNueva && tieneCoordenadas(e)) {
       return {
         latitud: Number(e.latitud),
         longitud: Number(e.longitud),
@@ -114,30 +199,28 @@
         display_name: e.direccion_geocodificada || e.direccion || ''
       };
     }
-    const direccion = nombreDireccion(e);
+    const direccion = limpiarDireccion(e.direccion);
     if (!direccion) return null;
     const clave = `${e.codigo || e.nombre}|${direccion}`;
-    if (cacheGeocodificacion.has(clave)) return cacheGeocodificacion.get(clave);
+    if (!forzarNueva && cacheGeocodificacion.has(clave)) return cacheGeocodificacion.get(clave);
 
-    // Solo geocodifica después de una selección explícita. Respeta el límite
-    // público de Nominatim de no superar una solicitud por segundo y usa caché.
-    const turnoGeocodificacion = colaNominatim.then(async () => {
-      const espera = Math.max(0, 1150 - (Date.now() - ultimaConsultaNominatim));
-      if (espera) await new Promise(resolve => setTimeout(resolve, espera));
-      ultimaConsultaNominatim = Date.now();
-    });
-    colaNominatim = turnoGeocodificacion.catch(() => {});
-    await turnoGeocodificacion;
+    const municipio = municipioDeDireccion(e);
+    const parametros = [
+      // Primera opción: búsqueda estructurada; evita mezclar dirección y nombre de la entidad.
+      {street: direccion, city: municipio, state: 'Antioquia', country: 'Colombia'},
+      // Segunda opción: texto libre de la dirección, sin el nombre de la entidad.
+      {q: `${direccion}, ${municipio}, Antioquia, Colombia`},
+      // Tercera opción: el punto de interés por nombre y dirección, solo como respaldo.
+      {q: `${e.nombre}, ${direccion}, ${municipio}, Antioquia, Colombia`}
+    ];
+    let resultado = null;
+    for (const consulta of parametros) {
+      resultado = await buscarEnNominatim(consulta, direccion, e.nombre);
+      if (resultado) break;
+    }
+    // Nunca guardar como ubicación de una entidad el centro genérico de la ciudad.
+    if (!resultado) return null;
 
-    const query = [direccion, e.nombre, 'Antioquia', 'Colombia'].filter(Boolean).join(', ');
-    const params = new URLSearchParams({format: 'jsonv2', q: query, limit: '1', addressdetails: '1', countrycodes: 'co', 'accept-language': 'es'});
-    const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
-      headers: {'Accept': 'application/json', 'Accept-Language': 'es'}
-    });
-    if (!response.ok) throw new Error('El servicio de ubicación no está disponible en este momento.');
-    const resultados = await response.json();
-    if (!Array.isArray(resultados) || resultados.length === 0) return null;
-    const resultado = resultados[0];
     const coords = {
       latitud: Number(resultado.lat),
       longitud: Number(resultado.lon),
@@ -151,8 +234,6 @@
     e.ubicacion_fuente = coords.fuente;
     e.direccion_geocodificada = coords.display_name;
 
-    // Guarda la ubicación para que otros administradores la vean en próximas
-    // consultas. Si no se guarda, el marcador sigue visible en esta sesión.
     if (e.codigo) {
       try {
         const guardado = await fetch('{{ url_for("api_guardar_ubicacion_entidad") }}', {
@@ -175,6 +256,7 @@
 
   async function mostrarFicha(e) {
     const token = ++seleccionActual;
+    if (mapa.hasLayer(referencia)) mapa.removeLayer(referencia);
     ficha.classList.remove('d-none');
     const d = e.diagnostico;
     const direccionMapas = encodeURIComponent(`${nombreDireccion(e)}, ${e.nombre}, Antioquia, Colombia`);
@@ -187,9 +269,7 @@
       if (!coords) {
         estadoUbicacion.className = 'alert alert-warning small';
         estadoUbicacion.textContent = 'No se encontró una ubicación para la dirección registrada. Revisa la dirección o utiliza el enlace a Google Maps para verificarla.';
-        setNota('No se pudo ubicar la dirección seleccionada. El marcador municipal solo es una referencia.');
-        if (!mapa.hasLayer(referencia)) referencia.addTo(mapa);
-        mapa.setView([6.2442, -75.5812], 12);
+        setNota('No se encontró un punto suficientemente específico para esta dirección. No se muestra un marcador falso en el centro de Medellín; verifica la dirección en el enlace externo.');
       } else {
         const sePudoPintar = pintarUbicacion(e, coords, coords.fuente === 'directorio' ? 'directorio' : 'geocodificada', coords.display_name);
         estadoUbicacion.className = 'alert alert-success small';
@@ -232,6 +312,33 @@
   }
 
   document.getElementById('cerrarFichaMapa').addEventListener('click', () => ficha.classList.add('d-none'));
+  document.getElementById('reiniciarUbicaciones').addEventListener('click', async () => {
+    const confirmado = window.confirm('Esto borrará únicamente las coordenadas geocodificadas guardadas para el mapa. No elimina diagnósticos ni modifica el directorio. Luego tendrás que seleccionar las entidades para volver a ubicarlas. ¿Continuar?');
+    if (!confirmado) return;
+    const boton = document.getElementById('reiniciarUbicaciones');
+    boton.disabled = true;
+    try {
+      const response = await fetch('{{ url_for("api_reiniciar_ubicaciones_entidades") }}', {method: 'DELETE', headers: {'Accept':'application/json'}});
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'No se pudieron limpiar las ubicaciones.');
+      entidades.forEach(e => {
+        e.latitud = null; e.longitud = null; e.ubicacion_fuente = ''; e.direccion_geocodificada = '';
+      });
+      cacheGeocodificacion.clear();
+      marcadoresEntidades.clearLayers();
+      marcadorPorCodigo.clear();
+      if (!mapa.hasLayer(referencia)) referencia.addTo(mapa);
+      mapa.setView([6.2442, -75.5812], 12);
+      ficha.classList.add('d-none');
+      setNota(`Se limpiaron ${data.eliminadas || 0} coordenadas guardadas. Selecciona una entidad para buscar de nuevo su dirección.`);
+      renderLista();
+      window.alert(`Listo. Se limpiaron ${data.eliminadas || 0} ubicaciones guardadas. Ahora selecciona cada entidad para consultar de nuevo su dirección.`);
+    } catch (error) {
+      window.alert(error.message || 'No se pudieron limpiar las ubicaciones.');
+    } finally {
+      boton.disabled = false;
+    }
+  });
   buscador.addEventListener('input', renderLista);
   filtro.addEventListener('change', renderLista);
   fetch('{{ url_for("api_mapa_entidades") }}', {headers: {'Accept':'application/json'}})
