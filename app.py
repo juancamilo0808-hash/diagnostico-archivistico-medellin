@@ -48,11 +48,6 @@ app.config.update(
     SECRET_KEY=os.environ.get("SECRET_KEY", "solo-desarrollo-cambiar-SECRET_KEY"),
     SQLALCHEMY_DATABASE_URI=_database_uri,
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
-    # Detecta conexiones cerradas y renueva conexiones antiguas del pool.
-    SQLALCHEMY_ENGINE_OPTIONS={
-        "pool_pre_ping": True,
-        "pool_recycle": 300,
-    },
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
     SESSION_COOKIE_SECURE=os.environ.get("RENDER", "").lower() == "true",
@@ -79,6 +74,13 @@ class Censo(db.Model):
     q5=db.Column(db.String(200)); q6_json=db.Column(db.Text); q7=db.Column(db.String(250)); q8=db.Column(db.String(200)); q9=db.Column(db.String(250)); q10=db.Column(db.String(250))
     q11=db.Column(db.Text); q12=db.Column(db.Text); q13=db.Column(db.Text); q14=db.Column(db.String(250)); q15=db.Column(db.String(100)); q16=db.Column(db.String(200)); q17=db.Column(db.Text); q18=db.Column(db.String(100)); q19=db.Column(db.String(200)); q20=db.Column(db.Text); q21=db.Column(db.String(100)); respuestas_json=db.Column(db.Text); codigo_entidad=db.Column(db.String(50))
     puntaje_obtenido=db.Column(db.Float,default=0); variables_aplicables=db.Column(db.Float,default=0); ima=db.Column(db.Float,default=0); nivel=db.Column(db.String(100))
+
+class BorradorDiagnostico(db.Model):
+    """Respuestas parciales guardadas automáticamente, separadas de diagnósticos finales."""
+    __tablename__ = 'borrador_diagnostico'
+    id = db.Column(db.String(36), primary_key=True)
+    datos_json = db.Column(db.Text, nullable=False, default='{}')
+    actualizado_en = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
 class UbicacionEntidad(db.Model):
     """Caché persistente de ubicaciones resueltas bajo demanda desde una dirección.
@@ -427,6 +429,12 @@ def censo():
             db.session.add(r)
             db.session.commit()
             flash('Diagnóstico guardado correctamente.', 'success')
+            borrador_id = request.form.get('borrador_id', '').strip()
+            if borrador_id:
+                borrador = db.session.get(BorradorDiagnostico, borrador_id)
+                if borrador is not None:
+                    db.session.delete(borrador)
+                    db.session.commit()
             return redirect(url_for('resultado', censo_id=r.id))
         except Exception:
             db.session.rollback()
@@ -435,6 +443,56 @@ def censo():
             return render_template('diagnostico.html'), 500
     return render_template('diagnostico.html')
 
+
+
+@app.route('/api/borrador/<string:borrador_id>', methods=['GET', 'POST'])
+def api_borrador(borrador_id):
+    """Lee o guarda un borrador parcial. No lo convierte en diagnóstico final."""
+    import uuid
+    try:
+        uuid.UUID(borrador_id)
+    except (ValueError, TypeError):
+        return jsonify({'ok': False, 'mensaje': 'Identificador de borrador no válido.'}), 400
+    if request.method == 'GET':
+        borrador = db.session.get(BorradorDiagnostico, borrador_id)
+        if borrador is None:
+            return jsonify({'ok': True, 'existe': False, 'datos': {}})
+        try:
+            datos = json.loads(borrador.datos_json or '{}')
+        except ValueError:
+            datos = {}
+        return jsonify({'ok': True, 'existe': True, 'datos': datos,
+                        'actualizado_en': borrador.actualizado_en.isoformat() if borrador.actualizado_en else None})
+    payload = request.get_json(silent=True) or {}
+    datos = payload.get('datos')
+    if not isinstance(datos, dict):
+        return jsonify({'ok': False, 'mensaje': 'Formato de datos no válido.'}), 400
+    # Límite defensivo para evitar almacenar cargas excesivas.
+    if len(json.dumps(datos, ensure_ascii=False)) > 200_000:
+        return jsonify({'ok': False, 'mensaje': 'El borrador supera el tamaño permitido.'}), 413
+    borrador = db.session.get(BorradorDiagnostico, borrador_id)
+    if borrador is None:
+        borrador = BorradorDiagnostico(id=borrador_id, datos_json=json.dumps(datos, ensure_ascii=False))
+        db.session.add(borrador)
+    else:
+        borrador.datos_json = json.dumps(datos, ensure_ascii=False)
+        borrador.actualizado_en = datetime.utcnow()
+    try:
+        db.session.commit()
+        return jsonify({'ok': True, 'guardado': True, 'actualizado_en': borrador.actualizado_en.isoformat()})
+    except Exception:
+        db.session.rollback()
+        app.logger.exception('Error al guardar borrador de diagnóstico')
+        return jsonify({'ok': False, 'mensaje': 'No fue posible guardar el borrador.'}), 500
+
+@app.route('/api/borrador/<string:borrador_id>/finalizado', methods=['POST'])
+def finalizar_borrador(borrador_id):
+    """Elimina el borrador tras el envío final exitoso; el diagnóstico queda en Censo."""
+    borrador = db.session.get(BorradorDiagnostico, borrador_id)
+    if borrador is not None:
+        db.session.delete(borrador)
+        db.session.commit()
+    return jsonify({'ok': True})
 
 def calcular_diagnostico_nuevo(form):
     """Calcula un índice piloto con cinco componentes de igual peso (20 % c/u).
@@ -773,27 +831,6 @@ def admin():
     return render_template('admin.html',registros=registros,promedio=promedio,niveles=niveles,
         sectores=sectores,semaforos=semaforos,ranking=ranking,instrumentos_labels=instrumentos_labels,
         instrumentos_valores=instrumentos_valores,semaforo_fn=semaforo)
-
-
-@app.route('/admin/eliminar-diagnostico/<int:censo_id>', methods=['POST'])
-@admin_required
-def eliminar_diagnostico(censo_id):
-    """Elimina únicamente el diagnóstico seleccionado; conserva las ubicaciones verificadas."""
-    registro = db.session.get(Censo, censo_id)
-    if registro is None:
-        flash('El diagnóstico seleccionado ya no existe.', 'warning')
-        return redirect(url_for('admin'))
-
-    nombre = registro.nombre_entidad
-    try:
-        db.session.delete(registro)
-        db.session.commit()
-        flash(f'Se eliminó el diagnóstico de «{nombre}». Las ubicaciones verificadas se conservaron.', 'success')
-    except Exception:
-        db.session.rollback()
-        app.logger.exception('No se pudo eliminar el diagnóstico %s', censo_id)
-        flash('No fue posible eliminar el diagnóstico. No se realizaron otros cambios.', 'danger')
-    return redirect(url_for('admin'))
 
 
 @app.route('/admin/exportar-excel')
