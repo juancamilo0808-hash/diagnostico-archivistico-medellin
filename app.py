@@ -51,6 +51,11 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
     SESSION_COOKIE_SECURE=os.environ.get("RENDER", "").lower() == "true",
+    # Recupera conexiones inactivas o cerradas por Neon antes de usarlas.
+    SQLALCHEMY_ENGINE_OPTIONS={
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+    },
 )
 
 if os.environ.get("RENDER", "").lower() == "true" and not _database_url and not _db_path_env:
