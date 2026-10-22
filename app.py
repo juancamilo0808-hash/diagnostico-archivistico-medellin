@@ -13,13 +13,58 @@ import os
 import csv
 import unicodedata
 
-BASE_DIR=Path(__file__).resolve().parent
-app=Flask(__name__)
-app.config.update(SECRET_KEY=os.environ.get("SECRET_KEY", "solo-desarrollo-cambiar-SECRET_KEY"), SQLALCHEMY_DATABASE_URI=os.environ.get("DATABASE_URL", f"sqlite:///{BASE_DIR/'diagnostico_archivistico.db'}").replace("postgres://", "postgresql://", 1), SQLALCHEMY_TRACK_MODIFICATIONS=False, SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", SESSION_COOKIE_SECURE=os.environ.get("RENDER", "").lower() == "true")
-db=SQLAlchemy(app)
+BASE_DIR = Path(__file__).resolve().parent
+app = Flask(__name__)
+
+# Selección segura de la base de datos:
+# 1) Si Render/entorno define DATABASE_URL, se usa esa base de datos administrada.
+# 2) Si define DB_PATH, se usa esa ruta (por ejemplo, /var/data/consejo.cda.db
+#    si se configura un disco persistente en Render).
+# 3) En ejecución local, se prioriza la base histórica consejo.cda.db.
+# 4) Si no existe la histórica pero sí la actual, se conserva diagnostico_archivistico.db.
+# No se copian, borran ni sobrescriben bases de datos automáticamente.
+_database_url = os.environ.get("DATABASE_URL", "").strip()
+_db_path_env = os.environ.get("DB_PATH", "").strip()
+
+if _database_url:
+    _database_uri = _database_url.replace("postgres://", "postgresql://", 1)
+else:
+    if _db_path_env:
+        _db_path = Path(_db_path_env).expanduser()
+        if not _db_path.is_absolute():
+            _db_path = BASE_DIR / _db_path
+    else:
+        _legacy_db = BASE_DIR / "consejo.cda.db"
+        _current_db = BASE_DIR / "diagnostico_archivistico.db"
+        if _legacy_db.exists():
+            _db_path = _legacy_db
+        elif _current_db.exists():
+            _db_path = _current_db
+        else:
+            _db_path = _legacy_db
+    _database_uri = "sqlite:///" + _db_path.as_posix()
+
+app.config.update(
+    SECRET_KEY=os.environ.get("SECRET_KEY", "solo-desarrollo-cambiar-SECRET_KEY"),
+    SQLALCHEMY_DATABASE_URI=_database_uri,
+    SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=os.environ.get("RENDER", "").lower() == "true",
+)
+
+if os.environ.get("RENDER", "").lower() == "true" and not _database_url and not _db_path_env:
+    app.logger.warning(
+        "La aplicación usa SQLite dentro de la carpeta del proyecto en Render. "
+        "Ese almacenamiento puede perderse al desplegar o reiniciar. Configure "
+        "DATABASE_URL o DB_PATH apuntando a almacenamiento persistente."
+    )
+
+app.logger.info("Almacén de datos configurado: %s", "DATABASE_URL" if _database_url else _db_path)
+db = SQLAlchemy(app)
 
 # En Render configura SECRET_KEY y ADMIN_PASSWORD en Environment.
-# Para producción, usa almacenamiento persistente o una base de datos administrada.
+# Para conservar datos en producción, configura DATABASE_URL o DB_PATH en un disco persistente.
 
 class Censo(db.Model):
     # codigo_entidad vincula cada registro al directorio oficial; respuestas_json guarda
