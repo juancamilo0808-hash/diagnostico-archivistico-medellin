@@ -48,6 +48,11 @@ app.config.update(
     SECRET_KEY=os.environ.get("SECRET_KEY", "solo-desarrollo-cambiar-SECRET_KEY"),
     SQLALCHEMY_DATABASE_URI=_database_uri,
     SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    # Detecta conexiones cerradas y renueva conexiones antiguas del pool.
+    SQLALCHEMY_ENGINE_OPTIONS={
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+    },
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
     SESSION_COOKIE_SECURE=os.environ.get("RENDER", "").lower() == "true",
