@@ -464,7 +464,12 @@ def admin_required(view):
 @app.route('/admin/mapa-entidades')
 @admin_required
 def mapa_entidades():
-    return render_template('mapa_entidades.html')
+    # La clave es pública en el navegador: restríngela por dominio en Google Cloud.
+    # No almacena coordenadas de Google de forma permanente; el mapa consulta la ubicación al seleccionar una entidad.
+    return render_template(
+        'mapa_entidades.html',
+        google_maps_api_key=os.environ.get('GOOGLE_MAPS_API_KEY', '').strip()
+    )
 
 
 @app.route('/api/admin/mapa-entidades')
