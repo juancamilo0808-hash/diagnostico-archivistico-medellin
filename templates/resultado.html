@@ -1,1 +1,34 @@
-{% extends 'base.html' %}{% block title %}Resultado IMA{% endblock %}{% block body_class %}result-page{% endblock %}{% block content %}<div class="container py-5"><div class="result-card"><p class="eyebrow">RESULTADO DEL CENSO</p><h1>{{censo.nombre_entidad}}</h1><div class="ima-number">{{'%.2f'|format(censo.ima)}}%</div><h2>{{censo.nivel}}</h2><p>Resultado calculado automáticamente.</p><div class="row g-3 mt-4"><div class="col-md-6"><div class="metric"><strong>{{censo.puntaje_obtenido}}</strong><span>Puntaje obtenido</span></div></div><div class="col-md-6"><div class="metric"><strong>{{censo.variables_aplicables}}</strong><span>Variables aplicables</span></div></div></div><div class="mt-4"><a href="{{url_for('censo')}}" class="btn btn-primary">Nuevo Censo</a> <a href="{{url_for('admin')}}" class="btn btn-outline-primary">Ver panel</a></div></div></div>{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Resultado del Diagnóstico Archivístico{% endblock %}
+{% block body_class %}result-page{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="result-card">
+    <p class="eyebrow">RESULTADO DEL DIAGNÓSTICO</p>
+    <h1>{{ censo.nombre_entidad }}</h1>
+    <div class="ima-number">{{ '%.2f'|format(censo.ima) }}%</div>
+    <h2>{{ censo.nivel }}</h2>
+    <p>Resultado calculado automáticamente.</p>
+
+    <div class="row g-3 mt-4">
+      <div class="col-md-6">
+        <div class="metric">
+          <strong>{{ censo.puntaje_obtenido }}</strong>
+          <span>Puntaje obtenido</span>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="metric">
+          <strong>{{ censo.variables_aplicables }}</strong>
+          <span>Variables aplicables</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <a href="{{ url_for('censo') }}" class="btn btn-primary">Nuevo diagnóstico</a>
+      <a href="{{ url_for('admin') }}" class="btn btn-outline-primary">Ver panel</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
