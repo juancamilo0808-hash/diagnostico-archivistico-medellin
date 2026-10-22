@@ -1,90 +1,114 @@
-
 {% extends "base.html" %}
-
 {% block title %}Mapa de entidades | Diagnóstico Archivístico{% endblock %}
-
 {% block content %}
-<div class="container-fluid py-4 px-3 px-lg-4">
-  <div class="mb-4">
-    <span class="text-uppercase small fw-bold text-primary">Consejo Distrital de Archivos de Medellín</span>
-    <h1 class="fw-bold mt-2">Mapa de entidades</h1>
-    <p class="text-secondary">
-      Vista piloto para explorar la ubicación de las entidades y preparar la consulta de sus diagnósticos archivísticos.
-    </p>
+<section class="container-fluid py-4 px-3 px-lg-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+    <div>
+      <span class="badge text-bg-warning mb-2">DIRECTORIO + DIAGNÓSTICOS REGISTRADOS</span>
+      <h1 class="h2 mb-1">Mapa de entidades</h1>
+      <p class="text-secondary mb-0">Consulta el directorio y verifica si una entidad tiene un diagnóstico asociado.</p>
+    </div>
+    <a href="{{ url_for('admin') }}" class="btn btn-outline-primary"><i class="bi bi-arrow-left"></i> Volver a resultados</a>
   </div>
-
-  <div class="row g-3 mb-4">
-    <div class="col-md-4">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <div class="text-secondary small">Ubicación de referencia</div>
-          <div class="fs-4 fw-bold">Medellín</div>
-          <div class="small text-secondary">Antioquia, Colombia</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <div class="text-secondary small">Estado del módulo</div>
-          <div class="fs-4 fw-bold">Versión piloto</div>
-          <div class="small text-secondary">Datos reales pendientes de conexión</div>
-        </div>
-      </div>
-    </div>
-    <div class="col-md-4">
-      <div class="card border-0 shadow-sm h-100">
-        <div class="card-body">
-          <div class="text-secondary small">Próxima funcionalidad</div>
-          <div class="fs-4 fw-bold">Ficha de entidad</div>
-          <div class="small text-secondary">Consulta de resultados y riesgos</div>
-        </div>
-      </div>
+  <div class="alert alert-info small" role="note"><strong>Nota sobre las ubicaciones:</strong> el directorio actual contiene direcciones, pero no coordenadas verificadas. El marcador señala el centro de referencia de Medellín, no la sede exacta de cada entidad. La clasificación jurídica de obligada/no obligada aún no se infiere automáticamente.</div>
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-secondary small">Entidades en directorio</div><div id="totalEntidades" class="display-6 fw-bold">—</div></div></div></div>
+    <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-secondary small">Con diagnóstico relacionado</div><div id="conDiagnostico" class="display-6 fw-bold text-success">—</div></div></div></div>
+    <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-secondary small">Sin diagnóstico relacionado</div><div id="sinDiagnostico" class="display-6 fw-bold text-primary">—</div></div></div></div>
+    <div class="col-6 col-xl-3"><div class="card border-0 shadow-sm h-100"><div class="card-body"><div class="text-secondary small">Ubicación de referencia</div><div class="h4 fw-bold mb-0">Medellín</div><div class="small text-secondary">Coordenada municipal aproximada</div></div></div></div>
+  </div>
+  <div class="row g-3">
+    <div class="col-12 col-xl-7"><div class="card border-0 shadow-sm h-100"><div class="card-header bg-white py-3"><strong><i class="bi bi-map me-2"></i>Mapa de referencia</strong></div><div class="card-body p-0"><div id="mapaEntidades" style="height:520px; min-height:360px; border-radius:0 0 .5rem .5rem;"></div></div><div class="card-footer bg-white small text-secondary">Cartografía © OpenStreetMap. <span id="notaCoordenadas">Las sedes exactas se incorporarán cuando se validen sus coordenadas.</span></div></div></div>
+    <div class="col-12 col-xl-5"><div class="card border-0 shadow-sm"><div class="card-header bg-white py-3"><strong><i class="bi bi-buildings me-2"></i>Directorio de entidades</strong></div><div class="card-body">
+      <label for="buscarEntidadMapa" class="form-label small fw-semibold">Buscar entidad</label><input id="buscarEntidadMapa" class="form-control mb-2" type="search" placeholder="Nombre o sigla…">
+      <label for="filtroEstadoMapa" class="form-label small fw-semibold">Estado del diagnóstico</label><select id="filtroEstadoMapa" class="form-select mb-3"><option value="todas">Todas las entidades</option><option value="con">Con diagnóstico relacionado</option><option value="sin">Sin diagnóstico relacionado</option></select>
+      <div id="listaEntidadesMapa" class="list-group list-group-flush" style="max-height:360px; overflow:auto"><div class="text-secondary py-3">Cargando directorio…</div></div>
+    </div></div>
+    <div id="fichaEntidadMapa" class="card border-0 shadow-sm mt-3 d-none"><div class="card-header bg-white py-3 d-flex justify-content-between align-items-center"><strong>Ficha de entidad</strong><button id="cerrarFichaMapa" class="btn btn-sm btn-outline-secondary" type="button" aria-label="Cerrar ficha">Cerrar</button></div><div class="card-body" id="contenidoFichaMapa"></div></div>
     </div>
   </div>
-
-  <div class="card border-0 shadow-sm overflow-hidden">
-    <div class="card-body">
-      <h2 class="h5 fw-bold">Mapa interactivo de referencia</h2>
-      <p class="text-secondary small">
-        Puedes acercar, alejar y desplazarte por el mapa. El marcador indica únicamente la ubicación general de Medellín, no la dirección de una entidad específica.
-      </p>
-      <div id="mapa" style="height:480px; width:100%; border-radius:12px; background:#eef3f7;"></div>
-      <div class="small text-secondary mt-3">
-        Cartografía © OpenStreetMap. Las ubicaciones individuales se incorporarán cuando se validen los datos geográficos.
-      </div>
-    </div>
-  </div>
-</div>
-
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</section>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-  const contenedor = document.getElementById("mapa");
-  if (!contenedor || typeof L === "undefined") {
-    if (contenedor) {
-      contenedor.innerHTML =
-        '<div class="alert alert-warning m-3">No se pudo cargar el mapa. Verifica tu conexión a internet e inténtalo nuevamente.</div>';
-    }
-    return;
+(() => {
+  const lista = document.getElementById('listaEntidadesMapa');
+  const buscador = document.getElementById('buscarEntidadMapa');
+  const filtro = document.getElementById('filtroEstadoMapa');
+  const ficha = document.getElementById('fichaEntidadMapa');
+  const fichaContenido = document.getElementById('contenidoFichaMapa');
+  let entidades = [];
+  const mapa = L.map('mapaEntidades').setView([6.2442, -75.5812], 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {maxZoom: 19, attribution: '&copy; OpenStreetMap'}).addTo(mapa);
+  const referencia = L.marker([6.2442, -75.5812]).addTo(mapa).bindPopup('<strong>Medellín</strong><br>Ubicación municipal de referencia; no corresponde a una sede exacta.');
+  const marcadoresEntidades = L.layerGroup().addTo(mapa);
+  const marcadorPorCodigo = new Map();
+  const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function renderLista() {
+    const q = buscador.value.trim().toLocaleLowerCase('es');
+    const estado = filtro.value;
+    const filtradas = entidades.filter(e => {
+      const texto = `${e.nombre} ${e.sigla} ${e.direccion}`.toLocaleLowerCase('es');
+      return (!q || texto.includes(q)) && (estado === 'todas' || (estado === 'con' ? !!e.diagnostico : !e.diagnostico));
+    });
+    lista.innerHTML = '';
+    if (!filtradas.length) { lista.innerHTML = '<div class="text-secondary py-3">No hay entidades que coincidan con la búsqueda.</div>'; return; }
+    filtradas.forEach(e => {
+      const button = document.createElement('button'); button.type = 'button';
+      button.className = 'list-group-item list-group-item-action py-3';
+      button.innerHTML = `<div class="d-flex justify-content-between gap-2"><strong>${escapeHtml(e.nombre)}</strong><span class="badge ${e.diagnostico ? 'text-bg-success' : 'text-bg-secondary'}">${e.diagnostico ? 'Con diagnóstico' : 'Sin diagnóstico'}</span></div><div class="small text-secondary mt-1">${escapeHtml(e.sigla)} · ${escapeHtml(e.clasificacion || 'Clasificación pendiente')}</div>`;
+      button.addEventListener('click', () => mostrarFicha(e)); lista.appendChild(button);
+    });
   }
-
-  const mapa = L.map("mapa").setView([6.2442, -75.5812], 11);
-
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: 19,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-  }).addTo(mapa);
-
-  L.marker([6.2442, -75.5812])
-    .addTo(mapa)
-    .bindPopup("<strong>Medellín</strong><br>Ubicación geográfica de referencia.");
-
-  setTimeout(function () {
-    mapa.invalidateSize();
-  }, 200);
-});
+  function mostrarFicha(e) {
+    ficha.classList.remove('d-none');
+    const d = e.diagnostico;
+    fichaContenido.innerHTML = `<h3 class="h5">${escapeHtml(e.nombre)}</h3><p class="small text-secondary">${escapeHtml(e.codigo)} · ${escapeHtml(e.sigla)}</p><dl class="row small"><dt class="col-5">Clasificación preliminar</dt><dd class="col-7">${escapeHtml(e.clasificacion || 'Pendiente de validar')}</dd><dt class="col-5">Ámbito</dt><dd class="col-7">${escapeHtml(e.ambito || 'No informado')}</dd><dt class="col-5">Dirección registrada</dt><dd class="col-7">${escapeHtml(e.direccion || 'No informada')}</dd><dt class="col-5">Responsable GD</dt><dd class="col-7">${escapeHtml(e.responsable || 'No informado')}</dd><dt class="col-5">Correo</dt><dd class="col-7">${e.correo ? `<a href="mailto:${escapeHtml(e.correo)}">${escapeHtml(e.correo)}</a>` : 'No informado'}</dd><dt class="col-5">Teléfono</dt><dd class="col-7">${escapeHtml(e.telefono || 'No informado')}</dd></dl>${d ? `<div class="alert alert-success"><strong>Diagnóstico relacionado</strong><br>IMA: ${escapeHtml(d.ima)}/100<br>Nivel: ${escapeHtml(d.nivel)}<br>Fecha: ${escapeHtml(d.fecha || 'No disponible')}<div class="small mt-1">Vinculación prioritaria por código del directorio; para registros históricos sin código se usa el nombre normalizado.</div></div><a class="btn btn-primary btn-sm" href="/resultado/${encodeURIComponent(d.id)}">Consultar resultado</a>` : '<div class="alert alert-secondary">No se encontró diagnóstico relacionado por código de entidad ni por coincidencia exacta de nombre.</div>'}<div class="small text-secondary">La ubicación exacta no se muestra porque todavía no hay coordenadas verificadas.</div>`;
+    const lat = Number(e.latitud), lon = Number(e.longitud);
+    if (Number.isFinite(lat) && Number.isFinite(lon) && e.latitud !== null && e.longitud !== null) {
+      mapa.setView([lat, lon], 16);
+      const marcador = marcadorPorCodigo.get(e.codigo);
+      if (marcador) marcador.openPopup();
+    } else {
+      mapa.setView([6.2442, -75.5812], 11);
+      referencia.openPopup();
+    }
+    ficha.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+  function dibujarMarcadores() {
+    marcadoresEntidades.clearLayers();
+    marcadorPorCodigo.clear();
+    let conCoordenadas = 0;
+    entidades.forEach(e => {
+      if (e.latitud === null || e.longitud === null || e.latitud === undefined || e.longitud === undefined) return;
+      const lat = Number(e.latitud), lon = Number(e.longitud);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) return;
+      const color = e.diagnostico ? '#198754' : '#6c757d';
+      const marcador = L.circleMarker([lat, lon], {
+        radius: 8, color, fillColor: color, fillOpacity: 0.85, weight: 2
+      }).addTo(marcadoresEntidades);
+      marcador.bindPopup(`<strong>${escapeHtml(e.nombre)}</strong><br>${escapeHtml(e.codigo)}<br>${e.diagnostico ? 'Con diagnóstico' : 'Sin diagnóstico'}${e.diagnostico ? `<br>IMA: ${escapeHtml(e.diagnostico.ima)}%` : ''}`);
+      marcador.on('click', () => mostrarFicha(e));
+      if (e.codigo) marcadorPorCodigo.set(e.codigo, marcador);
+      conCoordenadas += 1;
+    });
+    const nota = document.getElementById('notaCoordenadas');
+    if (nota) {
+      nota.textContent = conCoordenadas
+        ? `Se muestran ${conCoordenadas} sedes con coordenadas registradas en el directorio.`
+        : 'Todavía no hay coordenadas verificadas por entidad. El marcador visible señala únicamente el centro de referencia de Medellín.';
+    }
+  }
+  document.getElementById('cerrarFichaMapa').addEventListener('click', () => ficha.classList.add('d-none'));
+  buscador.addEventListener('input', renderLista); filtro.addEventListener('change', renderLista);
+  fetch('{{ url_for("api_mapa_entidades") }}', {headers: {'Accept':'application/json'}}).then(r => { if (!r.ok) throw new Error('No se pudo cargar el directorio'); return r.json(); }).then(data => {
+    entidades = data.entidades || [];
+    document.getElementById('totalEntidades').textContent = data.total ?? entidades.length;
+    document.getElementById('conDiagnostico').textContent = data.con_diagnostico ?? 0;
+    document.getElementById('sinDiagnostico').textContent = data.sin_diagnostico ?? 0;
+    dibujarMarcadores();
+    renderLista();
+  }).catch(() => { lista.innerHTML = '<div class="alert alert-danger">No se pudo cargar el directorio. Verifica que hayas iniciado sesión como administrador.</div>'; });
+})();
 </script>
 {% endblock %}
-
