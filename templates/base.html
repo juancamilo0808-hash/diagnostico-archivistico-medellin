@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#063b66">
-    <title>{% block title %}Diagnóstico Archivístico{% endblock %}</title>
+    <title>{% block title %}Diagnóstico Territorial{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -15,7 +15,7 @@
 <body class="{% block body_class %}{% endblock %}">
     <nav class="navbar navbar-expand-lg navbar-dark cda-nav">
         <div class="container-fluid cda-nav-inner">
-            <a class="navbar-brand d-flex align-items-center gap-3" href="{{ url_for('index') }}" aria-label="Inicio Diagnóstico Archivístico CDA Medellín">
+            <a class="navbar-brand d-flex align-items-center gap-3" href="{{ url_for('index') }}" aria-label="Inicio Diagnóstico territorial CDA Medellín">
                 <img class="official-alcaldia-logo" src="{{ url_for('static', filename='logo_alcaldia_original.png') }}" alt="Alcaldía de Medellín — Distrito de Ciencia, Tecnología e Innovación">
                 <span class="brand-divider"></span>
                 <span class="brand-cda">
