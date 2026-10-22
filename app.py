@@ -770,6 +770,27 @@ def admin():
         instrumentos_valores=instrumentos_valores,semaforo_fn=semaforo)
 
 
+@app.route('/admin/eliminar-diagnostico/<int:censo_id>', methods=['POST'])
+@admin_required
+def eliminar_diagnostico(censo_id):
+    """Elimina únicamente el diagnóstico seleccionado; conserva las ubicaciones verificadas."""
+    registro = db.session.get(Censo, censo_id)
+    if registro is None:
+        flash('El diagnóstico seleccionado ya no existe.', 'warning')
+        return redirect(url_for('admin'))
+
+    nombre = registro.nombre_entidad
+    try:
+        db.session.delete(registro)
+        db.session.commit()
+        flash(f'Se eliminó el diagnóstico de «{nombre}». Las ubicaciones verificadas se conservaron.', 'success')
+    except Exception:
+        db.session.rollback()
+        app.logger.exception('No se pudo eliminar el diagnóstico %s', censo_id)
+        flash('No fue posible eliminar el diagnóstico. No se realizaron otros cambios.', 'danger')
+    return redirect(url_for('admin'))
+
+
 @app.route('/admin/exportar-excel')
 @admin_required
 def exportar_excel():
