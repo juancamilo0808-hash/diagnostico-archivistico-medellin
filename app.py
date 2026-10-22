@@ -622,6 +622,24 @@ def api_guardar_ubicacion_entidad():
     })
 
 
+@app.route('/api/admin/mapa-entidades/ubicaciones', methods=['DELETE'])
+@admin_required
+def api_reiniciar_ubicaciones_entidades():
+    """Borra solamente la caché de coordenadas geocodificadas.
+
+    No elimina ni modifica diagnósticos, ni el CSV del directorio.
+    Se usa para corregir ubicaciones guardadas incorrectamente.
+    """
+    try:
+        cantidad = UbicacionEntidad.query.delete(synchronize_session=False)
+        db.session.commit()
+        return jsonify({'ok': True, 'eliminadas': cantidad})
+    except Exception:
+        db.session.rollback()
+        app.logger.exception('No se pudo reiniciar la caché de ubicaciones')
+        return jsonify({'error': 'No se pudo limpiar la caché de coordenadas.'}), 500
+
+
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if request.method == 'POST':
