@@ -335,14 +335,157 @@ main.container, .page-container { padding-top: 38px; padding-bottom: 55px; }
 .admin-card { padding: 24px; background: #fff; border: 1px solid var(--cda-border); border-radius: var(--cda-radius); box-shadow: var(--cda-shadow); }
 .admin-card h2, .admin-card h3 { color: var(--cda-blue-dark); font-weight: 800; }
 
-/* Pie de página */
-.cda-footer { color: rgba(255,255,255,.82); background: #082642; }
-.cda-footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 22px; padding-top: 25px; padding-bottom: 25px; }
-.cda-footer strong { color: #fff; }
-.cda-footer p { margin: 4px 0 0; font-size: .8rem; }
-.footer-links { display: flex; flex-wrap: wrap; gap: 15px; }
-.footer-links a { color: rgba(255,255,255,.82); font-size: .82rem; text-decoration: none; }
-.footer-links a:hover { color: #f0cb65; }
+/* ==========================================
+   PIE DE PÁGINA INSTITUCIONAL
+   Consejo Distrital de Archivos de Medellín
+   ========================================== */
+
+.cda-footer {
+    margin-top: 32px;
+    color: #17324d;
+    background: #eef4f8;
+    font-family: 'Open Sans', Arial, sans-serif;
+}
+
+.cda-footer-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 300px;
+    gap: 28px;
+    margin: 0;
+    padding: 36px 4%;
+    background: #fff;
+    border: 1px solid #dce4ec;
+    border-radius: 6px;
+}
+
+.cda-footer-info h2 {
+    margin: 0 0 10px;
+    color: #123b65;
+    font-size: 26px;
+    font-weight: 800;
+}
+
+.cda-footer-subtitle {
+    margin-bottom: 28px;
+    color: #667789;
+}
+
+.cda-contact-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin: 20px 0;
+}
+
+.cda-contact-icon {
+    display: flex;
+    flex: 0 0 44px;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    color: #fff;
+    background: #17659b;
+    border-radius: 50%;
+    font-size: 20px;
+}
+
+.cda-contact-item strong {
+    display: block;
+    margin-bottom: 4px;
+    color: #123b65;
+}
+
+.cda-contact-item a {
+    color: #0875c1;
+    overflow-wrap: anywhere;
+}
+
+.cda-contact-item p {
+    margin: 0;
+    color: #667789;
+}
+
+.cda-footer-logo {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.cda-footer-logo img {
+    display: block;
+    width: 260px;
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+.cda-footer-links {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 28px;
+    padding-top: 22px;
+    border-top: 1px solid #dce4ec;
+}
+
+.cda-footer-links a {
+    color: #155b91;
+    font-size: .9rem;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.cda-footer-links a:hover {
+    color: #092947;
+    text-decoration: underline;
+}
+
+.cda-footer-bottom {
+    padding: 24px 4%;
+    color: #fff;
+    background: #092947;
+    border-top: 6px solid #d6a62c;
+}
+
+.cda-footer-bottom p {
+    margin: 5px 0;
+    font-size: .9rem;
+}
+
+.cda-footer-bottom p + p {
+    color: #a9c1d7;
+}
+
+/* Adaptación para tabletas y celulares */
+@media (max-width: 768px) {
+    .cda-footer-panel {
+        grid-template-columns: 1fr;
+        gap: 22px;
+        padding: 24px 20px;
+    }
+
+    .cda-footer-info h2 {
+        font-size: 21px;
+    }
+
+    .cda-footer-logo {
+        justify-content: flex-start;
+    }
+
+    .cda-footer-logo img {
+        width: 190px;
+    }
+
+    .cda-footer-links {
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .cda-footer-bottom {
+        padding: 22px 20px;
+    }
+}
 
 /* Ajustes adaptables */
 @media (max-width: 1200px) {
