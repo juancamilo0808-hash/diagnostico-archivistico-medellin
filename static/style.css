@@ -56,8 +56,8 @@ a:hover { color: var(--cda-blue-dark); }
 }
 .official-alcaldia-logo {
     display: block;
-    width: 90px;
-    height: 64px;
+    width: 180px;
+    height: 80px;
     object-fit: contain;
     object-position: center;
     background-color: #ffffff;
