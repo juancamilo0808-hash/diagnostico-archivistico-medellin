@@ -208,11 +208,9 @@ def calcular(form):
     add(form.get('q18'),{'No (0)':0,'Parcialmente (0,5)':.5,'Sí (1)':1,'No aplica (N/A)':None})
     add(form.get('q19'),{'No (0)':0,'En proceso / Implementación parcial (0,5)':.5,'Sí, implementado (1)':1})
     ima=round(total/aplicables*100,2) if aplicables else 0
-    if ima<=20: nivel='Nivel 1 – Inicial'
-    elif ima<=40: nivel='Nivel 2 – Básico'
-    elif ima<=60: nivel='Nivel 3 – En desarrollo'
-    elif ima<=80: nivel='Nivel 4 – Implementado'
-    else: nivel='Nivel 5 – Consolidado'
+    if ima <= 33.33: nivel = 'Bajo'
+    elif ima <= 66.66: nivel = 'Medio'
+    else: nivel = 'Alto'
     return total,aplicables,ima,nivel,q6
 
 @app.route('/')
@@ -481,11 +479,9 @@ def calcular_diagnostico_nuevo(form):
     ima = round((sum(puntajes) / len(puntajes)) * 100, 2) if puntajes else 0
     total = round(sum(puntajes), 2)
     aplicables = float(len(puntajes))
-    if ima <= 20: nivel = 'Nivel 1 – Inicial'
-    elif ima <= 40: nivel = 'Nivel 2 – Básico'
-    elif ima <= 60: nivel = 'Nivel 3 – En desarrollo'
-    elif ima <= 80: nivel = 'Nivel 4 – Implementado'
-    else: nivel = 'Nivel 5 – Consolidado'
+    if ima <= 33.33: nivel = 'Bajo'
+    elif ima <= 66.66: nivel = 'Medio'
+    else: nivel = 'Alto'
     return total, aplicables, ima, nivel
 
 @app.route('/resultado/<int:censo_id>')
@@ -736,21 +732,17 @@ def admin():
         niveles[x.nivel or 'Sin clasificar']=niveles.get(x.nivel or 'Sin clasificar',0)+1
 
     def semaforo(ima):
-        # Umbrales visuales de referencia, coherentes con los cinco niveles IMA del formulario.
-        if ima <= 20: return {'label':'Crítico','color':'#dc3545','class':'critical'}
-        if ima <= 40: return {'label':'Bajo','color':'#fd7e14','class':'low'}
-        if ima <= 60: return {'label':'En desarrollo','color':'#e0a800','class':'developing'}
-        if ima <= 80: return {'label':'Satisfactorio','color':'#198754','class':'good'}
-        return {'label':'Avanzado','color':'#0d6efd','class':'advanced'}
+        # Clasificación simplificada en tres niveles: Bajo, Medio y Alto.
+        if ima <= 33.33: return {'label':'Bajo','color':'#dc3545','class':'low'}
+        if ima <= 66.66: return {'label':'Medio','color':'#e0a800','class':'medium'}
+        return {'label':'Alto','color':'#198754','class':'high'}
 
     semaforos={
-        'Crítico':sum(1 for x in registros if x.ima <= 20),
-        'Bajo':sum(1 for x in registros if 20 < x.ima <= 40),
-        'En desarrollo':sum(1 for x in registros if 40 < x.ima <= 60),
-        'Satisfactorio':sum(1 for x in registros if 60 < x.ima <= 80),
-        'Avanzado':sum(1 for x in registros if x.ima > 80),
+        'Bajo':sum(1 for x in registros if (x.ima or 0) <= 33.33),
+        'Medio':sum(1 for x in registros if 33.33 < (x.ima or 0) <= 66.66),
+        'Alto':sum(1 for x in registros if (x.ima or 0) > 66.66),
     }
-    ranking=[{'nombre':x.nombre_entidad,'ima':round(x.ima or 0,2),'nivel':x.nivel or 'Sin clasificar','semaforo':semaforo(x.ima or 0)['label']} for x in sorted(registros,key=lambda r:r.ima or 0,reverse=True)]
+    ranking=[{'nombre':x.nombre_entidad,'ima':round(x.ima or 0,2),'nivel':semaforo(x.ima or 0)['label'],'semaforo':semaforo(x.ima or 0)['label']} for x in sorted(registros,key=lambda r:r.ima or 0,reverse=True)]
 
     # Promedio de respuestas puntuables de cada instrumento archivístico (pregunta 6).
     instrumentos_totales={nombre:[0.0,0] for nombre in INSTRUMENTOS}
