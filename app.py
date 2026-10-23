@@ -12,6 +12,7 @@ import json
 import os
 import csv
 import unicodedata
+import re
 
 BASE_DIR = Path(__file__).resolve().parent
 app = Flask(__name__)
@@ -79,6 +80,17 @@ class Censo(db.Model):
     q5=db.Column(db.String(200)); q6_json=db.Column(db.Text); q7=db.Column(db.String(250)); q8=db.Column(db.String(200)); q9=db.Column(db.String(250)); q10=db.Column(db.String(250))
     q11=db.Column(db.Text); q12=db.Column(db.Text); q13=db.Column(db.Text); q14=db.Column(db.String(250)); q15=db.Column(db.String(100)); q16=db.Column(db.String(200)); q17=db.Column(db.Text); q18=db.Column(db.String(100)); q19=db.Column(db.String(200)); q20=db.Column(db.Text); q21=db.Column(db.String(100)); respuestas_json=db.Column(db.Text); codigo_entidad=db.Column(db.String(50))
     puntaje_obtenido=db.Column(db.Float,default=0); variables_aplicables=db.Column(db.Float,default=0); ima=db.Column(db.Float,default=0); nivel=db.Column(db.String(100))
+
+class BorradorDiagnostico(db.Model):
+    """Almacena respuestas parciales sin alterar diagnósticos finalizados."""
+    __tablename__ = 'borrador_diagnostico'
+    id = db.Column(db.String(80), primary_key=True)
+    datos_json = db.Column(db.Text, nullable=False, default='{}')
+    estado = db.Column(db.String(20), nullable=False, default='borrador')
+    creado_en = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    actualizado_en = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    censo_id = db.Column(db.Integer, nullable=True)
+
 
 class UbicacionEntidad(db.Model):
     """Caché persistente de ubicaciones resueltas bajo demanda desde una dirección.
@@ -346,6 +358,77 @@ def api_buscar_entidades():
     ])
 
 
+# ============================================================
+# AUTOGUARDADO Y RECUPERACIÓN DE BORRADORES
+# La clave es un token aleatorio de alta entropía que actúa como código privado.
+# Estas rutas solo crean/actualizan la tabla nueva; no alteran Censo ni ubicaciones.
+# ============================================================
+
+
+def validar_codigo_borrador(codigo):
+    codigo = str(codigo or '').strip()
+    return codigo if re.fullmatch(r'[A-Za-z0-9_-]{20,80}', codigo) else None
+
+
+@app.route('/api/borrador/<codigo>', methods=['GET'])
+def api_obtener_borrador(codigo):
+    codigo = validar_codigo_borrador(codigo)
+    if not codigo:
+        return jsonify({'ok': False, 'mensaje': 'El código de recuperación no es válido.'}), 400
+    try:
+        borrador = db.session.get(BorradorDiagnostico, codigo)
+        if borrador is None:
+            return jsonify({'ok': True, 'existe': False, 'datos': {}})
+        if borrador.estado != 'borrador':
+            return jsonify({'ok': True, 'existe': True, 'finalizado': True, 'datos': {}})
+        try:
+            datos = json.loads(borrador.datos_json or '{}')
+            if not isinstance(datos, dict):
+                datos = {}
+        except (TypeError, ValueError):
+            datos = {}
+        return jsonify({'ok': True, 'existe': True, 'finalizado': False,
+                        'datos': datos, 'actualizado_en': borrador.actualizado_en.isoformat() if borrador.actualizado_en else None})
+    except Exception:
+        db.session.rollback()
+        app.logger.exception('No se pudo recuperar el borrador')
+        return jsonify({'ok': False, 'mensaje': 'No fue posible consultar el borrador en este momento.'}), 500
+
+
+@app.route('/api/borrador/<codigo>', methods=['POST'])
+def api_guardar_borrador(codigo):
+    codigo = validar_codigo_borrador(codigo)
+    if not codigo:
+        return jsonify({'ok': False, 'mensaje': 'El código de recuperación no es válido.'}), 400
+    payload = request.get_json(silent=True) or {}
+    datos = payload.get('datos')
+    if not isinstance(datos, dict):
+        return jsonify({'ok': False, 'mensaje': 'El contenido del borrador no tiene un formato válido.'}), 400
+    # No se guardan identificadores internos de control dentro de las respuestas.
+    datos = {str(k)[:120]: v for k, v in datos.items() if k != 'borrador_id'}
+    try:
+        serializado = json.dumps(datos, ensure_ascii=False)
+        if len(serializado.encode('utf-8')) > 500_000:
+            return jsonify({'ok': False, 'mensaje': 'El borrador supera el tamaño permitido.'}), 413
+        borrador = db.session.get(BorradorDiagnostico, codigo)
+        if borrador is None:
+            borrador = BorradorDiagnostico(id=codigo, datos_json=serializado, estado='borrador')
+            db.session.add(borrador)
+        elif borrador.estado != 'borrador':
+            return jsonify({'ok': False, 'finalizado': True,
+                            'mensaje': 'Este diagnóstico ya fue finalizado y no admite más cambios.'}), 409
+        else:
+            borrador.datos_json = serializado
+            borrador.actualizado_en = datetime.utcnow()
+        db.session.commit()
+        return jsonify({'ok': True, 'guardado': True,
+                        'actualizado_en': borrador.actualizado_en.isoformat() if borrador.actualizado_en else None})
+    except Exception:
+        db.session.rollback()
+        app.logger.exception('No se pudo guardar el borrador')
+        return jsonify({'ok': False, 'mensaje': 'No se pudo guardar en la base de datos. Se conservará una copia local si hay espacio disponible.'}), 500
+
+
 @app.route('/diagnostico', methods=['GET', 'POST'])
 def censo():
     if request.method == 'POST':
@@ -423,6 +506,18 @@ def censo():
             puntaje_obtenido=total, variables_aplicables=aplicables, ima=ima, nivel=nivel)
         try:
             db.session.add(r)
+            codigo_borrador = validar_codigo_borrador(request.form.get('borrador_id', ''))
+            if codigo_borrador:
+                borrador = db.session.get(BorradorDiagnostico, codigo_borrador)
+                if borrador is not None and borrador.estado == 'borrador':
+                    borrador.estado = 'finalizado'
+                    borrador.censo_id = None  # se completa después del INSERT del registro
+                    borrador.actualizado_en = datetime.utcnow()
+            db.session.flush()
+            if codigo_borrador:
+                borrador = db.session.get(BorradorDiagnostico, codigo_borrador)
+                if borrador is not None and borrador.estado == 'finalizado':
+                    borrador.censo_id = r.id
             db.session.commit()
             flash('Diagnóstico guardado correctamente.', 'success')
             return redirect(url_for('resultado', censo_id=r.id))
