@@ -11,6 +11,13 @@
   <form id="censoForm" method="POST" novalidate>
     <input type="hidden" name="borrador_id" id="borrador_id" value="">
     <div id="autosaveStatus" class="alert alert-light py-2 small" role="status" aria-live="polite">El autoguardado se activará al comenzar a diligenciar.</div>
+    <div class="card mb-4 border-primary-subtle"><div class="card-body">
+      <h2 class="h6 mb-2">Guardar y recuperar un diagnóstico parcial</h2>
+      <p class="small text-muted mb-2">Conserve este código privado. Le permitirá recuperar el borrador desde otro computador. No lo comparta con personas no autorizadas.</p>
+      <div class="input-group mb-3"><input id="codigoRecuperacion" class="form-control" type="text" readonly aria-label="Código privado de recuperación"><button class="btn btn-outline-primary" type="button" id="copiarCodigo">Copiar código</button></div>
+      <div class="row g-2 align-items-end"><div class="col-md-8"><label class="form-label" for="codigoParaRecuperar">¿Ya tiene un código de recuperación?</label><input id="codigoParaRecuperar" class="form-control" type="text" autocomplete="off" placeholder="Pegue aquí el código de otro equipo"></div><div class="col-md-4"><button class="btn btn-outline-secondary w-100" type="button" id="recuperarCodigo">Recuperar borrador</button></div></div>
+      <div id="recuperacionStatus" class="small mt-2" role="status" aria-live="polite"></div>
+    </div></div>
     <div class="section-header mt-4"><div><h2>A. IDENTIFICACIÓN Y CARACTERIZACIÓN</h2></div></div><section class="card form-card mb-4"><div class="card-body"><div class="row g-3">
       <div class="col-md-8"><label class="form-label" for="nombre_entidad">Nombre oficial de la entidad *</label><input class="form-control" id="nombre_entidad" name="nombre_entidad" autocomplete="off" required><div id="sugerencias" class="list-group position-relative"></div></div>
       <div class="col-md-4"><label class="form-label" for="nit_entidad">NIT *</label><input class="form-control" id="nit_entidad" name="nit_entidad" required></div>
@@ -81,22 +88,76 @@
    .forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
   clearTimeout(timer);const q=name.value.trim();if(q.length<2){box.innerHTML='';return}
   timer=setTimeout(async()=>{try{const res=await fetch(`/api/buscar-entidades?q=${encodeURIComponent(q)}`);const items=await res.json();box.innerHTML='';items.forEach(item=>{const b=document.createElement('button');b.type='button';b.className='list-group-item list-group-item-action';b.textContent=item.nombre+(item.sigla?' ('+item.sigla+')':'');b.addEventListener('click',()=>{name.value=item.nombre;const d=item.datos||{};const map={'Código':'codigo_entidad','Sigla':'sigla_entidad','Grupo / relación con el Distrito':'grupo_relacion','Clasificación preliminar':'clasificacion_preliminar','Ámbito':'ambito','Responsable de gestión documental':'responsable_nombre','Cargo Responsable GD':'responsable_cargo','Correo Responsable GD':'responsable_correo','Teléfono Responsable GD':'telefono_responsable','Sitio web / fuente':'sitio_web','Dirección':'direccion_entidad'};Object.entries(map).forEach(([k,id])=>{const el=document.getElementById(id);if(el&&d[k])el.value=d[k]});box.innerHTML=''});box.appendChild(b)})}catch(e){console.error('No se pudo consultar el directorio',e)}},220)});
- const status=document.getElementById('autosaveStatus');
- const draftInput=document.getElementById('borrador_id');
- const storageKey='diagnosticoArchivisticoDraftId';
- let draftId=localStorage.getItem(storageKey);
- if(!draftId){draftId=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+'-'+Math.random().toString(16).slice(2));localStorage.setItem(storageKey,draftId)}
- draftInput.value=draftId;
- let saveTimer=null, loadingDraft=true, lastSerialized='';
- function serializeForm(){const data={};new FormData(form).forEach((value,key)=>{if(key==='borrador_id')return;if(Object.prototype.hasOwnProperty.call(data,key)){if(!Array.isArray(data[key]))data[key]=[data[key]];data[key].push(value)}else data[key]=value});return data}
- function restoreForm(data){Object.entries(data||{}).forEach(([name,value])=>{const controls=[...form.querySelectorAll(`[name="${CSS.escape(name)}"]`)];if(!controls.length)return;controls.forEach(el=>{if(el.type==='checkbox'||el.type==='radio'){const vals=Array.isArray(value)?value:[value];el.checked=vals.includes(el.value)}else if(el.type!=='submit'&&el.type!=='reset'){el.value=Array.isArray(value)?value[0]:value}})});refreshConditional();}
- async function loadDraft(){try{const res=await fetch(`/api/borrador/${encodeURIComponent(draftId)}`);const data=await res.json();if(data.existe&&data.datos&&Object.keys(data.datos).length){restoreForm(data.datos);status.textContent='Se recuperó un borrador guardado anteriormente. Continúe diligenciando; los cambios se guardarán automáticamente.'}else{status.textContent='Autoguardado activado. Las respuestas parciales se guardan automáticamente.'}}catch(e){status.textContent='No se pudo consultar el borrador. Revise la conexión; sus cambios aún no están confirmados como guardados.'}finally{loadingDraft=false;lastSerialized=JSON.stringify(serializeForm())}}
- async function saveDraft(){if(loadingDraft)return;const datos=serializeForm(), serialized=JSON.stringify(datos);if(serialized===lastSerialized)return;status.textContent='Guardando borrador…';try{const res=await fetch(`/api/borrador/${encodeURIComponent(draftId)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({datos})});const result=await res.json();if(!res.ok||!result.ok)throw new Error(result.mensaje||'Error al guardar');lastSerialized=serialized;status.textContent='Borrador guardado automáticamente.'}catch(e){status.textContent='No se pudo guardar. Mantenga esta página abierta y revise la conexión antes de continuar.'}}
- form.addEventListener('input',()=>{if(loadingDraft)return;clearTimeout(saveTimer);status.textContent='Cambios pendientes de guardar…';saveTimer=setTimeout(saveDraft,900)});
- form.addEventListener('change',()=>{if(loadingDraft)return;clearTimeout(saveTimer);saveTimer=setTimeout(saveDraft,500)});
- form.addEventListener('submit',e=>{if(!form.checkValidity()){e.preventDefault();form.classList.add('was-validated');form.querySelector(':invalid')?.scrollIntoView({behavior:'smooth',block:'center'});return;}if(saveTimer)clearTimeout(saveTimer);});
- loadDraft();
-})();
+  const status=document.getElementById('autosaveStatus');
+  const draftInput=document.getElementById('borrador_id');
+  const recoveryDisplay=document.getElementById('codigoRecuperacion');
+  const recoveryInput=document.getElementById('codigoParaRecuperar');
+  const recoveryStatus=document.getElementById('recuperacionStatus');
+  const storageKey='diagnosticoArchivisticoDraftId';
+  const localDataKey=id=>'diagnosticoArchivisticoDraftData:'+id;
+  function newDraftId(){
+    if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    if(window.crypto && crypto.getRandomValues){const bytes=new Uint8Array(24);crypto.getRandomValues(bytes);return Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('')}
+    throw new Error('Este navegador no permite generar un código seguro. Actualice el navegador para continuar.');
+  }
+  let draftId=localStorage.getItem(storageKey);
+  if(!draftId || !/^[A-Za-z0-9_-]{20,80}$/.test(draftId)){draftId=newDraftId();localStorage.setItem(storageKey,draftId)}
+  draftInput.value=draftId; recoveryDisplay.value=draftId;
+  let saveTimer=null, loadingDraft=true, lastSerialized='', serverFinalized=false;
+  function serializeForm(){const data={};new FormData(form).forEach((value,key)=>{if(key==='borrador_id')return;if(Object.prototype.hasOwnProperty.call(data,key)){if(!Array.isArray(data[key]))data[key]=[data[key]];data[key].push(value)}else data[key]=value});return data}
+  function restoreForm(data){Object.entries(data||{}).forEach(([name,value])=>{const controls=[...form.querySelectorAll(`[name="${CSS.escape(name)}"]`)];if(!controls.length)return;controls.forEach(el=>{if(el.type==='checkbox'||el.type==='radio'){const vals=Array.isArray(value)?value:[value];el.checked=vals.includes(el.value)}else if(el.type!=='submit'&&el.type!=='reset'){el.value=Array.isArray(value)?value[0]:value}})});refreshConditional();}
+  function saveLocal(datos){try{localStorage.setItem(localDataKey(draftId),JSON.stringify({datos,guardadoLocal:Date.now()}));return true}catch(e){return false}}
+  function readLocal(id){try{const raw=localStorage.getItem(localDataKey(id));return raw?JSON.parse(raw):null}catch(e){return null}}
+  async function serverLoad(id){const res=await fetch(`/api/borrador/${encodeURIComponent(id)}`,{cache:'no-store'});const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.mensaje||'No se pudo consultar el borrador');return data}
+  async function serverSave(id,datos){const res=await fetch(`/api/borrador/${encodeURIComponent(id)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({datos})});const result=await res.json();if(!res.ok||!result.ok)throw new Error(result.mensaje||'No se pudo guardar');return result}
+  async function loadDraft(){
+    const local=readLocal(draftId);
+    try{
+      const remote=await serverLoad(draftId);
+      if(remote.finalizado){serverFinalized=true;status.textContent='Este código corresponde a un diagnóstico ya finalizado. No se realizarán más cambios sobre ese borrador.';form.querySelector('[type="submit"]').disabled=true;loadingDraft=false;return}
+      const remoteDate=remote.actualizado_en?Date.parse(remote.actualizado_en):0;
+      if(local && local.datos && (!remote.existe || (local.guardadoLocal||0)>remoteDate)){
+        restoreForm(local.datos);
+        if(navigator.onLine){try{await serverSave(draftId,local.datos);status.textContent='Se recuperaron cambios locales y se sincronizaron con Neon.'}catch(e){status.textContent='Se recuperaron cambios locales. Pendiente de sincronizar cuando vuelva la conexión.'}}
+      }else if(remote.existe && remote.datos && Object.keys(remote.datos).length){restoreForm(remote.datos);saveLocal(remote.datos);status.textContent='Borrador recuperado desde Neon. Los cambios se guardarán automáticamente.'}
+      else if(local && local.datos){restoreForm(local.datos);status.textContent='Se recuperó una copia local. Se sincronizará cuando haya conexión.'}
+      else status.textContent='Autoguardado activado. Las respuestas parciales se guardarán automáticamente en Neon.';
+    }catch(e){if(local && local.datos){restoreForm(local.datos);status.textContent='Sin conexión con Neon: se recuperó la copia local. Se sincronizará al volver la conexión.'}else status.textContent='No se pudo consultar Neon. Al comenzar, se guardará una copia local y se intentará sincronizar.'}
+    finally{loadingDraft=false;lastSerialized=JSON.stringify(serializeForm());}
+  }
+  async function saveDraft(){
+    if(loadingDraft||serverFinalized)return;
+    const datos=serializeForm(),serialized=JSON.stringify(datos);if(serialized===lastSerialized)return;
+    const localOk=saveLocal(datos);status.textContent='Guardando cambios…';
+    if(!navigator.onLine){status.textContent=localOk?'Sin conexión. Cambios guardados temporalmente en este navegador; pendientes de sincronizar con Neon.':'Sin conexión y no se pudo guardar la copia local.';return}
+    try{await serverSave(draftId,datos);lastSerialized=serialized;saveLocal(datos);status.textContent='Borrador guardado en Neon.'}
+    catch(e){status.textContent=localOk?'No se pudo sincronizar con Neon. Los cambios quedan temporalmente en este navegador y se reintentarán.':(e.message||'No se pudo guardar el borrador.')}
+  }
+  function scheduleSave(delay=700){if(loadingDraft||serverFinalized)return;saveLocal(serializeForm());clearTimeout(saveTimer);saveTimer=setTimeout(saveDraft,delay)}
+  form.addEventListener('input',()=>scheduleSave(900));
+  form.addEventListener('change',()=>scheduleSave(400));
+  window.addEventListener('online',()=>{if(!serverFinalized){status.textContent='Conexión recuperada. Sincronizando respuestas…';saveDraft()}});
+  document.getElementById('copiarCodigo').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(draftId);recoveryStatus.textContent='Código copiado. Guárdelo en un lugar seguro.'}catch(e){recoveryDisplay.focus();recoveryDisplay.select();recoveryStatus.textContent='Seleccione y copie el código manualmente.'}});
+  document.getElementById('recuperarCodigo').addEventListener('click',async()=>{
+    const codigo=(recoveryInput.value||'').trim();
+    if(!/^[A-Za-z0-9_-]{20,80}$/.test(codigo)){recoveryStatus.textContent='Ingrese un código válido de recuperación.';return}
+    if(codigo===draftId){recoveryStatus.textContent='Este es el código que ya está abierto.';return}
+    recoveryStatus.textContent='Consultando borrador…';
+    try{
+      const remoto=await serverLoad(codigo);
+      if(!remoto.existe){recoveryStatus.textContent='No se encontró un borrador para ese código. Verifique que esté completo.';return}
+      if(remoto.finalizado){recoveryStatus.textContent='Este diagnóstico ya fue finalizado; no puede recuperarse como borrador.';return}
+      const localActual=serializeForm();
+      if(Object.values(localActual).some(v=>Array.isArray(v)?v.some(Boolean):String(v||'').trim()!=='')){
+        if(!confirm('El formulario actual contiene información. ¿Desea reemplazarlo por el borrador recuperado?'))return;
+      }
+      draftId=codigo;draftInput.value=draftId;localStorage.setItem(storageKey,draftId);recoveryDisplay.value=draftId;
+      restoreForm(remoto.datos||{});saveLocal(remoto.datos||{});lastSerialized=JSON.stringify(serializeForm());
+      recoveryStatus.textContent='Borrador recuperado. El código activo cambió al código que ingresó.';
+      status.textContent='Borrador recuperado desde Neon. Continúe; los cambios se guardarán automáticamente.';
+    }catch(e){recoveryStatus.textContent='No se pudo recuperar. Compruebe la conexión y vuelva a intentarlo.'}
+  });
+  form.addEventListener('submit',e=>{if(!form.checkValidity()){e.preventDefault();form.classList.add('was-validated');form.querySelector(':invalid')?.scrollIntoView({behavior:'smooth',block:'center'});return;}if(saveTimer)clearTimeout(saveTimer);});
+  loadDraft();})();
 </script>
 {% endblock %}
-
