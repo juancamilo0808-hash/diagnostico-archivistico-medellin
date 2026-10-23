@@ -40,17 +40,17 @@
   <div class="row g-3 mb-4">
     <div class="col-6 col-xl-3"><div class="metric-card"><div class="text-secondary mb-2"><i class="bi bi-buildings me-2"></i>Entidades registradas</div><div class="metric-value">{{ registros|length }}</div><div class="metric-label mt-1">Registros guardados en el diagnóstico</div></div></div>
     <div class="col-6 col-xl-3"><div class="metric-card"><div class="text-secondary mb-2"><i class="bi bi-speedometer2 me-2"></i>IMA promedio</div><div class="metric-value">{{ '%.1f'|format(promedio) }}<span class="fs-5">%</span></div><div class="metric-label mt-1">Promedio simple de entidades registradas</div></div></div>
-    <div class="col-6 col-xl-3"><div class="metric-card"><div class="text-secondary mb-2"><i class="bi bi-exclamation-triangle me-2"></i>Atención prioritaria</div><div class="metric-value">{{ semaforos['Crítico'] + semaforos['Bajo'] }}</div><div class="metric-label mt-1">Entidades en nivel crítico o bajo</div></div></div>
+    <div class="col-6 col-xl-3"><div class="metric-card"><div class="text-secondary mb-2"><i class="bi bi-exclamation-triangle me-2"></i>Atención prioritaria</div><div class="metric-value">{{ semaforos['Bajo'] }}</div><div class="metric-label mt-1">Entidades clasificadas en nivel bajo</div></div></div>
     <div class="col-6 col-xl-3"><div class="metric-card"><div class="text-secondary mb-2"><i class="bi bi-diagram-3 me-2"></i>Sectores representados</div><div class="metric-value">{{ sectores|length }}</div><div class="metric-label mt-1">Sectores con al menos un registro</div></div></div>
   </div>
 
   <section class="results-card p-3 p-lg-4 mb-4">
     <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3"><div><h2 class="mb-1">Semáforo de madurez archivística</h2><p class="text-secondary small mb-0">Clasificación visual por IMA. Rangos de referencia configurados en la aplicación.</p></div><span class="small text-secondary">{{ registros|length }} entidad(es) evaluada(s)</span></div>
     <div class="traffic-grid">
-      {% set estados = [('Crítico','#dc3545'),('Bajo','#fd7e14'),('En desarrollo','#e0a800'),('Satisfactorio','#198754'),('Avanzado','#0d6efd')] %}
+      {% set estados = [('Bajo','#dc3545'),('Medio','#e0a800'),('Alto','#198754')] %}
       {% for estado,color in estados %}<div class="traffic-item"><span class="traffic-light" style="--light-color:{{ color }}"></span><div><div class="traffic-count">{{ semaforos[estado] }}</div><div class="traffic-label">{{ estado }}</div></div></div>{% endfor %}
     </div>
-    <div class="small text-secondary mt-3">Crítico: 0–20 % · Bajo: &gt;20–40 % · En desarrollo: &gt;40–60 % · Satisfactorio: &gt;60–80 % · Avanzado: &gt;80–100 %. Estos umbrales deben validarse contra la metodología oficial antes de uso normativo.</div>
+    <div class="small text-secondary mt-3">Bajo: 0–33,33 % · Medio: &gt;33,33–66,66 % · Alto: &gt;66,66–100 %. Estos rangos son configurables y deben validarse contra la metodología institucional antes de su uso oficial.</div>
   </section>
 
   <div class="row g-4 mb-4">
@@ -62,7 +62,7 @@
 
   <section class="results-card p-3 p-lg-4">
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3"><div><h2 class="mb-1">Seguimiento de entidades</h2><p class="small text-secondary mb-0">Busca, filtra por sector o nivel y consulta los resultados registrados.</p></div><span class="badge text-bg-light">{{ registros|length }} registro(s)</span></div>
-    <div class="row g-2 mb-3"><div class="col-md-5"><label class="form-label small fw-bold" for="searchEntity">Buscar entidad</label><input id="searchEntity" class="filter-control" placeholder="Nombre de entidad o NIT…"></div><div class="col-md-4"><label class="form-label small fw-bold" for="filterSector">Sector</label><select id="filterSector" class="filter-control"><option value="">Todos los sectores</option>{% for sector in sectores %}<option value="{{ sector }}">{{ sector }}</option>{% endfor %}</select></div><div class="col-md-3"><label class="form-label small fw-bold" for="filterLevel">Semáforo</label><select id="filterLevel" class="filter-control"><option value="">Todos los niveles</option><option>Crítico</option><option>Bajo</option><option>En desarrollo</option><option>Satisfactorio</option><option>Avanzado</option></select></div></div>
+    <div class="row g-2 mb-3"><div class="col-md-5"><label class="form-label small fw-bold" for="searchEntity">Buscar entidad</label><input id="searchEntity" class="filter-control" placeholder="Nombre de entidad o NIT…"></div><div class="col-md-4"><label class="form-label small fw-bold" for="filterSector">Sector</label><select id="filterSector" class="filter-control"><option value="">Todos los sectores</option>{% for sector in sectores %}<option value="{{ sector }}">{{ sector }}</option>{% endfor %}</select></div><div class="col-md-3"><label class="form-label small fw-bold" for="filterLevel">Semáforo</label><select id="filterLevel" class="filter-control"><option value="">Todos los niveles</option><option>Bajo</option><option>Medio</option><option>Alto</option></select></div></div>
     <div class="table-responsive"><table class="table table-hover align-middle" id="entitiesTable"><thead><tr><th>Fecha</th><th>Entidad / NIT</th><th>Sector</th><th>IMA</th><th>Semáforo</th><th>Clasificación IMA</th><th>Acciones</th></tr></thead><tbody>
       {% for r in registros %}{% set estado=semaforo_fn(r.ima or 0) %}<tr data-entity="{{ r.nombre_entidad|lower }}" data-sector="{{ r.sector or 'Sin sector' }}" data-level="{{ estado.label }}"><td class="text-nowrap">{{ r.fecha.strftime('%d/%m/%Y') }}</td><td class="fw-semibold">{{ r.nombre_entidad }}</td><td>{{ r.sector or 'Sin sector' }}</td><td class="fw-bold">{{ '%.2f'|format(r.ima or 0) }}%</td><td><span class="status-pill" style="background:{{ estado.color }}18;color:{{ estado.color }};--status-color:{{ estado.color }}"><span class="status-dot"></span>{{ estado.label }}</span></td><td>{{ r.nivel or 'Sin clasificar' }}</td><td><form method="POST" action="{{ url_for('eliminar_diagnostico', censo_id=r.id) }}" onsubmit="return confirm('¿Eliminar definitivamente el diagnóstico de {{ r.nombre_entidad|e }}? Esta acción no se puede deshacer.')"><button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash me-1"></i>Eliminar</button></form></td></tr>{% else %}<tr><td colspan="7" class="text-center py-5 text-secondary"><i class="bi bi-clipboard2-data fs-2 d-block mb-2"></i>Aún no hay registros. Registra una entidad para visualizar resultados.</td></tr>{% endfor %}
     </tbody></table></div><div id="noMatches" class="alert alert-light text-center d-none">No hay entidades que coincidan con los filtros.</div>
@@ -71,9 +71,9 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script>
-const colors=['#dc3545','#fd7e14','#e0a800','#198754','#0d6efd'];
-const levelLabels=['Crítico','Bajo','En desarrollo','Satisfactorio','Avanzado'];
-const distribution={{ [semaforos['Crítico'], semaforos['Bajo'], semaforos['En desarrollo'], semaforos['Satisfactorio'], semaforos['Avanzado']]|tojson }};
+const colors=['#dc3545','#e0a800','#198754'];
+const levelLabels=['Bajo','Medio','Alto'];
+const distribution={{ [semaforos['Bajo'], semaforos['Medio'], semaforos['Alto']]|tojson }};
 const ranking={{ ranking[:12]|tojson }};
 const instrumentLabels={{ instrumentos_labels|tojson }};
 const instrumentValues={{ instrumentos_valores|tojson }};
