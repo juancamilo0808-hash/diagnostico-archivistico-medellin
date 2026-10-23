@@ -7,7 +7,13 @@
     <p class="eyebrow">RESULTADO DEL DIAGNÓSTICO</p>
     <h1>{{ censo.nombre_entidad }}</h1>
     <div class="ima-number">{{ '%.2f'|format(censo.ima) }}%</div>
-    <h2>{{ censo.nivel }}</h2>
+    {% if censo.ima <= 33.33 %}
+      <h2>Bajo</h2>
+    {% elif censo.ima <= 66.66 %}
+      <h2>Medio</h2>
+    {% else %}
+      <h2>Alto</h2>
+    {% endif %}
     <p>Resultado calculado automáticamente.</p>
 
     <div class="row g-3 mt-4">
