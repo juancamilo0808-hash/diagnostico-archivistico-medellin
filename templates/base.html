@@ -1,25 +1,45 @@
+```html
 <!doctype html>
 <html lang="es">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#063b66">
+
     <title>{% block title %}Diagnóstico Territorial{% endblock %}</title>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&family=Open+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20261014c">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20261023footer1">
 </head>
+
 <body class="{% block body_class %}{% endblock %}">
+
+    <!-- NAVEGACIÓN INSTITUCIONAL -->
     <nav class="navbar navbar-expand-lg navbar-dark cda-nav">
         <div class="container-fluid cda-nav-inner">
-            <a class="navbar-brand d-flex align-items-center gap-3" href="{{ url_for('index') }}" aria-label="Inicio Diagnóstico territorial CDA Medellín">
-                <img class="official-alcaldia-logo" src="{{ url_for('static', filename='logo_alcaldia_original.png') }}" alt="Alcaldía de Medellín — Distrito de Ciencia, Tecnología e Innovación">
+
+            <a class="navbar-brand d-flex align-items-center gap-3"
+               href="{{ url_for('index') }}"
+               aria-label="Inicio Diagnóstico Territorial Archivístico">
+
+                <img
+                    class="official-alcaldia-logo"
+                    src="{{ url_for('static', filename='logo_alcaldia_original.png') }}"
+                    alt="Alcaldía de Medellín — Distrito de Ciencia, Tecnología e Innovación">
+
                 <span class="brand-divider"></span>
+
                 <span class="brand-cda">
                     <i class="bi bi-file-earmark-text"></i>
+
                     <span class="brand-cda-text">
                         <span class="brand-cda-line">CONSEJO DISTRITAL</span>
                         <span class="brand-cda-line">DE ARCHIVOS</span>
@@ -27,29 +47,158 @@
                     </span>
                 </span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#cdaMenu" aria-controls="cdaMenu" aria-expanded="false" aria-label="Abrir menú">
+
+            <button
+                class="navbar-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#cdaMenu"
+                aria-controls="cdaMenu"
+                aria-expanded="false"
+                aria-label="Abrir menú">
+
                 <span class="navbar-toggler-icon"></span>
             </button>
+
             <div class="collapse navbar-collapse" id="cdaMenu">
                 <div class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
-                    <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}"><i class="bi bi-house-door"></i> Inicio</a>
-                    <a class="nav-link {% if request.endpoint == 'censo' %}active{% endif %}" href="{{ url_for('censo') }}"><i class="bi bi-file-earmark-text"></i> Diagnóstico</a>
-                    <a class="nav-link {% if request.endpoint == 'mapa_entidades' %}active{% endif %}" href="{{ url_for('mapa_entidades') }}"><i class="bi bi-geo-alt"></i> Mapa de entidades</a>
-                    <a class="nav-link {% if request.endpoint == 'ayuda' %}active{% endif %}" href="{{ url_for('ayuda') }}"><i class="bi bi-question-circle"></i> Ayuda</a>
-                    <a class="btn btn-nav" href="{{ url_for('admin') }}"><i class="bi bi-gear"></i> Administración y resultados</a>
+
+                    <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}"
+                       href="{{ url_for('index') }}">
+                        <i class="bi bi-house-door"></i> Inicio
+                    </a>
+
+                    <a class="nav-link {% if request.endpoint == 'censo' %}active{% endif %}"
+                       href="{{ url_for('censo') }}">
+                        <i class="bi bi-file-earmark-text"></i> Diagnóstico
+                    </a>
+
+                    <a class="nav-link {% if request.endpoint == 'mapa_entidades' %}active{% endif %}"
+                       href="{{ url_for('mapa_entidades') }}">
+                        <i class="bi bi-geo-alt"></i> Mapa de entidades
+                    </a>
+
+                    <a class="nav-link {% if request.endpoint == 'ayuda' %}active{% endif %}"
+                       href="{{ url_for('ayuda') }}">
+                        <i class="bi bi-question-circle"></i> Ayuda
+                    </a>
+
+                    <a class="btn btn-nav" href="{{ url_for('admin') }}">
+                        <i class="bi bi-gear"></i> Administración y resultados
+                    </a>
+
                 </div>
             </div>
         </div>
     </nav>
-    {% with messages=get_flashed_messages(with_categories=true) %}
-        {% for cat,msg in messages %}
-        <div class="container mt-3 position-relative" style="z-index:20"><div class="alert alert-{{ cat }} shadow-sm">{{ msg }}</div></div>
+
+    <!-- MENSAJES DEL SISTEMA -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for cat, msg in messages %}
+            <div class="container mt-3 position-relative" style="z-index:20">
+                <div class="alert alert-{{ cat }} shadow-sm">
+                    {{ msg }}
+                </div>
+            </div>
         {% endfor %}
     {% endwith %}
-    <main>{% block content %}{% endblock %}</main>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- PIE DE PÁGINA INSTITUCIONAL -->
     <footer class="cda-footer">
-        <div class="container-fluid cda-footer-inner"><div>© 2026 <strong>Consejo Distrital de Archivos de Medellín</strong><p>Alcaldía de Medellín · Distrito de Ciencia, Tecnología e Innovación</p></div></div>
+
+        <div class="cda-footer-panel">
+
+            <div class="cda-footer-info">
+
+                <h2>Consejo Distrital de Archivos de Medellín</h2>
+
+                <p class="cda-footer-subtitle">
+                    Alcaldía de Medellín · Distrito de Ciencia,
+                    Tecnología e Innovación
+                </p>
+
+                <!-- CORREO INSTITUCIONAL -->
+                <div class="cda-contact-item">
+                    <span class="cda-contact-icon">
+                        <i class="bi bi-envelope-fill"></i>
+                    </span>
+
+                    <div>
+                        <strong>Correo electrónico institucional:</strong>
+
+                        <a href="mailto:consejodarchivo@medellin.gov.co">
+                            consejodarchivo@medellin.gov.co
+                        </a>
+                    </div>
+                </div>
+
+                <!-- HORARIO DE ATENCIÓN -->
+                <div class="cda-contact-item">
+                    <span class="cda-contact-icon">
+                        <i class="bi bi-clock-fill"></i>
+                    </span>
+
+                    <div>
+                        <strong>Horario de atención:</strong>
+
+                        <p>
+                            Lunes a viernes: 7:30 a. m. - 5:00 p. m.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- LOGO INSTITUCIONAL -->
+            <div class="cda-footer-logo">
+                <img
+                    src="{{ url_for('static', filename='logo_alcaldia_original.png') }}"
+                    alt="Alcaldía de Medellín — Ciencia, Tecnología e Innovación">
+            </div>
+
+            <!-- ENLACES INSTITUCIONALES -->
+            <div class="cda-footer-links">
+
+                <a href="mailto:consejodarchivo@medellin.gov.co">
+                    Contacto institucional
+                </a>
+
+                <a href="{{ url_for('index') }}">
+                    Inicio
+                </a>
+
+                <a href="{{ url_for('ayuda') }}">
+                    Ayuda
+                </a>
+
+            </div>
+
+        </div>
+
+        <!-- FRANJA INFERIOR AZUL Y DORADA -->
+        <div class="cda-footer-bottom">
+
+            <p>
+                © 2026
+                <strong>Consejo Distrital de Archivos de Medellín</strong>
+            </p>
+
+            <p>
+                Alcaldía de Medellín · Distrito de Ciencia,
+                Tecnología e Innovación
+            </p>
+
+        </div>
+
     </footer>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>
+```
