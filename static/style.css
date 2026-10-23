@@ -1,5 +1,5 @@
 /* =========================================================
-   Diagnóstico territorial Archivísticos DEL DISTRITO DE MEDELLÍN
+   Diagnóstico Archivísticos DEL DISTRITO DE MEDELLÍN
    Hoja de estilos completa
    Conserva los estilos generales y cambia el fondo de portada
    a static/images/medellin_portada.png.
@@ -56,10 +56,14 @@ a:hover { color: var(--cda-blue-dark); }
 }
 .official-alcaldia-logo {
     display: block;
-    width: auto;
-    max-width: 185px;
-    max-height: 64px;
+    width: 90px;
+    height: 64px;
     object-fit: contain;
+    object-position: center;
+    background-color: #ffffff;
+    padding: 4px;
+    border-radius: 2px;
+    flex-shrink: 0;
 }
 /* Identidad institucional del encabezado */
 .cda-nav-inner {
