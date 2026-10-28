@@ -3,6 +3,13 @@
 {% block body_class %}diagnostico-page{% endblock %}
 {% block content %}
 <div class="container py-4">
+<style>
+  [data-step-header], [data-step-panel], [data-step-nav] { transition: opacity .15s ease; }
+  .step-navigation { border-top: 1px solid #d7e1eb; padding-top: 1rem; }
+  .step-navigation .btn { min-width: 120px; }
+  #autosaveStatus { position: sticky; top: .5rem; z-index: 5; }
+</style>
+
   <div class="mb-4">
     <span class="badge bg-primary mb-2">Instrumento diagnóstico</span>
     <h1 class="h2">Diagnóstico Territorial Archivístico</h1>
@@ -20,7 +27,7 @@
       <div id="recuperacionStatus" class="small mt-2" role="status" aria-live="polite"></div>
     </div></div>
     </div>
-    <div class="section-header mt-4"><div><h2>A. IDENTIFICACIÓN Y CARACTERIZACIÓN</h2></div></div><section class="card form-card mb-4"><div class="card-body"><div class="row g-3">
+    <div class="section-header mt-4" data-step-header="1"><div><h2>A. IDENTIFICACIÓN Y CARACTERIZACIÓN</h2></div></div><section class="card form-card mb-4" data-step-panel="1"><div class="card-body"><div class="row g-3">
       <div class="col-md-8"><label class="form-label" for="nombre_entidad">Nombre oficial de la entidad *</label><input class="form-control" id="nombre_entidad" name="nombre_entidad" autocomplete="off" required><div id="sugerencias" class="list-group position-relative"></div></div>
       <div class="col-md-4"><label class="form-label" for="nit_entidad">NIT *</label><input class="form-control" id="nit_entidad" name="nit_entidad" required></div>
       <input type="hidden" id="codigo_entidad" name="codigo_entidad"><input type="hidden" id="sigla_entidad" name="sigla_entidad">
@@ -36,34 +43,64 @@
       <div class="col-md-4"><label class="form-label">Sitio web</label><input class="form-control" name="sitio_web" id="sitio_web"></div>
       <div class="col-md-8"><label class="form-label">Dirección</label><input class="form-control" name="direccion_entidad" id="direccion_entidad"></div>
     </div><small class="text-muted d-block mt-3">Los campos del directorio se precargan cuando hay coincidencia. Verifique y corrija la información antes de continuar.</small></div></section>
+    <div class="step-navigation d-flex align-items-center justify-content-between gap-2 mb-4" data-step-nav="1">
+      <button type="button" class="btn btn-outline-secondary" data-step-prev="1" hidden>Anterior</button>
+      <span class="small text-muted">Sección 1 de 6 · Los cambios se guardan automáticamente</span>
+      <button type="button" class="btn btn-primary" data-step-next="1" >Siguiente <span aria-hidden="true">→</span></button>
+    </div>
 
-    <div class="section-header mt-4"><div><h2>B. ESTRATÉGICO</h2></div></div><section class="card form-card mb-4"><div class="card-body">
+    <div class="section-header mt-4" data-step-header="2"><div><h2>B. ESTRATÉGICO</h2></div></div><section class="card form-card mb-4" data-step-panel="2"><div class="card-body">
       <div class="mb-4"><label class="form-label fw-semibold">1. ¿Cuál es el estado de la Política de Gestión Documental de la entidad? *</label><select class="form-select" name="q1_politica" id="q1_politica" required><option value="">Seleccione</option><option>No existe</option><option>En desarrollo</option><option>Aprobada</option><option>En implementación</option><option>Implementada y con seguimiento</option><option>No se tiene información</option></select>
       <div class="conditional mt-3" data-show="q1_politica=Aprobada,q1_politica=En implementación,q1_politica=Implementada y con seguimiento"><label class="form-label">¿Está aprobada mediante acto administrativo?</label><select class="form-select" name="q1_acto"><option value="">Seleccione</option><option>Sí</option><option>No</option><option>En trámite</option></select><div class="conditional mt-2" data-show="q1_acto=Sí"><label class="form-label">Número y fecha del acto administrativo</label><input class="form-control" name="q1_acto_detalle"></div></div>
       <div class="conditional mt-3" data-show="q1_politica=En desarrollo"><label class="form-label">¿En qué etapa se encuentra?</label><textarea class="form-control" name="q1_etapa" rows="2"></textarea></div><div class="conditional mt-3" data-show="q1_politica=No existe"><label class="form-label">¿Cuál es la principal razón por la que no existe?</label><textarea class="form-control" name="q1_razon" rows="2"></textarea></div><label class="form-label mt-3">Evidencia (enlace o referencia documental)</label><input class="form-control" name="evidencia_q1"></div>
       <div class="mb-3"><label class="form-label fw-semibold">2. ¿La entidad hace seguimiento al cumplimiento del PGD y establece acciones de mejora? *</label><select class="form-select" name="q2_seguimiento" id="q2_seguimiento" required><option value="">Seleccione</option><option>Sí</option><option>Parcialmente</option><option>No</option><option>No se tiene información</option></select><div class="conditional mt-3" data-show="q2_seguimiento=Sí"><label class="form-label">¿Qué mecanismo utiliza y dónde se registra el seguimiento?</label><textarea class="form-control" name="q2_mecanismo" rows="2"></textarea></div><div class="conditional mt-3" data-show="q2_seguimiento=No"><label class="form-label">¿El PGD está formulado aunque no se haga seguimiento?</label><select class="form-select" name="q2_pgd_formulado"><option value="">Seleccione</option><option>Sí</option><option>No</option><option>En elaboración</option><option>No se sabe</option></select></div><label class="form-label mt-3">Evidencia (enlace o referencia documental)</label><input class="form-control" name="evidencia_q2"></div>
     </div></section>
+    <div class="step-navigation d-flex align-items-center justify-content-between gap-2 mb-4" data-step-nav="2">
+      <button type="button" class="btn btn-outline-secondary" data-step-prev="2" >Anterior</button>
+      <span class="small text-muted">Sección 2 de 6 · Los cambios se guardan automáticamente</span>
+      <button type="button" class="btn btn-primary" data-step-next="2" >Siguiente <span aria-hidden="true">→</span></button>
+    </div>
 
-    <div class="section-header mt-4"><div><h2>C. ADMINISTRACIÓN DE ARCHIVOS</h2></div></div><section class="card form-card mb-4"><div class="card-body">
+    <div class="section-header mt-4" data-step-header="3"><div><h2>C. ADMINISTRACIÓN DE ARCHIVOS</h2></div></div><section class="card form-card mb-4" data-step-panel="3"><div class="card-body">
       <div class="mb-4"><label class="form-label fw-semibold">3. ¿Cuántas personas participan en las funciones de gestión documental y archivo? *</label><input type="number" min="0" class="form-control" name="q3_personal" required><div class="form-text">Registre el total de personas; esta pregunta es informativa y no suma puntaje por sí sola.</div><label class="form-label mt-2">Observaciones sobre perfiles, dedicación o suficiencia del equipo</label><textarea class="form-control" name="q3_observaciones" rows="2"></textarea></div>
       <div><label class="form-label fw-semibold">4. ¿Las condiciones de almacenamiento, acceso y protección de los depósitos de archivo son adecuadas? *</label><select class="form-select" name="q4_depositos" id="q4_depositos" required><option value="">Seleccione</option><option>Sí</option><option>Parcialmente</option><option>No</option><option>No se tiene información</option></select><div class="conditional mt-3" data-show="q4_depositos=Parcialmente,q4_depositos=No"><label class="form-label">Describa las principales deficiencias o riesgos identificados</label><textarea class="form-control" name="q4_riesgos" rows="2"></textarea></div><label class="form-label mt-3">Evidencia (enlace o referencia documental)</label><input class="form-control" name="evidencia_q4"></div>
     </div></section>
+    <div class="step-navigation d-flex align-items-center justify-content-between gap-2 mb-4" data-step-nav="3">
+      <button type="button" class="btn btn-outline-secondary" data-step-prev="3" >Anterior</button>
+      <span class="small text-muted">Sección 3 de 6 · Los cambios se guardan automáticamente</span>
+      <button type="button" class="btn btn-primary" data-step-next="3" >Siguiente <span aria-hidden="true">→</span></button>
+    </div>
 
-    <div class="section-header mt-4"><div><h2>D. PROCESOS DE GESTIÓN DOCUMENTAL</h2></div></div><section class="card form-card mb-4"><div class="card-body">
+    <div class="section-header mt-4" data-step-header="4"><div><h2>D. PROCESOS DE GESTIÓN DOCUMENTAL</h2></div></div><section class="card form-card mb-4" data-step-panel="4"><div class="card-body">
       <div class="mb-4"><label class="form-label fw-semibold">5. ¿Cuál es el estado de las Tablas de Retención Documental (TRD)? *</label><select class="form-select" name="q5_trd" id="q5_trd" required><option value="">Seleccione</option><option>No elaboradas</option><option>En elaboración</option><option>En evaluación</option><option>Convalidadas</option><option>En implementación</option><option>Implementadas</option><option>Requieren actualización</option><option>No aplica</option><option>No se tiene información</option></select><div class="conditional mt-3" data-show="q5_trd=En elaboración"><label class="form-label">¿Qué avance o etapa falta completar?</label><textarea class="form-control" name="q5_avance" rows="2"></textarea></div><div class="conditional mt-3" data-show="q5_trd=En evaluación"><label class="form-label">¿Ante qué instancia se encuentran en evaluación y desde cuándo?</label><textarea class="form-control" name="q5_evaluacion" rows="2"></textarea></div><div class="conditional mt-3" data-show="q5_trd=Convalidadas,q5_trd=En implementación,q5_trd=Implementadas"><label class="form-label">¿Se cuenta con acto/constancia de convalidación y evidencia de implementación?</label><select class="form-select" name="q5_evidencia_estado"><option value="">Seleccione</option><option>Sí, ambas</option><option>Solo convalidación</option><option>Solo implementación</option><option>No se dispone de evidencia</option></select></div><div class="conditional mt-3" data-show="q5_trd=Requieren actualización"><label class="form-label">¿Qué motivó la necesidad de actualización?</label><textarea class="form-control" name="q5_actualizacion" rows="2"></textarea></div><label class="form-label mt-3">Evidencia (enlace o referencia documental)</label><input class="form-control" name="evidencia_q5"></div>
       <div><label class="form-label fw-semibold">6. ¿Cuáles procesos cuentan con procedimientos documentados o evidencias de ejecución? *</label><div class="row g-2">{% for item in ['Planeación','Producción','Gestión y trámite','Organización','Transferencias','Disposición final','Preservación a largo plazo','Valoración'] %}<div class="col-md-6"><div class="form-check"><input class="form-check-input" type="checkbox" name="q6_procesos" value="{{ item }}" id="p{{ loop.index }}"><label class="form-check-label" for="p{{ loop.index }}">{{ item }}</label></div></div>{% endfor %}</div><label class="form-label mt-3">Observaciones / evidencias</label><textarea class="form-control" name="evidencia_q6" rows="2"></textarea><div class="form-text">Selección múltiple. Esta pregunta es descriptiva en el piloto.</div></div>
     </div></section>
+    <div class="step-navigation d-flex align-items-center justify-content-between gap-2 mb-4" data-step-nav="4">
+      <button type="button" class="btn btn-outline-secondary" data-step-prev="4" >Anterior</button>
+      <span class="small text-muted">Sección 4 de 6 · Los cambios se guardan automáticamente</span>
+      <button type="button" class="btn btn-primary" data-step-next="4" >Siguiente <span aria-hidden="true">→</span></button>
+    </div>
 
-    <div class="section-header mt-4"><div><h2>E. TECNOLÓGICO</h2></div></div><section class="card form-card mb-4"><div class="card-body">
+    <div class="section-header mt-4" data-step-header="5"><div><h2>E. TECNOLÓGICO</h2></div></div><section class="card form-card mb-4" data-step-panel="5"><div class="card-body">
       <div class="mb-4"><label class="form-label fw-semibold">7. ¿La entidad utiliza un SGDEA o sistema equivalente para controlar el ciclo de vida y la trazabilidad documental? *</label><select class="form-select" name="q7_sgdea" id="q7_sgdea" required><option value="">Seleccione</option><option>Sí</option><option>Parcialmente</option><option>No</option><option>No se tiene información</option></select><div class="conditional mt-3" data-show="q7_sgdea=Sí,q7_sgdea=Parcialmente"><label class="form-label">Nombre del sistema y procesos que cubre</label><textarea class="form-control" name="q7_sistema_detalle" rows="2"></textarea><label class="form-label mt-2">¿Cuenta con documentación, soporte o evidencia de operación?</label><select class="form-select" name="q7_soporte"><option value="">Seleccione</option><option>Sí</option><option>Parcialmente</option><option>No</option></select></div><div class="conditional mt-3" data-show="q7_sgdea=No"><label class="form-label">¿Cuál es la principal limitación para su implementación?</label><textarea class="form-control" name="q7_limitacion" rows="2"></textarea></div><label class="form-label mt-3">Evidencia (enlace o referencia documental)</label><input class="form-control" name="evidencia_q7"></div>
       <div><label class="form-label fw-semibold">8. ¿Qué mecanismos de seguridad y preservación digital utiliza la entidad? *</label><div class="row g-2">{% for item in ['Copias de seguridad verificadas','Controles de acceso','Registros de auditoría','Verificación de integridad','Migración de formatos','Plan de preservación digital','Ninguno','No se tiene información'] %}<div class="col-md-6"><div class="form-check"><input class="form-check-input proteccion" type="checkbox" name="q8_protecciones" value="{{ item }}" id="s{{ loop.index }}"><label class="form-check-label" for="s{{ loop.index }}">{{ item }}</label></div></div>{% endfor %}</div><label class="form-label mt-3">Observaciones / evidencia</label><textarea class="form-control" name="evidencia_q8" rows="2"></textarea><div class="form-text">Selección múltiple; si selecciona “Ninguno” o “No se tiene información”, no seleccione otras opciones.</div></div>
     </div></section>
+    <div class="step-navigation d-flex align-items-center justify-content-between gap-2 mb-4" data-step-nav="5">
+      <button type="button" class="btn btn-outline-secondary" data-step-prev="5" >Anterior</button>
+      <span class="small text-muted">Sección 5 de 6 · Los cambios se guardan automáticamente</span>
+      <button type="button" class="btn btn-primary" data-step-next="5" >Siguiente <span aria-hidden="true">→</span></button>
+    </div>
 
-    <div class="section-header mt-4"><div><h2>F. CULTURAL</h2></div></div><section class="card form-card mb-4"><div class="card-body">
+    <div class="section-header mt-4" data-step-header="6"><div><h2>F. CULTURAL</h2></div></div><section class="card form-card mb-4" data-step-panel="6"><div class="card-body">
       <div class="mb-4"><label class="form-label fw-semibold">9. ¿Cómo se desarrollan las actividades de capacitación y sensibilización en gestión documental? *</label><select class="form-select" name="q9_capacitacion" id="q9_capacitacion" required><option value="">Seleccione</option><option>No se realiza</option><option>Ocasional</option><option>Planificada y periódica</option><option>No se tiene información</option></select><div class="conditional mt-3" data-show="q9_capacitacion=Ocasional,q9_capacitacion=Planificada y periódica"><label class="form-label">Temas, población objetivo y frecuencia</label><textarea class="form-control" name="q9_detalle" rows="2"></textarea></div><div class="conditional mt-3" data-show="q9_capacitacion=No se realiza"><label class="form-label">¿Qué dificulta desarrollar estas actividades?</label><textarea class="form-control" name="q9_barreras" rows="2"></textarea></div><label class="form-label mt-3">Evidencia (enlace o referencia documental)</label><input class="form-control" name="evidencia_q9"></div>
       <div><label class="form-label fw-semibold">10. ¿Cuál considera que es la acción prioritaria para mejorar el acceso, apropiación y uso de la información en la entidad? *</label><textarea class="form-control" name="q10_prioridad" rows="4" required placeholder="Describa la acción prioritaria y, si es posible, el resultado esperado."></textarea><label class="form-label mt-3">Evidencia o documento relacionado (opcional)</label><input class="form-control" name="evidencia_q10"></div>
     </div></section>
-    <div class="alert alert-info"><strong>Nota metodológica:</strong> esta es una versión piloto. Las preguntas descriptivas no se puntúan automáticamente. La escala y los umbrales del resultado son preliminares y deben validarse antes de usarse como medición institucional definitiva.</div>
+    <div class="step-navigation d-flex align-items-center justify-content-between gap-2 mb-4" data-step-nav="6">
+      <button type="button" class="btn btn-outline-secondary" data-step-prev="6" >Anterior</button>
+      <span class="small text-muted">Sección 6 de 6 · Los cambios se guardan automáticamente</span>
+      <button type="button" class="btn btn-primary" data-step-next="6" hidden>Siguiente <span aria-hidden="true">→</span></button>
+    </div>
+    <div class="alert alert-info" data-step-final hidden><strong>Nota metodológica:</strong> esta es una versión piloto. Las preguntas descriptivas no se puntúan automáticamente. La escala y los umbrales del resultado son preliminares y deben validarse antes de usarse como medición institucional definitiva.</div>
     <div class="d-flex gap-2 justify-content-end mb-5"><button class="btn btn-outline-secondary" type="reset">Limpiar formulario</button><button class="btn btn-primary px-4" type="submit">Guardar diagnóstico</button></div>
   </form>
 </div>
@@ -159,7 +196,43 @@
       status.textContent='Borrador recuperado desde Neon. Continúe; los cambios se guardarán automáticamente.';
     }catch(e){recoveryStatus.textContent='No se pudo recuperar. Compruebe la conexión y vuelva a intentarlo.'}
   });
-  form.addEventListener('submit',e=>{if(!form.checkValidity()){e.preventDefault();form.classList.add('was-validated');form.querySelector(':invalid')?.scrollIntoView({behavior:'smooth',block:'center'});return;}if(saveTimer)clearTimeout(saveTimer);});
+  form.addEventListener('submit',e=>{const invalid=[...form.querySelectorAll('input,select,textarea')].find(el=>el.willValidate&&!el.checkValidity());if(invalid){e.preventDefault();const panel=invalid.closest('[data-step-panel]');if(panel)showStep(Number(panel.dataset.stepPanel),false);invalid.reportValidity();invalid.focus({preventScroll:true});invalid.scrollIntoView({behavior:'smooth',block:'center'});return;}if(saveTimer)clearTimeout(saveTimer);});
+
+  // Navegación por secciones A–F. Antes de avanzar valida la sección actual y fuerza el guardado.
+  const stepCount=6; let currentStep=1;
+  function showStep(step, scroll=true){
+    currentStep=Math.max(1,Math.min(stepCount,step));
+    for(let i=1;i<=stepCount;i++){
+      const header=form.querySelector(`[data-step-header="${i}"]`);
+      const panel=form.querySelector(`[data-step-panel="${i}"]`);
+      const nav=form.querySelector(`[data-step-nav="${i}"]`);
+      if(header)header.hidden=i!==currentStep;
+      if(panel)panel.hidden=i!==currentStep;
+      if(nav)nav.hidden=i!==currentStep;
+    }
+    form.querySelectorAll('[data-step-final]').forEach(el=>el.hidden=currentStep!==stepCount);
+    if(scroll){const header=form.querySelector(`[data-step-header="${currentStep}"]`);header?.scrollIntoView({behavior:'smooth',block:'start'});}
+  }
+  async function saveBeforeContinue(){
+    if(saveTimer){clearTimeout(saveTimer);saveTimer=null;}
+    saveLocal(serializeForm());
+    if(navigator.onLine && !loadingDraft && !serverFinalized){
+      // Persiste inmediatamente antes de abandonar la sección.
+      const data=serializeForm(), serialized=JSON.stringify(data);
+      try{await serverSave(draftId,data);lastSerialized=serialized;saveLocal(data);status.textContent='Avance guardado. Puede continuar con la siguiente sección.';}
+      catch(e){status.textContent='Avance guardado en este navegador; no se pudo sincronizar con Neon. Se reintentará cuando haya conexión.';}
+    } else if(!serverFinalized){status.textContent='Avance guardado temporalmente en este navegador. Se sincronizará cuando haya conexión.';}
+  }
+  form.querySelectorAll('[data-step-next]').forEach(button=>button.addEventListener('click',async()=>{
+    const step=Number(button.dataset.stepNext);
+    const panel=form.querySelector(`[data-step-panel="${step}"]`);
+    const invalid=[...panel.querySelectorAll('input,select,textarea')].find(el=>el.willValidate && !el.checkValidity());
+    if(invalid){invalid.reportValidity();invalid.focus({preventScroll:true});invalid.scrollIntoView({behavior:'smooth',block:'center'});return;}
+    button.disabled=true;const old=button.innerHTML;button.innerHTML='Guardando…';
+    await saveBeforeContinue();showStep(step+1);button.innerHTML=old;button.disabled=false;
+  }));
+  form.querySelectorAll('[data-step-prev]').forEach(button=>button.addEventListener('click',()=>showStep(Number(button.dataset.stepPrev)-1)));
+  showStep(1,false);
   loadDraft();})();
 </script>
 {% endblock %}
