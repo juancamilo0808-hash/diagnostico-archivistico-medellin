@@ -10,14 +10,16 @@
   </div>
   <form id="censoForm" method="POST" novalidate>
     <input type="hidden" name="borrador_id" id="borrador_id" value="">
-    <div id="autosaveStatus" class="alert alert-light py-2 small" role="status" aria-live="polite">El autoguardado se activará al comenzar a diligenciar.</div>
-    <div class="card mb-4 border-primary-subtle"><div class="card-body">
+    <div id="autosaveStatus" class="alert alert-light py-2 small" role="status" aria-live="polite" hidden>El autoguardado se activará al comenzar a diligenciar.</div>
+    <div hidden aria-hidden="true">
+      <div class="card mb-4 border-primary-subtle"><div class="card-body">
       <h2 class="h6 mb-2">Guardar y recuperar un diagnóstico parcial</h2>
       <p class="small text-muted mb-2">Conserve este código privado. Le permitirá recuperar el borrador desde otro computador. No lo comparta con personas no autorizadas.</p>
       <div class="input-group mb-3"><input id="codigoRecuperacion" class="form-control" type="text" readonly aria-label="Código privado de recuperación"><button class="btn btn-outline-primary" type="button" id="copiarCodigo">Copiar código</button></div>
       <div class="row g-2 align-items-end"><div class="col-md-8"><label class="form-label" for="codigoParaRecuperar">¿Ya tiene un código de recuperación?</label><input id="codigoParaRecuperar" class="form-control" type="text" autocomplete="off" placeholder="Pegue aquí el código de otro equipo"></div><div class="col-md-4"><button class="btn btn-outline-secondary w-100" type="button" id="recuperarCodigo">Recuperar borrador</button></div></div>
       <div id="recuperacionStatus" class="small mt-2" role="status" aria-live="polite"></div>
     </div></div>
+    </div>
     <div class="section-header mt-4"><div><h2>A. IDENTIFICACIÓN Y CARACTERIZACIÓN</h2></div></div><section class="card form-card mb-4"><div class="card-body"><div class="row g-3">
       <div class="col-md-8"><label class="form-label" for="nombre_entidad">Nombre oficial de la entidad *</label><input class="form-control" id="nombre_entidad" name="nombre_entidad" autocomplete="off" required><div id="sugerencias" class="list-group position-relative"></div></div>
       <div class="col-md-4"><label class="form-label" for="nit_entidad">NIT *</label><input class="form-control" id="nit_entidad" name="nit_entidad" required></div>
