@@ -4,11 +4,55 @@
 {% block content %}
 <div class="container py-4">
 <style>
+  /* ------------------------------------------------------------------
+     Navegación por secciones (A–F).
+     - Sin JavaScript: el formulario se muestra completo, con un único
+       botón de envío al final (modo de respaldo, sin botones duplicados).
+     - Con JavaScript: el formulario recibe la clase .is-wizard y solo la
+       sección activa se muestra y ocupa espacio en el documento.
+     ------------------------------------------------------------------ */
   [hidden] { display: none !important; }
-  [data-step-header], [data-step-panel], [data-step-nav] { transition: opacity .15s ease; }
-  .step-navigation { border-top: 1px solid #d7e1eb; padding-top: 1rem; }
-  .step-navigation .btn { min-width: 120px; }
-  #autosaveStatus { position: sticky; top: .5rem; z-index: 5; }
+  .is-wizard .wizard-step:not(.is-active) { display: none !important; }
+  .is-wizard .wizard-final-only:not(.is-visible) { display: none !important; }
+  .wizard-js-only { display: none !important; }
+  .is-wizard .wizard-js-only:not([hidden]) { display: block !important; }
+  .is-wizard .wizard-nav .wizard-js-only:not([hidden]) { display: inline-flex !important; }
+
+  .wizard-progress { margin-bottom: 1rem; }
+  .wizard-pills { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .4rem; list-style: none; padding: 0; margin: 0 0 .6rem; }
+  .wizard-pill { display: flex; align-items: center; gap: .45rem; padding: .45rem .55rem; border: 1px solid var(--cda-border, #dce4ec); border-radius: 10px; background: #fff; color: var(--cda-muted, #667789); font-size: .78rem; line-height: 1.2; min-width: 0; }
+  .wizard-pill-letter { flex: 0 0 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--cda-blue-light, #eaf3fb); color: var(--cda-blue, #123b65); font-weight: 800; }
+  .wizard-pill-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .wizard-pill.is-done .wizard-pill-letter { background: var(--cda-green, #27845b); color: #fff; }
+  .wizard-pill.is-current { border-color: var(--cda-blue, #123b65); color: var(--cda-blue-dark, #092947); font-weight: 700; box-shadow: 0 0 0 2px rgba(18,59,101,.12); }
+  .wizard-pill.is-current .wizard-pill-letter { background: var(--cda-blue, #123b65); color: #fff; }
+  .wizard-bar { height: 6px; background: #e5edf4; border-radius: 30px; overflow: hidden; }
+  .wizard-bar > span { display: block; height: 100%; width: 16.66%; background: var(--cda-gold, #d6a62c); transition: width .25s ease; }
+
+  .autosave-status { display: flex; align-items: center; gap: .5rem; padding: .45rem .75rem; margin-bottom: 1rem; font-size: .85rem; border-radius: 10px; border: 1px solid var(--cda-border, #dce4ec); background: #fff; color: var(--cda-muted, #667789); }
+  .autosave-status::before { content: ""; flex: 0 0 9px; height: 9px; border-radius: 50%; background: #9aa9b8; }
+  .autosave-status[data-state="saving"]::before { background: #3d8bfd; }
+  .autosave-status[data-state="ok"] { color: #1d6a49; }
+  .autosave-status[data-state="ok"]::before { background: var(--cda-green, #27845b); }
+  .autosave-status[data-state="pending"] { color: #7a5a00; background: #fffaeb; border-color: #f1dca0; }
+  .autosave-status[data-state="pending"]::before { background: var(--cda-gold, #d6a62c); }
+  .autosave-status[data-state="error"] { color: #8a1c24; background: #fdf1f2; border-color: #f0c2c6; }
+  .autosave-status[data-state="error"]::before { background: #dc3545; }
+
+  .wizard-nav { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; border-top: 1px solid #d7e1eb; padding-top: 1rem; margin-bottom: 3rem; }
+  .wizard-nav .btn { min-width: 120px; }
+  .wizard-nav-end { display: flex; gap: .5rem; margin-left: auto; flex-wrap: wrap; justify-content: flex-end; }
+  .wizard-counter { font-size: .85rem; color: var(--cda-muted, #667789); }
+  .wizard-step .section-header h2:focus { outline: none; }
+
+  @media (max-width: 767.98px) {
+    .wizard-pill { justify-content: center; padding: .4rem .2rem; }
+    .wizard-pill-text { display: none; }
+    .wizard-pill.is-current .wizard-pill-text { display: none; }
+    .wizard-nav .btn { min-width: 0; flex: 1 1 auto; }
+    .wizard-counter { order: -1; width: 100%; text-align: center; }
+    .wizard-nav-end { margin-left: 0; flex: 1 1 auto; }
+  }
 </style>
 
   <div class="mb-4">
@@ -18,16 +62,22 @@
   </div>
   <form id="censoForm" method="POST" novalidate>
     <input type="hidden" name="borrador_id" id="borrador_id" value="">
-    <div id="autosaveStatus" class="alert alert-light py-2 small" role="status" aria-live="polite" hidden>El autoguardado se activará al comenzar a diligenciar.</div>
-    <div hidden aria-hidden="true">
-      <div class="card mb-4 border-primary-subtle"><div class="card-body">
-      <h2 class="h6 mb-2">Guardar y recuperar un diagnóstico parcial</h2>
-      <p class="small text-muted mb-2">Conserve este código privado. Le permitirá recuperar el borrador desde otro computador. No lo comparta con personas no autorizadas.</p>
-      <div class="input-group mb-3"><input id="codigoRecuperacion" class="form-control" type="text" readonly aria-label="Código privado de recuperación"><button class="btn btn-outline-primary" type="button" id="copiarCodigo">Copiar código</button></div>
-      <div class="row g-2 align-items-end"><div class="col-md-8"><label class="form-label" for="codigoParaRecuperar">¿Ya tiene un código de recuperación?</label><input id="codigoParaRecuperar" class="form-control" type="text" autocomplete="off" placeholder="Pegue aquí el código de otro equipo"></div><div class="col-md-4"><button class="btn btn-outline-secondary w-100" type="button" id="recuperarCodigo">Recuperar borrador</button></div></div>
-      <div id="recuperacionStatus" class="small mt-2" role="status" aria-live="polite"></div>
-    </div></div>
+
+    <div class="wizard-progress wizard-js-only" aria-hidden="true">
+      <ol class="wizard-pills">
+        <li class="wizard-pill is-current" data-pill="1"><span class="wizard-pill-letter">A</span><span class="wizard-pill-text">Identificación</span></li>
+        <li class="wizard-pill" data-pill="2"><span class="wizard-pill-letter">B</span><span class="wizard-pill-text">Estratégico</span></li>
+        <li class="wizard-pill" data-pill="3"><span class="wizard-pill-letter">C</span><span class="wizard-pill-text">Administración de archivos</span></li>
+        <li class="wizard-pill" data-pill="4"><span class="wizard-pill-letter">D</span><span class="wizard-pill-text">Procesos de gestión documental</span></li>
+        <li class="wizard-pill" data-pill="5"><span class="wizard-pill-letter">E</span><span class="wizard-pill-text">Tecnológico</span></li>
+        <li class="wizard-pill" data-pill="6"><span class="wizard-pill-letter">F</span><span class="wizard-pill-text">Cultural</span></li>
+      </ol>
+      <div class="wizard-bar"><span id="wizardBar"></span></div>
     </div>
+    <div id="autosaveStatus" class="autosave-status wizard-js-only" role="status" aria-live="polite" data-state="idle">Los cambios se guardarán automáticamente mientras diligencia el formulario.</div>
+    <noscript><div class="alert alert-warning small">Su navegador tiene JavaScript desactivado: el formulario se muestra completo y el avance no se guarda automáticamente.</div></noscript>
+
+    <div class="wizard-step is-active" data-step="1" data-step-label="A. Identificación">
     <div class="section-header mt-4" data-step-header="1"><div><h2>A. IDENTIFICACIÓN Y CARACTERIZACIÓN</h2></div></div><section class="card form-card mb-4" data-step-panel="1"><div class="card-body"><div class="row g-3">
       <div class="col-md-8"><label class="form-label" for="nombre_entidad">Nombre oficial de la entidad *</label><input class="form-control" id="nombre_entidad" name="nombre_entidad" autocomplete="off" required><div id="sugerencias" class="list-group position-relative"></div></div>
       <div class="col-md-4"><label class="form-label" for="nit_entidad">NIT *</label><input class="form-control" id="nit_entidad" name="nit_entidad" required></div>
@@ -44,74 +94,67 @@
       <div class="col-md-4"><label class="form-label">Sitio web</label><input class="form-control" name="sitio_web" id="sitio_web"></div>
       <div class="col-md-8"><label class="form-label">Dirección</label><input class="form-control" name="direccion_entidad" id="direccion_entidad"></div>
     </div><small class="text-muted d-block mt-3">Los campos del directorio se precargan cuando hay coincidencia. Verifique y corrija la información antes de continuar.</small></div></section>
-    <div class="step-navigation d-flex align-items-center justify-content-between gap-2 mb-4" data-step-nav="1">
-      <button type="button" class="btn btn-outline-secondary" data-step-prev="1" hidden>Anterior</button>
-      <span class="small text-muted">Sección 1 de 6 · Los cambios se guardan automáticamente</span>
-      <button type="button" class="btn btn-primary" data-step-next="1" >Siguiente <span aria-hidden="true">→</span></button>
     </div>
-
+    <div class="wizard-step" data-step="2" data-step-label="B. Estratégico">
     <div class="section-header mt-4" data-step-header="2"><div><h2>B. ESTRATÉGICO</h2></div></div><section class="card form-card mb-4" data-step-panel="2"><div class="card-body">
       <div class="mb-4"><label class="form-label fw-semibold">1. ¿Cuál es el estado de la Política de Gestión Documental de la entidad? *</label><select class="form-select" name="q1_politica" id="q1_politica" required><option value="">Seleccione</option><option>No existe</option><option>En desarrollo</option><option>Aprobada</option><option>En implementación</option><option>Implementada y con seguimiento</option><option>No se tiene información</option></select>
       <div class="conditional mt-3" data-show="q1_politica=Aprobada,q1_politica=En implementación,q1_politica=Implementada y con seguimiento"><label class="form-label">¿Está aprobada mediante acto administrativo?</label><select class="form-select" name="q1_acto"><option value="">Seleccione</option><option>Sí</option><option>No</option><option>En trámite</option></select><div class="conditional mt-2" data-show="q1_acto=Sí"><label class="form-label">Número y fecha del acto administrativo</label><input class="form-control" name="q1_acto_detalle"></div></div>
       <div class="conditional mt-3" data-show="q1_politica=En desarrollo"><label class="form-label">¿En qué etapa se encuentra?</label><textarea class="form-control" name="q1_etapa" rows="2"></textarea></div><div class="conditional mt-3" data-show="q1_politica=No existe"><label class="form-label">¿Cuál es la principal razón por la que no existe?</label><textarea class="form-control" name="q1_razon" rows="2"></textarea></div><label class="form-label mt-3">Evidencia (enlace o referencia documental)</label><input class="form-control" name="evidencia_q1"></div>
       <div class="mb-3"><label class="form-label fw-semibold">2. ¿La entidad hace seguimiento al cumplimiento del PGD y establece acciones de mejora? *</label><select class="form-select" name="q2_seguimiento" id="q2_seguimiento" required><option value="">Seleccione</option><option>Sí</option><option>Parcialmente</option><option>No</option><option>No se tiene información</option></select><div class="conditional mt-3" data-show="q2_seguimiento=Sí"><label class="form-label">¿Qué mecanismo utiliza y dónde se registra el seguimiento?</label><textarea class="form-control" name="q2_mecanismo" rows="2"></textarea></div><div class="conditional mt-3" data-show="q2_seguimiento=No"><label class="form-label">¿El PGD está formulado aunque no se haga seguimiento?</label><select class="form-select" name="q2_pgd_formulado"><option value="">Seleccione</option><option>Sí</option><option>No</option><option>En elaboración</option><option>No se sabe</option></select></div><label class="form-label mt-3">Evidencia (enlace o referencia documental)</label><input class="form-control" name="evidencia_q2"></div>
     </div></section>
-    <div class="step-navigation d-flex align-items-center justify-content-between gap-2 mb-4" data-step-nav="2">
-      <button type="button" class="btn btn-outline-secondary" data-step-prev="2" >Anterior</button>
-      <span class="small text-muted">Sección 2 de 6 · Los cambios se guardan automáticamente</span>
-      <button type="button" class="btn btn-primary" data-step-next="2" >Siguiente <span aria-hidden="true">→</span></button>
     </div>
-
+    <div class="wizard-step" data-step="3" data-step-label="C. Administración de archivos">
     <div class="section-header mt-4" data-step-header="3"><div><h2>C. ADMINISTRACIÓN DE ARCHIVOS</h2></div></div><section class="card form-card mb-4" data-step-panel="3"><div class="card-body">
       <div class="mb-4"><label class="form-label fw-semibold">3. ¿Cuántas personas participan en las funciones de gestión documental y archivo? *</label><input type="number" min="0" class="form-control" name="q3_personal" required><div class="form-text">Registre el total de personas; esta pregunta es informativa y no suma puntaje por sí sola.</div><label class="form-label mt-2">Observaciones sobre perfiles, dedicación o suficiencia del equipo</label><textarea class="form-control" name="q3_observaciones" rows="2"></textarea></div>
       <div><label class="form-label fw-semibold">4. ¿Las condiciones de almacenamiento, acceso y protección de los depósitos de archivo son adecuadas? *</label><select class="form-select" name="q4_depositos" id="q4_depositos" required><option value="">Seleccione</option><option>Sí</option><option>Parcialmente</option><option>No</option><option>No se tiene información</option></select><div class="conditional mt-3" data-show="q4_depositos=Parcialmente,q4_depositos=No"><label class="form-label">Describa las principales deficiencias o riesgos identificados</label><textarea class="form-control" name="q4_riesgos" rows="2"></textarea></div><label class="form-label mt-3">Evidencia (enlace o referencia documental)</label><input class="form-control" name="evidencia_q4"></div>
     </div></section>
-    <div class="step-navigation d-flex align-items-center justify-content-between gap-2 mb-4" data-step-nav="3">
-      <button type="button" class="btn btn-outline-secondary" data-step-prev="3" >Anterior</button>
-      <span class="small text-muted">Sección 3 de 6 · Los cambios se guardan automáticamente</span>
-      <button type="button" class="btn btn-primary" data-step-next="3" >Siguiente <span aria-hidden="true">→</span></button>
     </div>
-
+    <div class="wizard-step" data-step="4" data-step-label="D. Procesos de gestión documental">
     <div class="section-header mt-4" data-step-header="4"><div><h2>D. PROCESOS DE GESTIÓN DOCUMENTAL</h2></div></div><section class="card form-card mb-4" data-step-panel="4"><div class="card-body">
       <div class="mb-4"><label class="form-label fw-semibold">5. ¿Cuál es el estado de las Tablas de Retención Documental (TRD)? *</label><select class="form-select" name="q5_trd" id="q5_trd" required><option value="">Seleccione</option><option>No elaboradas</option><option>En elaboración</option><option>En evaluación</option><option>Convalidadas</option><option>En implementación</option><option>Implementadas</option><option>Requieren actualización</option><option>No aplica</option><option>No se tiene información</option></select><div class="conditional mt-3" data-show="q5_trd=En elaboración"><label class="form-label">¿Qué avance o etapa falta completar?</label><textarea class="form-control" name="q5_avance" rows="2"></textarea></div><div class="conditional mt-3" data-show="q5_trd=En evaluación"><label class="form-label">¿Ante qué instancia se encuentran en evaluación y desde cuándo?</label><textarea class="form-control" name="q5_evaluacion" rows="2"></textarea></div><div class="conditional mt-3" data-show="q5_trd=Convalidadas,q5_trd=En implementación,q5_trd=Implementadas"><label class="form-label">¿Se cuenta con acto/constancia de convalidación y evidencia de implementación?</label><select class="form-select" name="q5_evidencia_estado"><option value="">Seleccione</option><option>Sí, ambas</option><option>Solo convalidación</option><option>Solo implementación</option><option>No se dispone de evidencia</option></select></div><div class="conditional mt-3" data-show="q5_trd=Requieren actualización"><label class="form-label">¿Qué motivó la necesidad de actualización?</label><textarea class="form-control" name="q5_actualizacion" rows="2"></textarea></div><label class="form-label mt-3">Evidencia (enlace o referencia documental)</label><input class="form-control" name="evidencia_q5"></div>
       <div><label class="form-label fw-semibold">6. ¿Cuáles procesos cuentan con procedimientos documentados o evidencias de ejecución? *</label><div class="row g-2">{% for item in ['Planeación','Producción','Gestión y trámite','Organización','Transferencias','Disposición final','Preservación a largo plazo','Valoración'] %}<div class="col-md-6"><div class="form-check"><input class="form-check-input" type="checkbox" name="q6_procesos" value="{{ item }}" id="p{{ loop.index }}"><label class="form-check-label" for="p{{ loop.index }}">{{ item }}</label></div></div>{% endfor %}</div><label class="form-label mt-3">Observaciones / evidencias</label><textarea class="form-control" name="evidencia_q6" rows="2"></textarea><div class="form-text">Selección múltiple. Esta pregunta es descriptiva en el piloto.</div></div>
     </div></section>
-    <div class="step-navigation d-flex align-items-center justify-content-between gap-2 mb-4" data-step-nav="4">
-      <button type="button" class="btn btn-outline-secondary" data-step-prev="4" >Anterior</button>
-      <span class="small text-muted">Sección 4 de 6 · Los cambios se guardan automáticamente</span>
-      <button type="button" class="btn btn-primary" data-step-next="4" >Siguiente <span aria-hidden="true">→</span></button>
     </div>
-
+    <div class="wizard-step" data-step="5" data-step-label="E. Tecnológico">
     <div class="section-header mt-4" data-step-header="5"><div><h2>E. TECNOLÓGICO</h2></div></div><section class="card form-card mb-4" data-step-panel="5"><div class="card-body">
       <div class="mb-4"><label class="form-label fw-semibold">7. ¿La entidad utiliza un SGDEA o sistema equivalente para controlar el ciclo de vida y la trazabilidad documental? *</label><select class="form-select" name="q7_sgdea" id="q7_sgdea" required><option value="">Seleccione</option><option>Sí</option><option>Parcialmente</option><option>No</option><option>No se tiene información</option></select><div class="conditional mt-3" data-show="q7_sgdea=Sí,q7_sgdea=Parcialmente"><label class="form-label">Nombre del sistema y procesos que cubre</label><textarea class="form-control" name="q7_sistema_detalle" rows="2"></textarea><label class="form-label mt-2">¿Cuenta con documentación, soporte o evidencia de operación?</label><select class="form-select" name="q7_soporte"><option value="">Seleccione</option><option>Sí</option><option>Parcialmente</option><option>No</option></select></div><div class="conditional mt-3" data-show="q7_sgdea=No"><label class="form-label">¿Cuál es la principal limitación para su implementación?</label><textarea class="form-control" name="q7_limitacion" rows="2"></textarea></div><label class="form-label mt-3">Evidencia (enlace o referencia documental)</label><input class="form-control" name="evidencia_q7"></div>
       <div><label class="form-label fw-semibold">8. ¿Qué mecanismos de seguridad y preservación digital utiliza la entidad? *</label><div class="row g-2">{% for item in ['Copias de seguridad verificadas','Controles de acceso','Registros de auditoría','Verificación de integridad','Migración de formatos','Plan de preservación digital','Ninguno','No se tiene información'] %}<div class="col-md-6"><div class="form-check"><input class="form-check-input proteccion" type="checkbox" name="q8_protecciones" value="{{ item }}" id="s{{ loop.index }}"><label class="form-check-label" for="s{{ loop.index }}">{{ item }}</label></div></div>{% endfor %}</div><label class="form-label mt-3">Observaciones / evidencia</label><textarea class="form-control" name="evidencia_q8" rows="2"></textarea><div class="form-text">Selección múltiple; si selecciona “Ninguno” o “No se tiene información”, no seleccione otras opciones.</div></div>
     </div></section>
-    <div class="step-navigation d-flex align-items-center justify-content-between gap-2 mb-4" data-step-nav="5">
-      <button type="button" class="btn btn-outline-secondary" data-step-prev="5" >Anterior</button>
-      <span class="small text-muted">Sección 5 de 6 · Los cambios se guardan automáticamente</span>
-      <button type="button" class="btn btn-primary" data-step-next="5" >Siguiente <span aria-hidden="true">→</span></button>
     </div>
-
+    <div class="wizard-step" data-step="6" data-step-label="F. Cultural">
     <div class="section-header mt-4" data-step-header="6"><div><h2>F. CULTURAL</h2></div></div><section class="card form-card mb-4" data-step-panel="6"><div class="card-body">
       <div class="mb-4"><label class="form-label fw-semibold">9. ¿Cómo se desarrollan las actividades de capacitación y sensibilización en gestión documental? *</label><select class="form-select" name="q9_capacitacion" id="q9_capacitacion" required><option value="">Seleccione</option><option>No se realiza</option><option>Ocasional</option><option>Planificada y periódica</option><option>No se tiene información</option></select><div class="conditional mt-3" data-show="q9_capacitacion=Ocasional,q9_capacitacion=Planificada y periódica"><label class="form-label">Temas, población objetivo y frecuencia</label><textarea class="form-control" name="q9_detalle" rows="2"></textarea></div><div class="conditional mt-3" data-show="q9_capacitacion=No se realiza"><label class="form-label">¿Qué dificulta desarrollar estas actividades?</label><textarea class="form-control" name="q9_barreras" rows="2"></textarea></div><label class="form-label mt-3">Evidencia (enlace o referencia documental)</label><input class="form-control" name="evidencia_q9"></div>
       <div><label class="form-label fw-semibold">10. ¿Cuál considera que es la acción prioritaria para mejorar el acceso, apropiación y uso de la información en la entidad? *</label><textarea class="form-control" name="q10_prioridad" rows="4" required placeholder="Describa la acción prioritaria y, si es posible, el resultado esperado."></textarea><label class="form-label mt-3">Evidencia o documento relacionado (opcional)</label><input class="form-control" name="evidencia_q10"></div>
     </div></section>
-    <div class="step-navigation d-flex align-items-center justify-content-between gap-2 mb-4" data-step-nav="6">
-      <button type="button" class="btn btn-outline-secondary" data-step-prev="6" >Anterior</button>
-      <span class="small text-muted">Sección 6 de 6 · Los cambios se guardan automáticamente</span>
-      <button type="button" class="btn btn-primary" data-step-next="6" hidden>Siguiente <span aria-hidden="true">→</span></button>
     </div>
-    <div class="alert alert-info" data-step-final hidden><strong>Nota metodológica:</strong> esta es una versión piloto. Las preguntas descriptivas no se puntúan automáticamente. La escala y los umbrales del resultado son preliminares y deben validarse antes de usarse como medición institucional definitiva.</div>
-    <div class="d-flex gap-2 justify-content-end mb-5"><button class="btn btn-outline-secondary" type="reset">Limpiar formulario</button><button class="btn btn-primary px-4" type="submit">Guardar diagnóstico</button></div>
+
+    <div class="alert alert-info wizard-final-only"><strong>Nota metodológica:</strong> esta es una versión piloto. Las preguntas descriptivas no se puntúan automáticamente. La escala y los umbrales del resultado son preliminares y deben validarse antes de usarse como medición institucional definitiva.</div>
+
+    <!-- Única barra de navegación del formulario. Con JavaScript muestra
+         «Anterior» (desde la sección B), «Siguiente» (hasta la sección E) y, solo
+         en la sección F, «Limpiar formulario» y «Guardar diagnóstico». -->
+    <div class="wizard-nav" id="wizardNav">
+      <button type="button" class="btn btn-outline-secondary wizard-js-only" id="btnPrev" hidden><span aria-hidden="true">←</span> Anterior</button>
+      <span class="wizard-counter wizard-js-only" id="wizardCounter">Sección 1 de 6</span>
+      <div class="wizard-nav-end">
+        <button type="reset" class="btn btn-outline-secondary wizard-final-only" id="btnReset">Limpiar formulario</button>
+        <button type="button" class="btn btn-primary wizard-js-only" id="btnNext">Siguiente <span aria-hidden="true">→</span></button>
+        <button type="submit" class="btn btn-primary px-4 wizard-final-only" id="btnSubmit">Guardar diagnóstico</button>
+      </div>
+    </div>
   </form>
 </div>
 <script>
 (() => {
+ 'use strict';
  const form=document.getElementById('censoForm');
+ if(!form)return;
+
+ /* ===== 1. Reglas condicionales y búsqueda de entidades (lógica original) ===== */
  function refreshConditional(){
   document.querySelectorAll('.conditional').forEach(box=>{
    const rules=(box.dataset.show||'').split(',').map(x=>x.trim()).filter(Boolean);
-   const visible=rules.some(rule=>{const i=rule.indexOf('='); if(i<0)return false; const el=document.getElementById(rule.slice(0,i)); return el && el.value===rule.slice(i+1)});
+   const visible=rules.some(rule=>{const i=rule.indexOf('='); if(i<0)return false; const key=rule.slice(0,i); const el=document.getElementById(key)||form.querySelector(`[name="${CSS.escape(key)}"]`); return el && !el.disabled && el.value===rule.slice(i+1)});
    box.hidden=!visible;
    box.querySelectorAll('input,select,textarea').forEach(el=>{el.disabled=!visible; if(!visible)el.required=false;});
   });
@@ -128,112 +171,265 @@
    .forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
   clearTimeout(timer);const q=name.value.trim();if(q.length<2){box.innerHTML='';return}
   timer=setTimeout(async()=>{try{const res=await fetch(`/api/buscar-entidades?q=${encodeURIComponent(q)}`);const items=await res.json();box.innerHTML='';items.forEach(item=>{const b=document.createElement('button');b.type='button';b.className='list-group-item list-group-item-action';b.textContent=item.nombre+(item.sigla?' ('+item.sigla+')':'');b.addEventListener('click',()=>{name.value=item.nombre;const d=item.datos||{};const map={'Código':'codigo_entidad','Sigla':'sigla_entidad','Grupo / relación con el Distrito':'grupo_relacion','Clasificación preliminar':'clasificacion_preliminar','Ámbito':'ambito','Responsable de gestión documental':'responsable_nombre','Cargo Responsable GD':'responsable_cargo','Correo Responsable GD':'responsable_correo','Teléfono Responsable GD':'telefono_responsable','Sitio web / fuente':'sitio_web','Dirección':'direccion_entidad'};Object.entries(map).forEach(([k,id])=>{const el=document.getElementById(id);if(el&&d[k])el.value=d[k]});box.innerHTML=''});box.appendChild(b)})}catch(e){console.error('No se pudo consultar el directorio',e)}},220)});
-  const status=document.getElementById('autosaveStatus');
-  const draftInput=document.getElementById('borrador_id');
-  const recoveryDisplay=document.getElementById('codigoRecuperacion');
-  const recoveryInput=document.getElementById('codigoParaRecuperar');
-  const recoveryStatus=document.getElementById('recuperacionStatus');
-  const storageKey='diagnosticoArchivisticoDraftId';
-  const localDataKey=id=>'diagnosticoArchivisticoDraftData:'+id;
-  function newDraftId(){
-    if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
-    if(window.crypto && crypto.getRandomValues){const bytes=new Uint8Array(24);crypto.getRandomValues(bytes);return Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('')}
-    throw new Error('Este navegador no permite generar un código seguro. Actualice el navegador para continuar.');
+
+ /* ===== 2. Navegación por secciones A–F =====
+    Se activa antes que el autoguardado, de modo que un error de almacenamiento
+    o de red nunca deje todas las secciones y botones visibles a la vez. */
+ const STEP_COUNT=6;
+ const steps=[...form.querySelectorAll('.wizard-step')];
+ const pills=[...form.querySelectorAll('[data-pill]')];
+ const btnPrev=document.getElementById('btnPrev');
+ const btnNext=document.getElementById('btnNext');
+ const btnSubmit=document.getElementById('btnSubmit');
+ const counter=document.getElementById('wizardCounter');
+ const bar=document.getElementById('wizardBar');
+ const status=document.getElementById('autosaveStatus');
+ // Grupos de casillas que app.py exige como obligatorios (q6_procesos y q8_protecciones).
+ const REQUIRED_GROUPS=['q6_procesos','q8_protecciones'];
+ let currentStep=1;
+ let autosave={flush:async()=>{},schedule:()=>{},stop:()=>{},rememberStep:()=>{}};
+
+ const fieldsOf=container=>[...container.querySelectorAll('input,select,textarea')];
+ function syncCustomValidity(){
+  REQUIRED_GROUPS.forEach(name=>{
+   const boxes=[...form.querySelectorAll(`input[type="checkbox"][name="${name}"]`)];
+   const any=boxes.some(b=>b.checked);
+   boxes.forEach((b,i)=>b.setCustomValidity(i===0&&!any?'Seleccione al menos una opción.':''));
+  });
+  fieldsOf(form).forEach(el=>{
+   if(el.disabled||el.readOnly)return;
+   const isText=el.tagName==='TEXTAREA'||['text','email','search','tel','url'].includes(el.type);
+   if(!isText)return;
+   let msg='';
+   if(el.required&&el.value!==''&&el.value.trim()==='')msg='Este campo no puede quedar en blanco.';
+   else if(el.name==='responsable_correo'&&el.value.trim()!==''){
+    const v=el.value.trim();
+    if(!v.includes('@')||!v.split('@').pop().includes('.'))msg='Ingrese un correo institucional válido (ejemplo: nombre@entidad.gov.co).';
+   }
+   el.setCustomValidity(msg);
+  });
+ }
+ function invalidFields(container){
+  syncCustomValidity();
+  return fieldsOf(container).filter(el=>el.willValidate&&!el.checkValidity());
+ }
+ function markInvalid(list,container){
+  fieldsOf(container).forEach(el=>el.classList.remove('is-invalid'));
+  list.forEach(el=>{
+   if(el.type==='checkbox')form.querySelectorAll(`input[type="checkbox"][name="${el.name}"]`).forEach(b=>b.classList.add('is-invalid'));
+   else el.classList.add('is-invalid');
+  });
+ }
+ function reportFirst(el){
+  el.scrollIntoView({behavior:'smooth',block:'center'});
+  el.focus({preventScroll:true});
+  el.reportValidity();
+ }
+ function clearInvalid(el){
+  if(!el||!el.classList)return;
+  if(el.type==='checkbox'&&REQUIRED_GROUPS.includes(el.name)){
+   syncCustomValidity();
+   form.querySelectorAll(`input[type="checkbox"][name="${el.name}"]`).forEach(b=>b.classList.remove('is-invalid'));
+  }else el.classList.remove('is-invalid');
+ }
+ form.addEventListener('input',e=>clearInvalid(e.target));
+ form.addEventListener('change',e=>clearInvalid(e.target));
+
+ function showStep(n,{focus=true,scroll=true}={}){
+  currentStep=Math.max(1,Math.min(STEP_COUNT,Number(n)||1));
+  let active=null;
+  steps.forEach(s=>{const on=Number(s.dataset.step)===currentStep;s.classList.toggle('is-active',on);if(on)active=s;});
+  const last=currentStep===STEP_COUNT;
+  btnPrev.hidden=currentStep===1;
+  btnNext.hidden=last;
+  form.querySelectorAll('.wizard-final-only').forEach(el=>el.classList.toggle('is-visible',last));
+  counter.textContent=`Sección ${currentStep} de ${STEP_COUNT}`+(active&&active.dataset.stepLabel?` · ${active.dataset.stepLabel}`:'');
+  bar.style.width=(currentStep/STEP_COUNT*100).toFixed(2)+'%';
+  pills.forEach(p=>{const i=Number(p.dataset.pill);p.classList.toggle('is-current',i===currentStep);p.classList.toggle('is-done',i<currentStep);});
+  autosave.rememberStep(currentStep);
+  if(scroll)form.scrollIntoView({behavior:'smooth',block:'start'});
+  if(focus&&active){const h=active.querySelector('h2');if(h){h.tabIndex=-1;h.focus({preventScroll:true});}}
+ }
+
+ btnNext.addEventListener('click',async()=>{
+  const active=steps[currentStep-1];
+  const bad=invalidFields(active);
+  markInvalid(bad,active);
+  if(bad.length){reportFirst(bad[0]);return;}
+  btnNext.disabled=true;const old=btnNext.innerHTML;btnNext.textContent='Guardando…';
+  try{await autosave.flush();}catch(e){}
+  finally{btnNext.innerHTML=old;btnNext.disabled=false;}
+  showStep(currentStep+1);
+ });
+ btnPrev.addEventListener('click',()=>{autosave.flush().catch(()=>{});showStep(currentStep-1);});
+
+ // Enter en un campo de texto no envía el formulario: avanza (o no hace nada en la última sección).
+ form.addEventListener('keydown',e=>{
+  if(e.key!=='Enter'||!form.classList.contains('is-wizard'))return;
+  const t=e.target;
+  if(!(t instanceof HTMLInputElement)||['checkbox','radio','button','submit','reset'].includes(t.type))return;
+  e.preventDefault();
+  if(t.id!=='nombre_entidad'&&currentStep<STEP_COUNT)btnNext.click();
+ });
+
+ let submitting=false;
+ form.addEventListener('submit',e=>{
+  if(submitting){e.preventDefault();return;}
+  if(form.classList.contains('is-wizard')&&currentStep<STEP_COUNT){e.preventDefault();btnNext.click();return;}
+  for(const s of steps){
+   const bad=invalidFields(s);
+   if(bad.length){
+    e.preventDefault();markInvalid(bad,s);
+    showStep(Number(s.dataset.step),{focus:false,scroll:false});
+    reportFirst(bad[0]);return;
+   }
   }
-  let draftId=localStorage.getItem(storageKey);
-  if(!draftId || !/^[A-Za-z0-9_-]{20,80}$/.test(draftId)){draftId=newDraftId();localStorage.setItem(storageKey,draftId)}
-  draftInput.value=draftId; recoveryDisplay.value=draftId;
-  let saveTimer=null, loadingDraft=true, lastSerialized='', serverFinalized=false;
+  submitting=true;autosave.stop();
+  btnSubmit.disabled=true;btnSubmit.textContent='Enviando…';
+ });
+ window.addEventListener('pageshow',e=>{if(e.persisted){submitting=false;btnSubmit.disabled=false;btnSubmit.textContent='Guardar diagnóstico';}});
+
+ form.addEventListener('reset',e=>{
+  if(!window.confirm('¿Desea borrar todas las respuestas de este diagnóstico? Esta acción no se puede deshacer.')){e.preventDefault();return;}
+  setTimeout(()=>{refreshConditional();fieldsOf(form).forEach(el=>el.classList.remove('is-invalid'));showStep(1);autosave.schedule(0);},0);
+ });
+
+ form.classList.add('is-wizard');
+ showStep(1,{focus:false,scroll:false});
+
+ /* ===== 3. Autoguardado (navegador + servidor /api/borrador/<codigo>) =====
+    Todo va dentro de try/catch: si el navegador bloquea el almacenamiento o
+    falla la red, la navegación sigue funcionando y se informa el estado real. */
+ function setStatus(state,text){status.dataset.state=state;status.textContent=text;}
+ try{
+  const draftInput=document.getElementById('borrador_id');
+  const KEY='diagnosticoArchivisticoDraftId';
+  const dataKey=id=>'diagnosticoArchivisticoDraftData:'+id;
+  const stepKey=id=>'diagnosticoArchivisticoStep:'+id;
+  const VALID=/^[A-Za-z0-9_-]{20,80}$/;
+  const MSG={
+   saving:'Guardando cambios…',
+   ok:'Avance guardado correctamente.',
+   offline:'Sin conexión. Los cambios quedan guardados localmente y están pendientes de sincronización.',
+   serverPending:'No fue posible sincronizar con el servidor. Los cambios quedan guardados localmente y están pendientes de sincronización.',
+   fail:'No fue posible guardar los cambios. Verifique la conexión antes de continuar.'
+  };
+
+  // Acceso seguro a localStorage: algunos navegadores (modo privado, políticas
+  // institucionales) lo bloquean y lanzan una excepción al consultarlo.
+  const memory={};
+  const store=(()=>{try{const s=window.localStorage,k='__diag_test__';s.setItem(k,'1');s.removeItem(k);return s;}catch(e){return null;}})();
+  const sGet=k=>{try{return store?store.getItem(k):(k in memory?memory[k]:null);}catch(e){return null;}};
+  const sSet=(k,v)=>{try{if(store)store.setItem(k,v);else memory[k]=String(v);return true;}catch(e){return false;}};
+  const sDel=k=>{try{if(store)store.removeItem(k);else delete memory[k];}catch(e){}};
+
+  function newDraftId(){
+   if(window.crypto&&crypto.randomUUID)return crypto.randomUUID();
+   if(window.crypto&&crypto.getRandomValues){const bytes=new Uint8Array(24);crypto.getRandomValues(bytes);return Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');}
+   throw new Error('Este navegador no permite generar un identificador seguro.');
+  }
+  let draftId=null;
+  function setDraft(id){draftId=id;draftInput.value=id;draftInput.defaultValue=id;sSet(KEY,id);}
+  const storedId=sGet(KEY);
+  setDraft(storedId&&VALID.test(storedId)?storedId:newDraftId());
+
   function serializeForm(){const data={};new FormData(form).forEach((value,key)=>{if(key==='borrador_id')return;if(Object.prototype.hasOwnProperty.call(data,key)){if(!Array.isArray(data[key]))data[key]=[data[key]];data[key].push(value)}else data[key]=value});return data}
   function restoreForm(data){Object.entries(data||{}).forEach(([name,value])=>{const controls=[...form.querySelectorAll(`[name="${CSS.escape(name)}"]`)];if(!controls.length)return;controls.forEach(el=>{if(el.type==='checkbox'||el.type==='radio'){const vals=Array.isArray(value)?value:[value];el.checked=vals.includes(el.value)}else if(el.type!=='submit'&&el.type!=='reset'){el.value=Array.isArray(value)?value[0]:value}})});refreshConditional();}
-  function saveLocal(datos){try{localStorage.setItem(localDataKey(draftId),JSON.stringify({datos,guardadoLocal:Date.now()}));return true}catch(e){return false}}
-  function readLocal(id){try{const raw=localStorage.getItem(localDataKey(id));return raw?JSON.parse(raw):null}catch(e){return null}}
-  async function serverLoad(id){const res=await fetch(`/api/borrador/${encodeURIComponent(id)}`,{cache:'no-store'});const data=await res.json();if(!res.ok||!data.ok)throw new Error(data.mensaje||'No se pudo consultar el borrador');return data}
-  async function serverSave(id,datos){const res=await fetch(`/api/borrador/${encodeURIComponent(id)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({datos})});const result=await res.json();if(!res.ok||!result.ok)throw new Error(result.mensaje||'No se pudo guardar');return result}
-  async function loadDraft(){
-    const local=readLocal(draftId);
-    try{
-      const remote=await serverLoad(draftId);
-      if(remote.finalizado){serverFinalized=true;status.textContent='Este código corresponde a un diagnóstico ya finalizado. No se realizarán más cambios sobre ese borrador.';form.querySelector('[type="submit"]').disabled=true;loadingDraft=false;return}
-      const remoteDate=remote.actualizado_en?Date.parse(remote.actualizado_en):0;
-      if(local && local.datos && (!remote.existe || (local.guardadoLocal||0)>remoteDate)){
-        restoreForm(local.datos);
-        if(navigator.onLine){try{await serverSave(draftId,local.datos);status.textContent='Se recuperaron cambios locales y se sincronizaron con Neon.'}catch(e){status.textContent='Se recuperaron cambios locales. Pendiente de sincronizar cuando vuelva la conexión.'}}
-      }else if(remote.existe && remote.datos && Object.keys(remote.datos).length){restoreForm(remote.datos);saveLocal(remote.datos);status.textContent='Borrador recuperado desde Neon. Los cambios se guardarán automáticamente.'}
-      else if(local && local.datos){restoreForm(local.datos);status.textContent='Se recuperó una copia local. Se sincronizará cuando haya conexión.'}
-      else status.textContent='Autoguardado activado. Las respuestas parciales se guardarán automáticamente en Neon.';
-    }catch(e){if(local && local.datos){restoreForm(local.datos);status.textContent='Sin conexión con Neon: se recuperó la copia local. Se sincronizará al volver la conexión.'}else status.textContent='No se pudo consultar Neon. Al comenzar, se guardará una copia local y se intentará sincronizar.'}
-    finally{loadingDraft=false;lastSerialized=JSON.stringify(serializeForm());}
-  }
-  async function saveDraft(){
-    if(loadingDraft||serverFinalized)return;
-    const datos=serializeForm(),serialized=JSON.stringify(datos);if(serialized===lastSerialized)return;
-    const localOk=saveLocal(datos);status.textContent='Guardando cambios…';
-    if(!navigator.onLine){status.textContent=localOk?'Sin conexión. Cambios guardados temporalmente en este navegador; pendientes de sincronizar con Neon.':'Sin conexión y no se pudo guardar la copia local.';return}
-    try{await serverSave(draftId,datos);lastSerialized=serialized;saveLocal(datos);status.textContent='Borrador guardado en Neon.'}
-    catch(e){status.textContent=localOk?'No se pudo sincronizar con Neon. Los cambios quedan temporalmente en este navegador y se reintentarán.':(e.message||'No se pudo guardar el borrador.')}
-  }
-  function scheduleSave(delay=700){if(loadingDraft||serverFinalized)return;saveLocal(serializeForm());clearTimeout(saveTimer);saveTimer=setTimeout(saveDraft,delay)}
-  form.addEventListener('input',()=>scheduleSave(900));
-  form.addEventListener('change',()=>scheduleSave(400));
-  window.addEventListener('online',()=>{if(!serverFinalized){status.textContent='Conexión recuperada. Sincronizando respuestas…';saveDraft()}});
-  document.getElementById('copiarCodigo').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(draftId);recoveryStatus.textContent='Código copiado. Guárdelo en un lugar seguro.'}catch(e){recoveryDisplay.focus();recoveryDisplay.select();recoveryStatus.textContent='Seleccione y copie el código manualmente.'}});
-  document.getElementById('recuperarCodigo').addEventListener('click',async()=>{
-    const codigo=(recoveryInput.value||'').trim();
-    if(!/^[A-Za-z0-9_-]{20,80}$/.test(codigo)){recoveryStatus.textContent='Ingrese un código válido de recuperación.';return}
-    if(codigo===draftId){recoveryStatus.textContent='Este es el código que ya está abierto.';return}
-    recoveryStatus.textContent='Consultando borrador…';
-    try{
-      const remoto=await serverLoad(codigo);
-      if(!remoto.existe){recoveryStatus.textContent='No se encontró un borrador para ese código. Verifique que esté completo.';return}
-      if(remoto.finalizado){recoveryStatus.textContent='Este diagnóstico ya fue finalizado; no puede recuperarse como borrador.';return}
-      const localActual=serializeForm();
-      if(Object.values(localActual).some(v=>Array.isArray(v)?v.some(Boolean):String(v||'').trim()!=='')){
-        if(!confirm('El formulario actual contiene información. ¿Desea reemplazarlo por el borrador recuperado?'))return;
-      }
-      draftId=codigo;draftInput.value=draftId;localStorage.setItem(storageKey,draftId);recoveryDisplay.value=draftId;
-      restoreForm(remoto.datos||{});saveLocal(remoto.datos||{});lastSerialized=JSON.stringify(serializeForm());
-      recoveryStatus.textContent='Borrador recuperado. El código activo cambió al código que ingresó.';
-      status.textContent='Borrador recuperado desde Neon. Continúe; los cambios se guardarán automáticamente.';
-    }catch(e){recoveryStatus.textContent='No se pudo recuperar. Compruebe la conexión y vuelva a intentarlo.'}
-  });
-  form.addEventListener('submit',e=>{const invalid=[...form.querySelectorAll('input,select,textarea')].find(el=>el.willValidate&&!el.checkValidity());if(invalid){e.preventDefault();const panel=invalid.closest('[data-step-panel]');if(panel)showStep(Number(panel.dataset.stepPanel),false);invalid.reportValidity();invalid.focus({preventScroll:true});invalid.scrollIntoView({behavior:'smooth',block:'center'});return;}if(saveTimer)clearTimeout(saveTimer);});
+  // Solo cuenta como «guardado localmente» si el navegador realmente lo permite.
+  function saveLocal(datos){return !!store&&sSet(dataKey(draftId),JSON.stringify({datos,guardadoLocal:Date.now()}));}
+  function readLocal(id){try{const raw=sGet(dataKey(id));return raw?JSON.parse(raw):null}catch(e){return null}}
+  // El servidor guarda la fecha en UTC sin zona horaria; se interpreta como UTC.
+  function parseServerDate(v){if(!v)return 0;const t=Date.parse(/[zZ]|[+-]\d\d:?\d\d$/.test(v)?v:v+'Z');return isNaN(t)?0:t;}
 
-  // Navegación por secciones A–F. Antes de avanzar valida la sección actual y fuerza el guardado.
-  const stepCount=6; let currentStep=1;
-  function showStep(step, scroll=true){
-    currentStep=Math.max(1,Math.min(stepCount,step));
-    for(let i=1;i<=stepCount;i++){
-      const header=form.querySelector(`[data-step-header="${i}"]`);
-      const panel=form.querySelector(`[data-step-panel="${i}"]`);
-      const nav=form.querySelector(`[data-step-nav="${i}"]`);
-      if(header)header.hidden=i!==currentStep;
-      if(panel)panel.hidden=i!==currentStep;
-      if(nav)nav.hidden=i!==currentStep;
+  async function request(url,opts={}){
+   const ctrl=new AbortController();const t=setTimeout(()=>ctrl.abort(),12000);
+   try{const res=await fetch(url,{...opts,cache:'no-store',signal:ctrl.signal});let data={};try{data=await res.json();}catch(e){}return{res,data};}
+   finally{clearTimeout(t);}
+  }
+  async function serverLoad(id){const{res,data}=await request(`/api/borrador/${encodeURIComponent(id)}`);if(!res.ok||!data.ok)throw new Error(data.mensaje||'No se pudo consultar el borrador');return data;}
+  async function serverSave(id,datos){
+   const{res,data}=await request(`/api/borrador/${encodeURIComponent(id)}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({datos})});
+   if(res.status===409||data.finalizado){const err=new Error('finalizado');err.finalized=true;throw err;}
+   if(!res.ok||!data.ok)throw new Error(data.mensaje||'No se pudo guardar');
+   return data;
+  }
+
+  let loading=true,stopped=false,lastSynced=null,timer=null,retryTimer=null,chain=Promise.resolve();
+  function scheduleRetry(){if(retryTimer||stopped)return;retryTimer=setTimeout(()=>{retryTimer=null;queueSave();},30000);}
+  async function doSave(){
+   if(loading||stopped)return'skip';
+   const datos=serializeForm(),ser=JSON.stringify(datos);
+   const localOk=saveLocal(datos);
+   if(ser===lastSynced){setStatus('ok',MSG.ok);return'ok';}
+   if(!navigator.onLine){setStatus(localOk?'pending':'error',localOk?MSG.offline:MSG.fail);scheduleRetry();return'local';}
+   setStatus('saving',MSG.saving);
+   try{await serverSave(draftId,datos);lastSynced=ser;setStatus('ok',MSG.ok);return'ok';}
+   catch(e){
+    if(e.finalized){
+     // Ese borrador ya se envió (por ejemplo, desde otra pestaña): se continúa en uno nuevo sin perder lo escrito.
+     sDel(dataKey(draftId));sDel(stepKey(draftId));setDraft(newDraftId());saveLocal(datos);
+     try{await serverSave(draftId,datos);lastSynced=ser;setStatus('ok',MSG.ok);return'ok';}catch(e2){}
     }
-    form.querySelectorAll('[data-step-final]').forEach(el=>el.hidden=currentStep!==stepCount);
-    if(scroll){const header=form.querySelector(`[data-step-header="${currentStep}"]`);header?.scrollIntoView({behavior:'smooth',block:'start'});}
+    setStatus(localOk?'pending':'error',localOk?MSG.serverPending:MSG.fail);scheduleRetry();
+    return localOk?'local':'fail';
+   }
   }
-  async function saveBeforeContinue(){
-    if(saveTimer){clearTimeout(saveTimer);saveTimer=null;}
-    saveLocal(serializeForm());
-    if(navigator.onLine && !loadingDraft && !serverFinalized){
-      // Persiste inmediatamente antes de abandonar la sección.
-      const data=serializeForm(), serialized=JSON.stringify(data);
-      try{await serverSave(draftId,data);lastSerialized=serialized;saveLocal(data);status.textContent='Avance guardado. Puede continuar con la siguiente sección.';}
-      catch(e){status.textContent='Avance guardado en este navegador; no se pudo sincronizar con Neon. Se reintentará cuando haya conexión.';}
-    } else if(!serverFinalized){status.textContent='Avance guardado temporalmente en este navegador. Se sincronizará cuando haya conexión.';}
+  // Los guardados se encadenan: nunca hay dos peticiones simultáneas y cada una
+  // envía el estado del formulario en el momento de ejecutarse (el más reciente).
+  function queueSave(){const p=chain.then(doSave,doSave);chain=p.catch(()=>{});return p;}
+  function schedule(delay=700){if(loading||stopped)return;saveLocal(serializeForm());clearTimeout(timer);timer=setTimeout(()=>{timer=null;queueSave();},delay);}
+  function flush(){clearTimeout(timer);timer=null;return queueSave();}
+  function stop(){stopped=true;clearTimeout(timer);clearTimeout(retryTimer);}
+  autosave={flush,schedule,stop,rememberStep:n=>{if(draftId)sSet(stepKey(draftId),String(n));}};
+
+  async function loadDraft(){
+   let local=readLocal(draftId);
+   let resumeStep=Number(sGet(stepKey(draftId)))||1;
+   let restored=false,needSync=false;
+   try{
+    const remote=await serverLoad(draftId);
+    if(remote.finalizado){
+     // El diagnóstico anterior de este navegador ya fue enviado: se inicia uno nuevo.
+     sDel(dataKey(draftId));sDel(stepKey(draftId));setDraft(newDraftId());local=null;resumeStep=1;
+     setStatus('idle','Puede iniciar un nuevo diagnóstico. Los cambios se guardarán automáticamente.');
+    }else{
+     const remoteDate=parseServerDate(remote.actualizado_en);
+     const remoteHasData=remote.existe&&remote.datos&&Object.keys(remote.datos).length>0;
+     if(local&&local.datos&&(!remoteHasData||(local.guardadoLocal||0)>remoteDate)){
+      restoreForm(local.datos);restored=true;needSync=true;
+     }else if(remoteHasData){
+      restoreForm(remote.datos);saveLocal(remote.datos);restored=true;
+      lastSynced=JSON.stringify(serializeForm());
+      setStatus('ok','Se recuperó el avance guardado. Puede continuar donde lo dejó.');
+     }else{
+      setStatus('idle',store?'Los cambios se guardarán automáticamente mientras diligencia el formulario.':'Este navegador no permite guardar copias locales: el avance se guardará en el servidor mientras mantenga la página abierta.');
+     }
+    }
+   }catch(e){
+    if(local&&local.datos){
+     restoreForm(local.datos);restored=true;
+     setStatus('pending','Sin conexión con el servidor. Se recuperaron las respuestas guardadas en este navegador; están pendientes de sincronización.');
+     scheduleRetry();
+    }else{
+     setStatus('idle','No fue posible verificar la conexión con el servidor. Las respuestas se guardarán en este navegador y se sincronizarán cuando sea posible.');
+    }
+   }finally{
+    loading=false;
+    if(restored&&resumeStep>1&&resumeStep<=STEP_COUNT)showStep(resumeStep,{focus:false,scroll:false});
+    if(needSync)queueSave();
+   }
   }
-  form.querySelectorAll('[data-step-next]').forEach(button=>button.addEventListener('click',async()=>{
-    const step=Number(button.dataset.stepNext);
-    const panel=form.querySelector(`[data-step-panel="${step}"]`);
-    const invalid=[...panel.querySelectorAll('input,select,textarea')].find(el=>el.willValidate && !el.checkValidity());
-    if(invalid){invalid.reportValidity();invalid.focus({preventScroll:true});invalid.scrollIntoView({behavior:'smooth',block:'center'});return;}
-    button.disabled=true;const old=button.innerHTML;button.innerHTML='Guardando…';
-    await saveBeforeContinue();showStep(step+1);button.innerHTML=old;button.disabled=false;
-  }));
-  form.querySelectorAll('[data-step-prev]').forEach(button=>button.addEventListener('click',()=>showStep(Number(button.dataset.stepPrev)-1)));
-  showStep(1,false);
-  loadDraft();})();
+
+  form.addEventListener('input',()=>schedule(900));
+  form.addEventListener('change',()=>schedule(400));
+  window.addEventListener('online',()=>{if(!stopped&&!loading){setStatus('saving','Conexión recuperada. Sincronizando respuestas…');queueSave();}});
+  window.addEventListener('offline',()=>{if(!stopped&&!loading&&JSON.stringify(serializeForm())!==lastSynced)setStatus(store?'pending':'error',store?MSG.offline:MSG.fail);});
+  window.addEventListener('pagehide',()=>{if(!stopped&&!loading)saveLocal(serializeForm());});
+  loadDraft();
+ }catch(err){
+  console.error('Autoguardado no disponible',err);
+  setStatus('error','El guardado automático no está disponible en este navegador. Complete el formulario y envíelo al final.');
+ }
+})();
 </script>
 {% endblock %}
