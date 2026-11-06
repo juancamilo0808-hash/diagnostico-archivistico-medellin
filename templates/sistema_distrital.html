@@ -464,19 +464,6 @@
     </div>
   </section>
 
-  <!-- ================= RECURSOS ================= -->
-  <section class="sda-sec" id="recursos">
-    <div class="sda-kicker">Recursos</div>
-    <h2>Normatividad y referentes técnicos</h2>
-    <p class="intro">Fuentes oficiales para orientar la gestión documental de su entidad.</p>
-    <div class="res">
-      {% for n in normatividad[:6] %}
-      <a href="{{ n.web }}" target="_blank" rel="noopener"><i class="bi {{ n.icono }}"></i><div><small>{{ n.categoria }}</small><strong>{{ n.titulo }}</strong><span>{{ n.descripcion }}</span></div></a>
-      {% endfor %}
-    </div>
-    <p class="mt-3 mb-0"><a class="fw-bold" href="{{ url_for('normatividad') }}">Ver toda la normatividad <i class="bi bi-arrow-right"></i></a></p>
-  </section>
-
   <div class="sda-band">
     <div><h2>¿Su entidad ya hizo el diagnóstico?</h2><p>Es el punto de partida para priorizar el acompañamiento del Sistema.</p></div>
     <a class="sda-btn gold" href="{{ url_for('censo') }}"><i class="bi bi-clipboard2-check"></i> Iniciar diagnóstico</a>
