@@ -75,29 +75,24 @@
                         <i class="bi bi-house-door"></i> Inicio
                     </a>
 
-                    <a class="nav-link {% if request.endpoint == 'censo' %}active{% endif %}"
-                       href="{{ url_for('censo') }}">
-                        <i class="bi bi-file-earmark-text"></i> Diagnóstico
-                    </a>
-
-                    <a class="nav-link {% if request.endpoint == 'normatividad' %}active{% endif %}"
-                       href="{{ url_for('normatividad') }}">
-                        <i class="bi bi-journal-text"></i> Normatividad
-                    </a>
-
-                    <a class="nav-link {% if request.endpoint == 'mapa_entidades' %}active{% endif %}"
-                       href="{{ url_for('mapa_entidades') }}">
-                        <i class="bi bi-geo-alt"></i> Mapa de entidades
-                    </a>
-
                     <a class="nav-link {% if request.endpoint == 'sistema_distrital' %}active{% endif %}"
                        href="{{ url_for('sistema_distrital') }}">
                         <i class="bi bi-diagram-3"></i> Sistema Distrital
                     </a>
 
+                    <a class="nav-link {% if request.endpoint == 'censo' %}active{% endif %}"
+                       href="{{ url_for('censo') }}">
+                        <i class="bi bi-file-earmark-text"></i> Diagnóstico
+                    </a>
+
                     <a class="nav-link {% if request.endpoint in ('servicios_en_linea', 'sistema_distrital_solicitud', 'sistema_distrital_tramite') %}active{% endif %}"
                        href="{{ url_for('servicios_en_linea') }}">
                         <i class="bi bi-send-check"></i> Servicios en línea
+                    </a>
+
+                    <a class="nav-link {% if request.endpoint == 'normatividad' %}active{% endif %}"
+                       href="{{ url_for('normatividad') }}">
+                        <i class="bi bi-journal-text"></i> Normatividad
                     </a>
 
                     <a class="nav-link {% if request.endpoint == 'ayuda' %}active{% endif %}"
@@ -106,7 +101,7 @@
                     </a>
 
                     <a class="btn btn-nav" href="{{ url_for('admin') }}">
-                        <i class="bi bi-gear"></i> Administración<span class="d-none d-xxl-inline"> y resultados</span>
+                        <i class="bi bi-gear"></i> Administración<span class="d-none d-xl-inline"> y resultados</span>
                     </a>
 
                 </div>
