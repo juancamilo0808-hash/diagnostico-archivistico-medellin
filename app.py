@@ -530,12 +530,14 @@ def censo():
     return render_template('diagnostico.html')
 
 
-# Equivalencias de respuestas a puntaje por componente. Se comparten entre el
-# cálculo del diagnóstico y el tablero del Sistema Distrital de Archivos.
+# Equivalencias de respuestas a puntaje por componente, en escala de tres valores:
+# 0 = no cumple, 0,5 = avance parcial, 1 = cumple. «No se tiene información» y
+# «No aplica» no se cuentan. Se comparten entre el cálculo del diagnóstico, la
+# ficha de cada entidad y los indicadores del Sistema Distrital de Archivos.
 MAPAS_COMPONENTES = {
         'estrategico': [
-            ('q1_politica', {'No existe': 0, 'En desarrollo': 0.5, 'Aprobada': 1,
-                             'En implementación': 0.75, 'Implementada y con seguimiento': 1,
+            ('q1_politica', {'No existe': 0, 'En desarrollo': 0.5, 'Aprobada': 0.5,
+                             'En implementación': 0.5, 'Implementada y con seguimiento': 1,
                              'No se tiene información': None}),
             ('q2_seguimiento', {'No': 0, 'Parcialmente': 0.5, 'Sí': 1,
                                 'No se tiene información': None}),
@@ -546,7 +548,7 @@ MAPAS_COMPONENTES = {
         ],
         'procesos_documentales': [
             ('q5_trd', {'No elaboradas': 0, 'En elaboración': 0.5, 'En evaluación': 0.5,
-                        'Convalidadas': 0.75, 'En implementación': 0.75, 'Implementadas': 1,
+                        'Convalidadas': 0.5, 'En implementación': 0.5, 'Implementadas': 1,
                         'Requieren actualización': 0.5, 'No aplica': None,
                         'No se tiene información': None}),
         ],
@@ -1769,5 +1771,30 @@ with app.app_context():
                 app.logger.info('Columna agregada a censo: %s', nombre_columna)
     except Exception:
         app.logger.exception('No se pudo verificar/agregar una columna nueva a censo')
+
+    # Recalcula los diagnósticos guardados con la escala vigente (0 – 0,5 – 1), para
+    # que el índice guardado coincida con el de la ficha. Solo cambia puntaje_obtenido,
+    # variables_aplicables, ima y nivel; las respuestas no se tocan. Los registros del
+    # formulario antiguo (sin q1_politica) se dejan como están.
+    try:
+        actualizados = 0
+        for registro in Censo.query.all():
+            try:
+                datos = json.loads(registro.respuestas_json or '{}')
+            except (TypeError, ValueError):
+                continue
+            if not isinstance(datos, dict) or not datos.get('q1_politica'):
+                continue
+            total, aplicables, ima, nivel = calcular_diagnostico_nuevo(datos)
+            if (registro.ima, registro.nivel, registro.puntaje_obtenido, registro.variables_aplicables) != (ima, nivel, total, aplicables):
+                registro.puntaje_obtenido, registro.variables_aplicables = total, aplicables
+                registro.ima, registro.nivel = ima, nivel
+                actualizados += 1
+        if actualizados:
+            db.session.commit()
+            app.logger.info('Diagnósticos recalculados con la escala vigente: %s', actualizados)
+    except Exception:
+        db.session.rollback()
+        app.logger.exception('No se pudieron recalcular los diagnósticos con la escala vigente')
 if __name__ == "__main__":
     app.run(debug=os.environ.get("FLASK_DEBUG", "false").lower() == "true")
