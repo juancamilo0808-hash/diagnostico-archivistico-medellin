@@ -90,9 +90,14 @@
                         <i class="bi bi-geo-alt"></i> Mapa de entidades
                     </a>
 
-                    <a class="nav-link {% if request.endpoint in ('sistema_distrital', 'sistema_distrital_tramite') %}active{% endif %}"
+                    <a class="nav-link {% if request.endpoint == 'sistema_distrital' %}active{% endif %}"
                        href="{{ url_for('sistema_distrital') }}">
                         <i class="bi bi-diagram-3"></i> Sistema Distrital
+                    </a>
+
+                    <a class="nav-link {% if request.endpoint in ('servicios_en_linea', 'sistema_distrital_solicitud', 'sistema_distrital_tramite') %}active{% endif %}"
+                       href="{{ url_for('servicios_en_linea') }}">
+                        <i class="bi bi-send-check"></i> Servicios en línea
                     </a>
 
                     <a class="nav-link {% if request.endpoint == 'ayuda' %}active{% endif %}"
