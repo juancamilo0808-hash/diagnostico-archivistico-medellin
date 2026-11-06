@@ -44,7 +44,7 @@
   }
 </style>
 <section class="tr-hero"><div class="container">
-  <div class="k">Sistema Distrital de Archivos · Servicios en línea</div>
+  <div class="k">Servicios en línea · Sistema Distrital de Archivos</div>
   <h1>Consulta de trámite</h1>
   <p>Estado, etapas y observaciones de su solicitud.</p>
 </div></section>
@@ -83,7 +83,7 @@
       {% endfor %}
     </div>
     <div class="mt-4 d-flex gap-2 flex-wrap">
-      <a class="btn btn-primary" href="{{ url_for('sistema_distrital') }}#servicios"><i class="bi bi-arrow-left"></i> Volver a servicios</a>
+      <a class="btn btn-primary" href="{{ url_for('servicios_en_linea') }}"><i class="bi bi-arrow-left"></i> Volver a servicios</a>
       <a class="btn btn-outline-secondary" href="{{ url_for('sistema_distrital_tramite') }}">Consultar otro radicado</a>
     </div>
   {% else %}
@@ -95,7 +95,7 @@
       <div><label class="form-label fw-semibold" for="correo">Correo registrado</label><input class="form-control form-control-lg" id="correo" name="correo" type="email" required></div>
       <button class="btn btn-primary btn-lg" type="submit"><i class="bi bi-search"></i> Consultar</button>
     </form>
-    <p class="mt-3 mb-0 small"><a href="{{ url_for('sistema_distrital') }}#servicios">¿Aún no tiene radicado? Haga su solicitud aquí.</a></p>
+    <p class="mt-3 mb-0 small"><a href="{{ url_for('servicios_en_linea') }}">¿Aún no tiene radicado? Haga su solicitud aquí.</a></p>
   {% endif %}
   </div>
 </div>
