@@ -1314,8 +1314,14 @@ def _sda_radicados_sesion():
 
 @app.route('/sistema-distrital')
 def sistema_distrital():
-    return render_template('sistema_distrital.html', tipos=SDA_TIPOS, normatividad=NORMATIVIDAD,
-                           valores={}, errores={}, tipo_activo=request.args.get('servicio', ''))
+    return render_template('sistema_distrital.html')
+
+
+@app.route('/servicios-en-linea')
+def servicios_en_linea():
+    servicio = request.args.get('servicio', '')
+    return render_template('servicios_en_linea.html', tipos=SDA_TIPOS, valores={}, errores={},
+                           tipo_activo=servicio if servicio in ('asistencia', 'evaluacion', 'consulta') else '')
 
 
 @app.route('/sistema-distrital/solicitud', methods=['POST'])
@@ -1357,7 +1363,7 @@ def sistema_distrital_solicitud():
     if len(_sda_radicados_sesion()) >= SDA_MAX_SOLICITUDES_SESION:
         errores['general'] = 'Se alcanzó el número máximo de solicitudes desde este navegador. Intente más tarde.'
     if errores:
-        return render_template('sistema_distrital.html', tipos=SDA_TIPOS, normatividad=NORMATIVIDAD,
+        return render_template('servicios_en_linea.html', tipos=SDA_TIPOS,
                                valores=v, errores=errores, tipo_activo=tipo), 400
     try:
         s = SolicitudSistema(tipo=tipo, entidad=v['entidad'], nit=v['nit'], contacto_nombre=v['contacto_nombre'],
@@ -1375,7 +1381,7 @@ def sistema_distrital_solicitud():
         db.session.rollback()
         app.logger.exception('No fue posible radicar la solicitud del Sistema Distrital')
         errores['general'] = 'No fue posible radicar la solicitud en este momento. Intente de nuevo.'
-        return render_template('sistema_distrital.html', tipos=SDA_TIPOS, normatividad=NORMATIVIDAD,
+        return render_template('servicios_en_linea.html', tipos=SDA_TIPOS,
                                valores=v, errores=errores, tipo_activo=tipo), 500
     session['sda_radicados'] = (_sda_radicados_sesion() + [s.radicado])[-20:]
     return redirect(url_for('sistema_distrital_tramite', radicado=s.radicado, nuevo=1))
