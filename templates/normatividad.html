@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Normatividad archivística{% endblock %}
+{% block content %}
+<style>
+  .nm-hero { background: linear-gradient(160deg, #071f38, #0b2d50 60%, #0f3a63); color:#fff; padding:2.6rem 0 4.8rem; }
+  .nm-hero .k { font-size:.75rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--cda-gold,#d6a62c); }
+  .nm-hero h1 { color:#fff; font-weight:800; margin:.4rem 0 .4rem; }
+  .nm-hero p { color:rgba(255,255,255,.78); max-width:44rem; margin:0; }
+  .nm-wrap { margin-top:-3rem; padding-bottom:3rem; }
+  .nm-filter { display:flex; gap:.4rem; flex-wrap:wrap; margin-bottom:1rem; }
+  .nm-filter button { border:1px solid var(--cda-border,#dce4ec); background:#fff; border-radius:999px; padding:.4rem .9rem; font-size:.85rem; font-weight:600; color:var(--cda-blue-dark,#092947); }
+  .nm-filter button[aria-pressed="true"] { background:var(--cda-blue,#123b65); color:#fff; border-color:var(--cda-blue,#123b65); }
+  .nm-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:1rem; }
+  .nm-card { background:#fff; border:1px solid var(--cda-border,#dce4ec); border-radius:18px; padding:1.3rem; display:grid; grid-template-columns: 3rem 1fr; gap:1rem; }
+  .nm-ico { width:3rem; height:3rem; border-radius:12px; display:grid; place-items:center; background:var(--cda-blue-light,#eaf3fb); color:var(--cda-blue,#123b65); font-size:1.3rem; }
+  .nm-card small { font-size:.7rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--cda-gold,#b8891a); }
+  .nm-card h2 { font-size:1.05rem; font-weight:800; color:var(--cda-blue-dark,#092947); margin:.15rem 0 .35rem; }
+  .nm-card p { font-size:.9rem; color:var(--cda-text,#243447); margin:0 0 .7rem; }
+  .nm-card .st { font-size:.75rem; color:var(--cda-muted,#667789); }
+  .nm-links { display:flex; gap:.5rem; flex-wrap:wrap; }
+  @media (max-width: 767.98px) { .nm-grid { grid-template-columns:1fr; } }
+</style>
+<section class="nm-hero"><div class="container">
+  <div class="k">Normalización · Sistema Distrital de Archivos</div>
+  <h1>Normatividad y referentes técnicos</h1>
+  <p>Leyes, decretos, acuerdos y guías oficiales que orientan la gestión documental y la función archivística de las entidades.</p>
+</div></section>
+<div class="container nm-wrap">
+  <div class="nm-filter" role="group" aria-label="Filtrar por categoría">
+    <button type="button" data-cat="" aria-pressed="true">Todas</button>
+    {% for c in normatividad|map(attribute='categoria')|unique %}<button type="button" data-cat="{{ c }}" aria-pressed="false">{{ c }}</button>{% endfor %}
+  </div>
+  <div class="nm-grid">
+    {% for n in normatividad %}
+    <article class="nm-card" data-cat="{{ n.categoria }}">
+      <div class="nm-ico"><i class="bi {{ n.icono }}"></i></div>
+      <div>
+        <small>{{ n.categoria }}</small>
+        <h2>{{ n.titulo }}</h2>
+        <p>{{ n.descripcion }}</p>
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <span class="st"><i class="bi bi-info-circle"></i> {{ n.estado }}</span>
+          <span class="nm-links">
+            {% if n.web %}<a class="btn btn-sm btn-outline-primary" href="{{ n.web }}" target="_blank" rel="noopener">Consultar</a>{% endif %}
+            {% if n.pdf %}<a class="btn btn-sm btn-outline-secondary" href="{{ n.pdf }}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf"></i> PDF</a>{% endif %}
+          </span>
+        </div>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  <p class="small text-secondary mt-4 mb-0">Enlaces a fuentes oficiales. Verifique siempre la versión vigente en el sitio del emisor.</p>
+</div>
+<script>
+  document.querySelectorAll('.nm-filter button').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.nm-filter button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+    document.querySelectorAll('.nm-card').forEach(c => { c.hidden = !!b.dataset.cat && c.dataset.cat !== b.dataset.cat; });
+  }));
+</script>
+{% endblock %}
