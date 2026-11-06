@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+{% block title %}Indicadores del Sistema Distrital{% endblock %}
+{% block body_class %}sda-page{% endblock %}
+{% block content %}
+{% set d = datos %}
+{% set ver = publicable and d %}
+<style>
+  .sda-page { --f-asis:#1c5688; --f-norm:#1f7a4d; --f-segu:#b45309; --f-eval:#5b3f99; }
+  .sda-hero { background: linear-gradient(135deg, var(--cda-blue-dark,#092947), var(--cda-blue,#123b65)); color:#fff; padding:2.5rem 0 4.5rem; }
+  .sda-hero .eyebrow { color: var(--cda-gold,#d6a62c); font-weight:700; letter-spacing:.08em; text-transform:uppercase; font-size:.8rem; }
+  .sda-hero h1 { font-weight:800; margin:.35rem 0 .6rem; color:#fff; }
+  .sda-hero p { color:rgba(255,255,255,.82); max-width:760px; margin:0; }
+  .sda-hero .meta { margin-top:1rem; font-size:.85rem; color:rgba(255,255,255,.7); }
+  .sda-kpis { margin-top:-3rem; }
+  .sda-kpi { background:#fff; border:1px solid var(--cda-border,#dce4ec); border-radius:14px; padding:1rem 1.1rem; height:100%; box-shadow:0 8px 24px rgba(9,41,71,.08); }
+  .sda-kpi .v { font-size:1.9rem; font-weight:800; color:var(--cda-blue-dark,#092947); line-height:1.1; font-variant-numeric: tabular-nums; }
+  .sda-kpi .l { font-size:.82rem; color:var(--cda-muted,#667789); }
+  .sda-section { margin-top:2.5rem; }
+  .sda-section > h2 { font-size:1.35rem; font-weight:800; color:var(--cda-blue-dark,#092947); margin-bottom:.25rem; }
+  .sda-section > .sub { color:var(--cda-muted,#667789); margin-bottom:1.25rem; }
+
+  /* Estructura */
+  .sda-org { background:#fff; border:1px solid var(--cda-border,#dce4ec); border-radius:18px; padding:1.5rem; }
+  .sda-top { display:grid; grid-template-columns: 1fr minmax(0,1.2fr) 1fr; align-items:center; gap:1rem; }
+  .sda-node { border-radius:12px; padding:.85rem 1rem; text-align:center; font-weight:700; }
+  .sda-rector { grid-column:2; background:var(--cda-blue,#123b65); color:#fff; box-shadow:0 6px 16px rgba(18,59,101,.25); }
+  .sda-rector small, .sda-consejo small { display:block; font-weight:400; font-size:.78rem; opacity:.85; margin-top:.15rem; }
+  .sda-consejo { grid-column:3; background:var(--cda-blue-light,#eaf3fb); color:var(--cda-blue-dark,#092947); border:2px dashed #8fb3d6; position:relative; }
+  .sda-consejo::before { content:""; position:absolute; right:100%; top:50%; width:1rem; border-top:2px dashed #8fb3d6; }
+  .sda-trunk { height:1.25rem; width:2px; background:#b9c9d9; margin:0 auto; }
+  .sda-funcs { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.9rem; position:relative; padding-top:1.25rem; }
+  .sda-funcs::before { content:""; position:absolute; top:0; left:12.5%; right:12.5%; border-top:2px solid #b9c9d9; }
+  .sda-func { position:relative; display:flex; flex-direction:column; justify-content:flex-start; align-items:stretch; text-align:left; background:#fff; border:1px solid var(--cda-border,#dce4ec); border-radius:14px; padding:0; overflow:hidden; cursor:pointer; transition: transform .15s ease, box-shadow .15s ease; width:100%; color:inherit; }
+  .sda-func::before { content:""; position:absolute; top:-1.25rem; left:50%; height:1.25rem; border-left:2px solid #b9c9d9; }
+  .sda-func:hover { transform: translateY(-2px); box-shadow:0 10px 24px rgba(9,41,71,.10); }
+  .sda-func[aria-selected="true"] { box-shadow:0 0 0 3px var(--fc), 0 10px 24px rgba(9,41,71,.12); }
+  .sda-func .hd { background:var(--fc); color:#fff; font-weight:800; font-size:.85rem; letter-spacing:.04em; text-transform:uppercase; padding:.6rem .9rem; display:flex; gap:.5rem; align-items:center; }
+  .sda-func .bd { padding:.85rem .9rem 1rem; flex:1; display:flex; flex-direction:column; }
+  .sda-func .live { margin-top:auto; }
+  .sda-func .desc { font-size:.85rem; color:var(--cda-text,#243447); margin-bottom:.75rem; min-height:3.6em; }
+  .sda-func .live { border-top:1px dashed var(--cda-border,#dce4ec); padding-top:.6rem; }
+  .sda-func .live .n { font-size:1.5rem; font-weight:800; color:var(--fc); line-height:1; font-variant-numeric: tabular-nums; }
+  .sda-func .live .t { font-size:.78rem; color:var(--cda-muted,#667789); }
+  .sda-func .more { font-size:.78rem; font-weight:700; color:var(--fc); margin-top:.5rem; display:block; }
+  .f-asis { --fc:var(--f-asis); } .f-norm { --fc:var(--f-norm); } .f-segu { --fc:var(--f-segu); } .f-eval { --fc:var(--f-eval); }
+  .sda-levels { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.75rem; margin-top:1.25rem; }
+  .sda-level { background:var(--cda-bg,#f3f6fa); border-radius:12px; padding:.75rem .9rem; font-size:.82rem; color:var(--cda-text,#243447); }
+  .sda-level strong { display:block; color:var(--cda-blue-dark,#092947); font-size:.85rem; }
+  .sda-live-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:#27845b; margin-right:.35rem; box-shadow:0 0 0 3px rgba(39,132,91,.18); }
+
+  /* Paneles */
+  .sda-panel { background:#fff; border:1px solid var(--cda-border,#dce4ec); border-top:4px solid var(--fc); border-radius:16px; padding:1.5rem; margin-top:1rem; }
+  .sda-js .sda-panel:not(.is-active) { display:none; }
+  .sda-panel h3 { font-size:1.15rem; font-weight:800; color:var(--fc); margin-bottom:.2rem; }
+  .sda-panel .sub { color:var(--cda-muted,#667789); font-size:.88rem; margin-bottom:1.1rem; }
+  .sda-panel h4 { font-size:.95rem; font-weight:700; color:var(--cda-blue-dark,#092947); margin:1.1rem 0 .6rem; }
+  .bar-row { display:grid; grid-template-columns: minmax(120px,38%) 1fr 3.6rem; gap:.6rem; align-items:center; margin-bottom:.45rem; font-size:.85rem; }
+  .bar { height:10px; background:#e8eef4; border-radius:20px; overflow:hidden; }
+  .bar > span { display:block; height:100%; background:var(--fc); border-radius:20px; }
+  .bar-row .val { text-align:right; font-weight:700; font-variant-numeric: tabular-nums; }
+  .prio { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.6rem; }
+  .prio > div { border-radius:12px; padding:.75rem; text-align:center; border:1px solid var(--cda-border,#dce4ec); }
+  .prio .n { font-size:1.6rem; font-weight:800; font-variant-numeric: tabular-nums; }
+  .prio .alta .n { color:#b42318; } .prio .media .n { color:#9a6700; } .prio .baja .n { color:#1d6a49; }
+  .prio .t { font-size:.78rem; color:var(--cda-muted,#667789); }
+  .tema { display:grid; grid-template-columns: 2.2rem 1fr auto; gap:.75rem; align-items:center; padding:.65rem 0; border-bottom:1px solid #edf1f5; }
+  .tema:last-child { border-bottom:0; }
+  .tema .rank { width:2.2rem; height:2.2rem; border-radius:50%; display:grid; place-items:center; background:color-mix(in srgb, var(--fc) 12%, #fff); color:var(--fc); font-weight:800; }
+  .tema .nm { font-weight:700; font-size:.9rem; color:var(--cda-blue-dark,#092947); }
+  .tema .ins { font-size:.8rem; color:var(--cda-muted,#667789); }
+  .tema .pc { font-weight:800; color:var(--fc); font-variant-numeric: tabular-nums; text-align:right; }
+  .tema .pc small { display:block; font-weight:400; font-size:.72rem; color:var(--cda-muted,#667789); }
+  .stack { display:flex; height:16px; border-radius:20px; overflow:hidden; background:#e8eef4; }
+  .stack span { display:block; height:100%; }
+  .legend { display:flex; gap:1rem; flex-wrap:wrap; font-size:.8rem; margin-top:.5rem; color:var(--cda-muted,#667789); }
+  .legend i { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:.3rem; vertical-align:-1px; }
+  .pipe { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:.4rem; }
+  .pipe > div { position:relative; background:color-mix(in srgb, var(--fc) 8%, #fff); border:1px solid color-mix(in srgb, var(--fc) 25%, #fff); border-radius:10px; padding:.7rem .5rem; text-align:center; }
+  .pipe > div:not(:last-child)::after { content:"›"; position:absolute; right:-.42rem; top:50%; transform:translateY(-55%); color:var(--fc); font-weight:800; z-index:1; }
+  .pipe .n { font-size:1.5rem; font-weight:800; color:var(--fc); font-variant-numeric: tabular-nums; }
+  .pipe .t { font-size:.75rem; color:var(--cda-text,#243447); line-height:1.2; }
+  .pipe .p { font-size:.7rem; color:var(--cda-muted,#667789); }
+  .sda-table { font-size:.85rem; }
+  .sda-table th { color:var(--cda-muted,#667789); font-weight:600; font-size:.78rem; text-transform:uppercase; letter-spacing:.03em; }
+  .sda-note { font-size:.82rem; color:var(--cda-muted,#667789); }
+
+  /* Ruta */
+  .ruta { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:.75rem; counter-reset: paso; }
+  .ruta > div { background:#fff; border:1px solid var(--cda-border,#dce4ec); border-radius:14px; padding:1rem; position:relative; }
+  .ruta > div::before { counter-increment: paso; content: counter(paso); width:2rem; height:2rem; border-radius:50%; display:grid; place-items:center; background:var(--cda-gold,#d6a62c); color:var(--cda-blue-dark,#092947); font-weight:800; margin-bottom:.6rem; }
+  .ruta strong { display:block; color:var(--cda-blue-dark,#092947); font-size:.9rem; margin-bottom:.25rem; }
+  .ruta span { font-size:.82rem; color:var(--cda-muted,#667789); }
+  .ruta .tag { display:inline-block; margin-top:.5rem; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--fc); }
+
+  @media (max-width: 991.98px) {
+    .sda-funcs { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .sda-funcs::before, .sda-func::before { display:none; }
+    .ruta { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .pipe { grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .pipe > div::after { display:none; }
+  }
+  @media (max-width: 575.98px) {
+    .sda-top { grid-template-columns:1fr; }
+    .sda-rector, .sda-consejo { grid-column:1; }
+    .sda-consejo::before { display:none; }
+    .sda-funcs, .sda-levels, .ruta, .prio { grid-template-columns:1fr; }
+    .pipe { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .bar-row { grid-template-columns: 1fr 3.4rem; }
+    .bar-row .bar { grid-column:1 / -1; grid-row:2; }
+  }
+</style>
+<script>document.documentElement.classList.add('sda-js');</script>
+
+<section class="sda-hero">
+  <div class="container">
+    <div class="eyebrow">Administración · Indicadores del Sistema Distrital</div>
+    <h1>Indicadores de las funciones del Sistema</h1>
+    <p>Priorización de asistencia técnica, normalización, seguimiento y evaluación a partir de los diagnósticos. Vista reservada a la administración.</p>
+    <div class="meta">
+      {% if ver %}<span class="sda-live-dot"></span>Datos de {{ d.n }} entidad{{ 'es' if d.n != 1 }} con diagnóstico{% if d.actualizado %} · último registro: {{ d.actualizado.strftime('%d/%m/%Y') }}{% endif %}
+      {% else %}Indicadores en construcción: se publican cuando al menos {{ minimo }} entidades completan el diagnóstico.{% endif %}
+    </div>
+  </div>
+</section>
+
+<div class="container pb-5">
+  <div class="row g-3 sda-kpis">
+    <div class="col-6 col-lg-3"><div class="sda-kpi"><div class="v">{{ d.n if ver else '—' }}</div><div class="l">Entidades con diagnóstico</div></div></div>
+    <div class="col-6 col-lg-3"><div class="sda-kpi"><div class="v">{{ d.promedio if ver and d.promedio is not none else '—' }}</div><div class="l">Índice promedio (0–100)</div></div></div>
+    <div class="col-6 col-lg-3"><div class="sda-kpi"><div class="v">{{ (d.niveles_pct.Bajo ~ ' %') if ver else '—' }}</div><div class="l">Entidades en nivel bajo</div></div></div>
+    <div class="col-6 col-lg-3"><div class="sda-kpi"><div class="v">{{ d.en_curso if d else '—' }}</div><div class="l">Diagnósticos en curso</div></div></div>
+  </div>
+
+  {% if not d %}
+  <div class="alert alert-warning mt-4">No fue posible consultar los diagnósticos en este momento. La estructura del Sistema se muestra sin indicadores.</div>
+  {% elif not publicable %}
+  <div class="alert alert-info mt-4 small mb-0">Para proteger la información de cada entidad, los indicadores agregados se muestran cuando hay al menos {{ minimo }} entidades con diagnóstico (actualmente: {{ d.n }}).</div>
+  {% endif %}
+
+  <!-- ===================== Estructura ===================== -->
+  <section class="sda-section">
+    <h2>Funciones del Sistema</h2>
+    <p class="sub">Seleccione una función para ver qué hace y cómo va en el Distrito.</p>
+    <div class="sda-org">
+      <div class="sda-top">
+        <div class="sda-node sda-rector">Instancia rectora del Sistema Distrital de Archivos<small>Coordina la política archivística del Distrito</small></div>
+        <div class="sda-node sda-consejo">Consejo Distrital de Archivos<small>Órgano asesor · conceptos técnicos</small></div>
+      </div>
+      <div class="sda-trunk"></div>
+      <div class="sda-funcs" role="tablist" aria-label="Funciones del Sistema">
+        <button type="button" class="sda-func f-asis" role="tab" id="tab-asis" aria-controls="panel-asis" aria-selected="true" data-target="asis">
+          <div class="hd"><i class="bi bi-people-fill"></i> Asistencia técnica</div>
+          <div class="bd">
+            <div class="desc">Orientación y acompañamiento técnico a las entidades del Distrito.</div>
+            <div class="live"><div class="n">{{ d.prioridades.Alta|length if ver else '—' }}</div><div class="t">{{ 'entidad' if ver and d.prioridades.Alta|length == 1 else 'entidades' }} con prioridad alta de acompañamiento</div></div>
+            <span class="more">Ver detalle →</span>
+          </div>
+        </button>
+        <button type="button" class="sda-func f-norm" role="tab" id="tab-norm" aria-controls="panel-norm" aria-selected="false" data-target="norm">
+          <div class="hd"><i class="bi bi-file-earmark-text-fill"></i> Normalización</div>
+          <div class="bd">
+            <div class="desc">Instrumentos, lineamientos y contenidos para la gestión documental.</div>
+            <div class="live">{% if ver and d.temas and d.temas[0].pct %}<div class="n">{{ d.temas[0].pct }} %</div><div class="t">sin avance en «{{ d.temas[0].tema }}», tema prioritario</div>{% else %}<div class="n">—</div><div class="t">tema prioritario para lineamientos</div>{% endif %}</div>
+            <span class="more">Ver detalle →</span>
+          </div>
+        </button>
+        <button type="button" class="sda-func f-segu" role="tab" id="tab-segu" aria-controls="panel-segu" aria-selected="false" data-target="segu">
+          <div class="hd"><i class="bi bi-bar-chart-fill"></i> Seguimiento</div>
+          <div class="bd">
+            <div class="desc">Seguimiento a la implementación de la gestión documental en las entidades.</div>
+            <div class="live"><div class="n">{{ d.promedio if ver and d.promedio is not none else '—' }}</div><div class="t">índice promedio de madurez archivística</div></div>
+            <span class="more">Ver detalle →</span>
+          </div>
+        </button>
+        <button type="button" class="sda-func f-eval" role="tab" id="tab-eval" aria-controls="panel-eval" aria-selected="false" data-target="eval">
+          <div class="hd"><i class="bi bi-search"></i> Evaluación</div>
+          <div class="bd">
+            <div class="desc">Revisión y evaluación de instrumentos archivísticos (TRD y TVD).</div>
+            <div class="live">{% set ev = d.etapas_trd|selectattr('estado','equalto','En evaluación')|first if ver else none %}<div class="n">{{ ev.entidades if ev else '—' }}</div><div class="t">{{ 'entidad' if ev and ev.entidades == 1 else 'entidades' }} con TRD en evaluación</div></div>
+            <span class="more">Ver detalle →</span>
+          </div>
+        </button>
+      </div>
+      <div class="sda-levels">
+        <div class="sda-level"><strong>Instancias articuladoras</strong>Cabezas de sector y dependencias de archivo de cada entidad, que coordinan la gestión documental en su ámbito.</div>
+        <div class="sda-level"><strong>Instancias ejecutoras</strong>Archivos de gestión y central de las entidades públicas y de los particulares que cumplen funciones públicas.</div>
+        <div class="sda-level"><strong>Diagnóstico Territorial</strong>Esta herramienta: aporta los datos con los que cada función prioriza y mide su avance.</div>
+      </div>
+    </div>
+
+    <!-- ===================== Paneles ===================== -->
+    <div class="sda-panel f-asis is-active" id="panel-asis" role="tabpanel" aria-labelledby="tab-asis">
+      <h3>Asistencia técnica</h3>
+      <p class="sub">Quiénes necesitan acompañamiento primero y en qué componente concentrarlo.</p>
+      {% if ver %}
+      <div class="prio">
+        <div class="alta"><div class="n">{{ d.prioridades.Alta|length }}</div><div class="t">Prioridad alta · nivel bajo</div></div>
+        <div class="media"><div class="n">{{ d.prioridades.Media|length }}</div><div class="t">Prioridad media · nivel medio</div></div>
+        <div class="baja"><div class="n">{{ d.prioridades.Baja|length }}</div><div class="t">Prioridad baja · nivel alto</div></div>
+      </div>
+      <h4>Componentes donde más entidades tienen brecha crítica</h4>
+      {% for c in d.componentes|sort(attribute='brecha_pct', reverse=true) if c.respondidas %}
+      <div class="bar-row"><span>{{ c.etiqueta }}</span><div class="bar"><span style="width: {{ c.brecha_pct }}%"></span></div><span class="val">{{ c.brecha_pct }} %</span></div>
+      {% endfor %}
+      <p class="sda-note mt-2">Brecha crítica: puntaje del componente inferior al 50 %. Porcentaje sobre las entidades que respondieron ese componente.</p>
+      {% if es_admin %}
+      <h4><i class="bi bi-lock-fill"></i> Entidades con prioridad alta (solo administración)</h4>
+      {% if d.prioridades.Alta %}
+      <div class="table-responsive"><table class="table sda-table align-middle mb-0">
+        <thead><tr><th>Entidad</th><th>Sector</th><th class="text-end">Índice</th><th>Componente más débil</th><th></th></tr></thead>
+        <tbody>{% for e in d.prioridades.Alta %}<tr><td>{{ e.nombre }}</td><td>{{ e.sector }}</td><td class="text-end">{{ e.ima }}</td><td>{{ e.componente_debil }}</td><td><a href="{{ url_for('resultado', censo_id=e.id) }}">Resultado</a></td></tr>{% endfor %}</tbody>
+      </table></div>
+      {% else %}<p class="sda-note">No hay entidades en nivel bajo.</p>{% endif %}
+      {% endif %}
+      {% else %}<p class="sda-note mb-0">Los indicadores aparecerán cuando haya suficientes diagnósticos.</p>{% endif %}
+    </div>
+
+    <div class="sda-panel f-norm" id="panel-norm" role="tabpanel" aria-labelledby="tab-norm">
+      <h3>Normalización</h3>
+      <p class="sub">Qué lineamientos producir primero, según las brechas más frecuentes.</p>
+      {% if ver %}
+      {% for t in d.temas %}
+      <div class="tema"><div class="rank">{{ loop.index }}</div><div><div class="nm">{{ t.tema }}</div><div class="ins">Sugerido: {{ t.instrumento }}</div></div><div class="pc">{{ t.pct }} %<small>{{ t.entidades }} de {{ d.n_formulario_actual }}</small></div></div>
+      {% endfor %}
+      <h4>Procesos con procedimientos documentados (pregunta 6)</h4>
+      {% for p in d.procesos %}
+      <div class="bar-row"><span>{{ p.proceso }}</span><div class="bar"><span style="width: {{ p.pct }}%"></span></div><span class="val">{{ p.pct }} %</span></div>
+      {% endfor %}
+      <p class="sda-note mt-2">Los procesos con menor porcentaje son candidatos a guías y modelos de procedimiento. Se calculan sobre {{ d.n_formulario_actual }} diagnósticos del formulario vigente.</p>
+      {% else %}<p class="sda-note mb-0">Los indicadores aparecerán cuando haya suficientes diagnósticos.</p>{% endif %}
+    </div>
+
+    <div class="sda-panel f-segu" id="panel-segu" role="tabpanel" aria-labelledby="tab-segu">
+      <h3>Seguimiento</h3>
+      <p class="sub">Cómo está la gestión documental del Distrito por nivel, componente y sector.</p>
+      {% if ver %}
+      <h4>Distribución por nivel</h4>
+      <div class="stack" role="img" aria-label="Bajo {{ d.niveles_pct.Bajo }} %, Medio {{ d.niveles_pct.Medio }} %, Alto {{ d.niveles_pct.Alto }} %">
+        <span style="width: {{ d.niveles_pct.Bajo }}%; background:#dc3545"></span><span style="width: {{ d.niveles_pct.Medio }}%; background:#e0a800"></span><span style="width: {{ d.niveles_pct.Alto }}%; background:#198754"></span>
+      </div>
+      <div class="legend"><span><i style="background:#dc3545"></i>Bajo: {{ d.niveles.Bajo }} ({{ d.niveles_pct.Bajo }} %)</span><span><i style="background:#e0a800"></i>Medio: {{ d.niveles.Medio }} ({{ d.niveles_pct.Medio }} %)</span><span><i style="background:#198754"></i>Alto: {{ d.niveles.Alto }} ({{ d.niveles_pct.Alto }} %)</span></div>
+      <h4>Puntaje promedio por componente</h4>
+      {% for c in d.componentes %}
+      <div class="bar-row"><span>{{ c.etiqueta }}</span><div class="bar"><span style="width: {{ c.promedio or 0 }}%"></span></div><span class="val">{{ c.promedio if c.promedio is not none else '—' }}</span></div>
+      {% endfor %}
+      <h4>Por sector</h4>
+      <div class="table-responsive"><table class="table sda-table mb-0">
+        <thead><tr><th>Sector</th><th class="text-end">Entidades</th><th class="text-end">Índice promedio</th></tr></thead>
+        <tbody>{% for s in d.sectores %}<tr><td>{{ s.sector }}</td><td class="text-end">{{ s.entidades }}</td><td class="text-end">{{ s.promedio }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+      <p class="sda-note mt-2">Se toma el diagnóstico más reciente de cada entidad ({{ d.n }} entidades; {{ d.diagnosticos_totales }} diagnósticos registrados en total).</p>
+      {% else %}<p class="sda-note mb-0">Los indicadores aparecerán cuando haya suficientes diagnósticos.</p>{% endif %}
+    </div>
+
+    <div class="sda-panel f-eval" id="panel-eval" role="tabpanel" aria-labelledby="tab-eval">
+      <h3>Evaluación</h3>
+      <p class="sub">En qué punto del ciclo están las Tablas de Retención Documental de las entidades.</p>
+      {% if ver %}
+      <div class="pipe">
+        {% for e in d.etapas_trd %}<div><div class="n">{{ e.entidades }}</div><div class="t">{{ e.etiqueta }}</div><div class="p">{{ e.pct }} %</div></div>{% endfor %}
+      </div>
+      <div class="row g-3 mt-1">
+        <div class="col-md-6"><div class="sda-level h-100"><strong>{{ d.trd_con_evidencia }} de {{ d.trd_avanzada }}</strong>entidades con TRD convalidadas o implementadas {{ 'cuenta' if d.trd_con_evidencia == 1 else 'cuentan' }} con acto de convalidación y evidencia de implementación.</div></div>
+        <div class="col-md-6"><div class="sda-level h-100"><strong>{{ d.trd_actualizacion }}</strong>{{ 'entidad reporta' if d.trd_actualizacion == 1 else 'entidades reportan' }} que sus TRD requieren actualización y podrían llegar a evaluación del Consejo.</div></div>
+      </div>
+      {% if d.otros_trd %}<p class="sda-note mt-2 mb-0">Otras respuestas: {% for k, v in d.otros_trd.items() %}{{ k }} ({{ v }}){{ ', ' if not loop.last }}{% endfor %}.</p>{% endif %}
+      {% else %}<p class="sda-note mb-0">Los indicadores aparecerán cuando haya suficientes diagnósticos.</p>{% endif %}
+    </div>
+  </section>
+
+  <div class="mt-4 d-flex gap-2 flex-wrap">
+    <a class="btn btn-primary" href="{{ url_for('admin') }}"><i class="bi bi-arrow-left"></i> Volver al panel</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('admin_solicitudes') }}"><i class="bi bi-inbox"></i> Solicitudes de entidades</a>
+    <a class="btn btn-outline-secondary" href="{{ url_for('api_sistema_distrital') }}"><i class="bi bi-filetype-json"></i> Indicadores (JSON)</a>
+  </div>
+  <p class="sda-note mt-4 mb-0"><strong>Nota metodológica:</strong> los indicadores se calculan automáticamente con la escala piloto del diagnóstico y orientan la priorización; no constituyen certificación de cumplimiento normativo. La estructura del Sistema es de referencia y puede ajustarse a la conformación oficial del Distrito.</p>
+</div>
+
+<script>
+(() => {
+  const tabs = [...document.querySelectorAll('.sda-func[data-target]')];
+  function select(tab, focusPanel) {
+    tabs.forEach(t => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+      t.tabIndex = on ? 0 : -1;
+      const p = document.getElementById('panel-' + t.dataset.target);
+      if (p) p.classList.toggle('is-active', on);
+    });
+    try { history.replaceState(null, '', '#' + tab.dataset.target); } catch (e) {}
+    if (focusPanel) document.getElementById('panel-' + tab.dataset.target).scrollIntoView({behavior: 'smooth', block: 'nearest'});
+  }
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => select(t, true));
+    t.addEventListener('keydown', e => {
+      const k = {ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1}[e.key];
+      if (!k) return;
+      e.preventDefault();
+      const next = tabs[(i + k + tabs.length) % tabs.length];
+      next.focus(); select(next, false);
+    });
+  });
+  const inicial = tabs.find(t => '#' + t.dataset.target === location.hash) || tabs[0];
+  select(inicial, false);
+})();
+</script>
+{% endblock %}
