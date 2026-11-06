@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}Ficha de diagnóstico · {{ nombre }}{% endblock %}
+{% block content %}
+{% set color_nivel = {'Alto':'#b42318','Medio':'#9a6700','Bajo':'#475569'} %}
+{% macro semaforo(p) -%}{% if p is none %}#94a3b8{% elif p <= 33.33 %}#dc3545{% elif p <= 66.66 %}#e0a800{% else %}#198754{% endif %}{%- endmacro %}
+{% macro etiqueta(p) -%}{% if p is none %}Sin respuestas puntuables{% elif p <= 33.33 %}Bajo{% elif p <= 66.66 %}Medio{% else %}Alto{% endif %}{%- endmacro %}
+{% macro valor(v) -%}
+  {%- if v is string -%}{{ v if v else '' }}{%- else -%}{{ v|join(', ') }}{%- endif -%}
+{%- endmacro %}
+<style>
+  .fx-hero { background:linear-gradient(125deg,#062d4e,#0b527c 68%,#167d91); color:#fff; border-radius:22px; padding:26px 30px; box-shadow:0 14px 35px #0b35551c; }
+  .fx-hero .k { letter-spacing:.14em; font-size:.75rem; font-weight:800; opacity:.8; }
+  .fx-hero h1 { font-weight:800; font-size:clamp(1.4rem,2.6vw,2rem); margin:.3rem 0 .4rem; color:#fff; }
+  .fx-meta { display:flex; flex-wrap:wrap; gap:.4rem 1.2rem; font-size:.86rem; opacity:.88; }
+  .fx-ima { text-align:center; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.22); border-radius:18px; padding:14px 22px; min-width:170px; }
+  .fx-ima .n { font-size:2.6rem; font-weight:900; line-height:1; font-variant-numeric:tabular-nums; }
+  .fx-ima .l { font-size:.78rem; opacity:.8; }
+  .fx-pill { display:inline-flex; align-items:center; gap:.4rem; padding:.25rem .7rem; border-radius:999px; font-weight:800; font-size:.8rem; background:#fff; }
+  .fx-pill i { width:9px; height:9px; border-radius:50%; display:inline-block; }
+  .fx-tools { display:flex; gap:.5rem; flex-wrap:wrap; align-items:center; margin-top:16px; }
+  .fx-tools select { max-width:420px; border-radius:10px; }
+  .fx-card { background:#fff; border:1px solid #e4ebf1; border-radius:18px; box-shadow:0 7px 24px #0a2c4610; padding:22px; }
+  .fx-card h2 { font-size:1.08rem; font-weight:800; color:#123852; margin-bottom:.2rem; }
+  .fx-sub { color:#617487; font-size:.86rem; margin-bottom:1rem; }
+  .fx-kpi { background:#fff; border:1px solid #e4ebf1; border-radius:16px; padding:16px 18px; height:100%; }
+  .fx-kpi .v { font-size:1.9rem; font-weight:900; line-height:1.1; font-variant-numeric:tabular-nums; }
+  .fx-kpi .t { font-size:.8rem; color:#617487; }
+  .dim-row { display:grid; grid-template-columns:minmax(150px,22rem) 1fr 4.6rem 6.5rem; gap:.8rem; align-items:center; padding:.55rem 0; border-bottom:1px solid #eef2f6; }
+  .dim-row:last-child { border-bottom:0; }
+  .dim-row a { color:#123852; font-weight:700; text-decoration:none; }
+  .dim-row a:hover { text-decoration:underline; }
+  .dim-bar { height:12px; background:#e8eef4; border-radius:20px; overflow:hidden; }
+  .dim-bar span { display:block; height:100%; border-radius:20px; }
+  .dim-val { text-align:right; font-weight:800; font-variant-numeric:tabular-nums; }
+  .dim-risk { font-size:.76rem; color:#617487; text-align:right; }
+  .rk-table th { font-size:.74rem; text-transform:uppercase; letter-spacing:.04em; color:#617487; background:#f5f8fb; white-space:nowrap; }
+  .rk-table td { font-size:.88rem; vertical-align:top; }
+  .rk-badge { display:inline-block; padding:.2rem .6rem; border-radius:999px; font-size:.74rem; font-weight:800; white-space:nowrap; }
+  .rk-Alto { background:#fdecea; color:#b42318; } .rk-Medio { background:#fff4d6; color:#7a5a00; } .rk-Bajo { background:#eef2f6; color:#475569; }
+  .rk-det { color:#617487; font-size:.82rem; display:block; margin-top:.15rem; }
+  .dim { scroll-margin-top:90px; }
+  .dim-head { display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; margin-bottom:.8rem; }
+  .dim-head h2 { margin:0; }
+  .dim-letter { display:inline-grid; place-items:center; width:2rem; height:2rem; border-radius:10px; background:#eaf3fb; color:#123b65; font-weight:900; margin-right:.5rem; }
+  .q { border-top:1px solid #eef2f6; padding:.85rem 0; }
+  .q:first-of-type { border-top:0; }
+  .q-t { font-weight:700; color:#123852; font-size:.92rem; }
+  .q-v { font-size:.95rem; margin-top:.15rem; }
+  .q-v.empty { color:#94a3b8; font-style:italic; }
+  .q-d { display:grid; grid-template-columns:minmax(140px,30%) 1fr; gap:.15rem .9rem; font-size:.86rem; margin-top:.45rem; }
+  .q-d dt { color:#617487; font-weight:600; }
+  .q-d dd { margin:0; white-space:pre-line; word-break:break-word; }
+  .chk { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.3rem 1rem; font-size:.86rem; margin-top:.5rem; }
+  .chk span { display:flex; gap:.45rem; align-items:center; }
+  .chk .si { color:#14532d; } .chk .no { color:#b42318; }
+  .dim-risks { margin-top:.6rem; display:grid; gap:.5rem; }
+  .dim-risks div { border-left:4px solid; border-radius:8px; padding:.55rem .8rem; background:#fafbfc; font-size:.86rem; }
+  .hist-table td, .hist-table th { font-size:.86rem; }
+  @media (max-width: 767.98px) {
+    .dim-row { grid-template-columns:1fr 4rem; }
+    .dim-row .dim-bar { grid-column:1 / -1; grid-row:2; }
+    .dim-row .dim-risk { display:none; }
+    .q-d { grid-template-columns:1fr; }
+    .chk { grid-template-columns:1fr; }
+    .fx-hero { padding:20px; }
+  }
+  @media print {
+    .cda-nav, .cda-footer, footer, .fx-tools, .no-print { display:none !important; }
+    body { background:#fff !important; }
+    .fx-hero { background:#fff !important; color:#000 !important; box-shadow:none; border:1px solid #ccc; }
+    .fx-hero h1, .fx-ima { color:#000 !important; }
+    .fx-card, .fx-kpi { box-shadow:none; break-inside:avoid; }
+    .dim { break-inside:avoid-page; }
+  }
+</style>
+<div class="container-fluid px-lg-5 py-4">
+  <section class="fx-hero mb-4">
+    <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start">
+      <div>
+        <div class="k">FICHA DE DIAGNÓSTICO · ADMINISTRACIÓN</div>
+        <h1>{{ nombre }}</h1>
+        <div class="fx-meta">
+          {% if respuestas.get('nit_entidad') %}<span><i class="bi bi-hash"></i> NIT {{ respuestas.get('nit_entidad') }}</span>{% endif %}
+          <span><i class="bi bi-diagram-3"></i> {{ censo.sector or 'Sin sector' }}</span>
+          <span><i class="bi bi-bank"></i> {{ censo.naturaleza or 'Sin naturaleza' }}</span>
+          <span><i class="bi bi-calendar3"></i> {{ censo.fecha|hora_col }}</span>
+          {% if censo.codigo_entidad %}<span><i class="bi bi-upc"></i> {{ censo.codigo_entidad }}</span>{% endif %}
+          <span><i class="bi bi-file-earmark"></i> Registro n.º {{ censo.id }}</span>
+        </div>
+      </div>
+      <div class="fx-ima">
+        <div class="n">{{ '%.1f'|format(censo.ima or 0) }}</div>
+        <div class="l mb-2">Índice de madurez (0–100)</div>
+        <span class="fx-pill" style="color:{{ semaforo(censo.ima or 0) }}"><i style="background:{{ semaforo(censo.ima or 0) }}"></i>Nivel {{ etiqueta(censo.ima or 0) }}</span>
+      </div>
+    </div>
+    <div class="fx-tools">
+      <label class="visually-hidden" for="cambiarEntidad">Ver otra entidad</label>
+      <select id="cambiarEntidad" class="form-select form-select-sm" onchange="if(this.value) location.href=this.value">
+        {% for o in opciones %}<option value="{{ url_for('ficha_diagnostico', censo_id=o.id) }}" {% if o.id == censo.id %}selected{% endif %}>{{ nombre_de(o) }} · {{ o.fecha|hora_col('%d/%m/%Y') }} · {{ '%.1f'|format(o.ima or 0) }}</option>{% endfor %}
+      </select>
+      <button type="button" class="btn btn-light btn-sm fw-bold" onclick="window.print()"><i class="bi bi-printer me-1"></i>Imprimir o guardar PDF</button>
+      <a class="btn btn-outline-light btn-sm fw-bold" href="{{ url_for('admin') }}"><i class="bi bi-arrow-left me-1"></i>Panel</a>
+    </div>
+  </section>
+
+  {% if not formulario_actual %}
+  <div class="alert alert-warning">Este registro se hizo con una versión anterior del formulario y no tiene respuestas por dimensión. Se muestran solo los datos generales.</div>
+  {% else %}
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3"><div class="fx-kpi"><div class="v" style="color:#b42318">{{ conteo.Alto }}</div><div class="t">Riesgos altos</div></div></div>
+    <div class="col-6 col-lg-3"><div class="fx-kpi"><div class="v" style="color:#9a6700">{{ conteo.Medio }}</div><div class="t">Riesgos medios</div></div></div>
+    <div class="col-6 col-lg-3"><div class="fx-kpi"><div class="v" style="color:#475569">{{ conteo.Bajo }}</div><div class="t">Riesgos bajos</div></div></div>
+    {% set criticas = dimensiones|selectattr('puntaje','ne',none)|selectattr('puntaje','le',50)|list %}
+    <div class="col-6 col-lg-3"><div class="fx-kpi"><div class="v" style="color:#123852">{{ criticas|length }} de 5</div><div class="t">Dimensiones en 50 % o menos</div></div></div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <div class="col-12">
+      <section class="fx-card">
+        <h2>Perfil por dimensión</h2>
+        <p class="fx-sub">Puntaje de 0 a 100 de cada dimensión evaluada. Clic en el nombre para ver su detalle.</p>
+        {% for d in dimensiones if d.componente %}
+        <div class="dim-row">
+          <a href="#dim-{{ d.clave }}">{{ d.letra }}. {{ d.nombre }}</a>
+          <div class="dim-bar" role="img" aria-label="{{ d.nombre }}: {{ d.puntaje if d.puntaje is not none else 'sin puntaje' }}"><span style="width: {{ d.puntaje or 0 }}%; background: {{ semaforo(d.puntaje) }}"></span></div>
+          <div class="dim-val" style="color: {{ semaforo(d.puntaje) }}">{{ d.puntaje if d.puntaje is not none else '—' }}</div>
+          <div class="dim-risk">{{ d.riesgos|length }} riesgo{{ 's' if d.riesgos|length != 1 }}</div>
+        </div>
+        {% endfor %}
+        <p class="small text-secondary mt-3 mb-0">Bajo: 0–33,3 · Medio: 33,4–66,6 · Alto: 66,7–100. Escala piloto del instrumento; las preguntas 3, 6, 8 y 10 son descriptivas y no suman puntaje.</p>
+      </section>
+    </div>
+    <div class="col-12">
+      <section class="fx-card">
+        <h2>Riesgos encontrados</h2>
+        <p class="fx-sub">Derivados de las respuestas de la entidad, ordenados de mayor a menor prioridad.</p>
+        {% if riesgos %}
+        <div class="table-responsive"><table class="table rk-table mb-0">
+          <thead><tr><th style="width:6rem">Nivel</th><th style="width:16rem">Dimensión</th><th>Riesgo</th><th style="width:34%">Recomendación</th></tr></thead>
+          <tbody>{% for x in riesgos %}<tr><td><span class="rk-badge rk-{{ x.nivel }}">{{ x.nivel }}</span></td><td class="text-nowrap">{{ nombres_dim[x.dimension] }}</td><td><strong>{{ x.titulo }}</strong>{% if x.detalle %}<span class="rk-det">{{ x.detalle }}</span>{% endif %}</td><td>{{ x.recomendacion }}</td></tr>{% endfor %}</tbody>
+        </table></div>
+        {% else %}<p class="mb-0 text-secondary">No se identificaron riesgos con las reglas actuales.</p>{% endif %}
+      </section>
+    </div>
+  </div>
+  {% endif %}
+
+  {% for d in dimensiones if formulario_actual or d.clave == 'identificacion' %}
+  <section class="fx-card mb-3 dim" id="dim-{{ d.clave }}">
+    <div class="dim-head">
+      <h2><span class="dim-letter">{{ d.letra }}</span>{{ d.nombre }}</h2>
+      {% if d.componente and formulario_actual %}<span class="fx-pill" style="border:1px solid #e4ebf1; color: {{ semaforo(d.puntaje) }}"><i style="background: {{ semaforo(d.puntaje) }}"></i>{{ d.puntaje if d.puntaje is not none else '—' }} · {{ etiqueta(d.puntaje) }}</span>{% endif %}
+    </div>
+    {% for q in d.preguntas %}
+    <div class="q">
+      <div class="q-t">{{ q.titulo }}</div>
+      {% set v = valor(q.valor) %}
+      <div class="q-v {{ '' if v else 'empty' }}">{{ v if v else 'Sin respuesta' }}</div>
+      {% if q.detalles %}
+      <dl class="q-d">
+        {% for det in q.detalles %}<dt>{{ det.etiqueta }}</dt><dd>{% if det.es_evidencia and (det.valor is string) and det.valor.startswith('http') %}<a href="{{ det.valor }}" target="_blank" rel="noopener noreferrer">{{ det.valor }}</a>{% else %}{{ valor(det.valor) }}{% endif %}</dd>{% endfor %}
+      </dl>
+      {% endif %}
+    </div>
+    {% endfor %}
+    {% if d.extra and formulario_actual %}
+    <div class="chk" aria-label="{{ d.extra.titulo }}">
+      {% for item, ok in d.extra.elementos %}<span class="{{ 'si' if ok else 'no' }}"><i class="bi {{ 'bi-check-circle-fill' if ok else 'bi-x-circle' }}"></i>{{ item }}</span>{% endfor %}
+    </div>
+    {% endif %}
+    {% if d.riesgos %}
+    <div class="dim-risks">
+      {% for x in d.riesgos %}<div style="border-color: {{ color_nivel[x.nivel] }}"><span class="rk-badge rk-{{ x.nivel }} me-2">{{ x.nivel }}</span><strong>{{ x.titulo }}</strong>{% if x.detalle %}<span class="rk-det">{{ x.detalle }}</span>{% endif %}<span class="rk-det"><i class="bi bi-arrow-return-right"></i> {{ x.recomendacion }}</span></div>{% endfor %}
+    </div>
+    {% endif %}
+  </section>
+  {% endfor %}
+
+  {% if transversales %}
+  <section class="fx-card mb-3">
+    <h2>Evidencias</h2>
+    {% for x in transversales %}<p class="mb-1"><span class="rk-badge rk-{{ x.nivel }} me-2">{{ x.nivel }}</span><strong>{{ x.titulo }}</strong>. {{ x.detalle }}. {{ x.recomendacion }}</p>{% endfor %}
+  </section>
+  {% endif %}
+
+  <section class="fx-card mb-3">
+    <h2>Historial de la entidad</h2>
+    <p class="fx-sub">{% if historial|length > 1 %}La entidad tiene {{ historial|length }} diagnósticos; el más reciente va primero.{% else %}Es el único diagnóstico registrado de esta entidad.{% endif %}</p>
+    {% if historial|length > 1 %}
+    <div class="table-responsive"><table class="table hist-table mb-0">
+      <thead><tr><th>Fecha</th><th class="text-end">Índice</th><th>Nivel</th><th class="text-end">Cambio</th><th></th></tr></thead>
+      <tbody>{% for h in historial %}{% set prev = historial[loop.index] if loop.index < historial|length else none %}
+        <tr {% if h.id == censo.id %}class="table-active"{% endif %}><td>{{ h.fecha|hora_col('%d/%m/%Y') }}</td><td class="text-end fw-bold">{{ '%.1f'|format(h.ima or 0) }}</td><td>{{ etiqueta(h.ima or 0) }}</td>
+        <td class="text-end">{% if prev %}{% set dlt = (h.ima or 0) - (prev.ima or 0) %}<span style="color: {{ '#198754' if dlt > 0 else ('#b42318' if dlt < 0 else '#617487') }}">{{ '%+.1f'|format(dlt) }}</span>{% else %}—{% endif %}</td>
+        <td>{% if h.id != censo.id %}<a href="{{ url_for('ficha_diagnostico', censo_id=h.id) }}">Ver ficha</a>{% else %}<span class="text-secondary small">En pantalla</span>{% endif %}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    {% endif %}
+  </section>
+
+  <p class="small text-secondary"><i class="bi bi-info-circle me-1"></i>Los riesgos se generan automáticamente con reglas sobre las respuestas y orientan el acompañamiento; no constituyen certificación de cumplimiento normativo y deben validarse en la revisión técnica.</p>
+</div>
+{% endblock %}
