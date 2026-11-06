@@ -1,7 +1,7 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, jsonify, abort
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect as sqlalchemy_inspect
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from functools import wraps
 from io import BytesIO
@@ -9,6 +9,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 import json
+import math
 import os
 import csv
 import unicodedata
@@ -529,13 +530,9 @@ def censo():
     return render_template('diagnostico.html')
 
 
-def calcular_diagnostico_nuevo(form):
-    """Calcula un índice piloto con cinco componentes de igual peso (20 % c/u).
-
-    Esta fórmula es una propuesta técnica preliminar, no una escala oficial del AGN.
-    Las preguntas descriptivas no suman puntaje automáticamente.
-    """
-    mapas = {
+# Equivalencias de respuestas a puntaje por componente. Se comparten entre el
+# cálculo del diagnóstico y el tablero del Sistema Distrital de Archivos.
+MAPAS_COMPONENTES = {
         'estrategico': [
             ('q1_politica', {'No existe': 0, 'En desarrollo': 0.5, 'Aprobada': 1,
                              'En implementación': 0.75, 'Implementada y con seguimiento': 1,
@@ -561,15 +558,29 @@ def calcular_diagnostico_nuevo(form):
             ('q9_capacitacion', {'No se realiza': 0, 'Ocasional': 0.5,
                                  'Planificada y periódica': 1, 'No se tiene información': None}),
         ],
-    }
+}
+
+
+def puntajes_componentes(form):
+    """Puntaje de 0 a 1 de cada componente (None si no hay respuestas puntuables)."""
     componentes = {}
-    for componente, preguntas in mapas.items():
+    for componente, preguntas in MAPAS_COMPONENTES.items():
         valores = []
         for campo, opciones in preguntas:
             valor = opciones.get(form.get(campo, ''))
             if valor is not None:
                 valores.append(valor)
         componentes[componente] = (sum(valores) / len(valores)) if valores else None
+    return componentes
+
+
+def calcular_diagnostico_nuevo(form):
+    """Calcula un índice piloto con cinco componentes de igual peso (20 % c/u).
+
+    Esta fórmula es una propuesta técnica preliminar, no una escala oficial del AGN.
+    Las preguntas descriptivas no suman puntaje automáticamente.
+    """
+    componentes = puntajes_componentes(form)
     puntajes = [v for v in componentes.values() if v is not None]
     ima = round((sum(puntajes) / len(puntajes)) * 100, 2) if puntajes else 0
     total = round(sum(puntajes), 2)
@@ -1033,6 +1044,406 @@ def exportar_excel():
         mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
     )
 
+
+# ---------------------------------------------------------------------------
+# MÓDULO NUEVO: Sistema Distrital de Archivos (tablero público).
+# Solo lee los diagnósticos existentes; no crea tablas ni modifica registros.
+# ---------------------------------------------------------------------------
+# Mínimo de entidades para publicar indicadores agregados sin exponer a una
+# entidad individual. El panel de administración siempre ve los datos.
+SDA_MIN_ENTIDADES_PUBLICO = int(os.environ.get('SDA_MIN_ENTIDADES_PUBLICO', '3'))
+
+SDA_COMPONENTES = [
+    ('estrategico', 'Estratégico'),
+    ('administracion_archivos', 'Administración de archivos'),
+    ('procesos_documentales', 'Procesos de gestión documental'),
+    ('tecnologico', 'Tecnológico'),
+    ('cultural', 'Cultural'),
+]
+
+# Etapas de las TRD en el orden del ciclo que acompaña el Consejo.
+SDA_ETAPAS_TRD = [
+    ('No elaboradas', 'Sin TRD'),
+    ('En elaboración', 'En elaboración'),
+    ('En evaluación', 'En evaluación'),
+    ('Convalidadas', 'Convalidadas'),
+    ('En implementación', 'En implementación'),
+    ('Implementadas', 'Implementadas'),
+]
+
+# Temas de normalización: (clave, tema, instrumento o lineamiento sugerido, regla de brecha).
+SDA_TEMAS_NORMALIZACION = [
+    ('politica', 'Política de Gestión Documental', 'Guía para formular, aprobar y hacer seguimiento a la PGD',
+     lambda r: r.get('q1_politica') in ('No existe', 'En desarrollo')),
+    ('seguimiento', 'Seguimiento al PGD', 'Lineamiento de seguimiento y planes de mejora del PGD',
+     lambda r: r.get('q2_seguimiento') == 'No'),
+    ('depositos', 'Depósitos y conservación', 'Lineamiento de condiciones de depósitos y SIC',
+     lambda r: r.get('q4_depositos') == 'No'),
+    ('trd', 'Tablas de Retención Documental', 'Guía de elaboración y presentación de TRD',
+     lambda r: r.get('q5_trd') in ('No elaboradas', 'Requieren actualización')),
+    ('sgdea', 'Documento electrónico y SGDEA', 'Lineamiento de requisitos para SGDEA',
+     lambda r: r.get('q7_sgdea') == 'No'),
+    ('preservacion', 'Preservación digital', 'Guía del Plan de Preservación Digital a Largo Plazo',
+     lambda r: 'Plan de preservación digital' not in _sda_lista(r.get('q8_protecciones'))),
+    ('capacitacion', 'Capacitación y cultura archivística', 'Plan distrital de capacitación en gestión documental',
+     lambda r: r.get('q9_capacitacion') == 'No se realiza'),
+]
+
+SDA_PROCESOS = ['Planeación', 'Producción', 'Gestión y trámite', 'Organización',
+                'Transferencias', 'Disposición final', 'Preservación a largo plazo', 'Valoración']
+
+
+def _sda_lista(valor):
+    if isinstance(valor, list):
+        return valor
+    return [valor] if valor else []
+
+
+def _sda_pct(parte, total):
+    return round(parte * 100 / total, 1) if total else 0
+
+
+def _sda_nombre(registro):
+    return (registro.nombre_entidad or '').split(' | NIT')[0].strip() or 'Entidad sin nombre'
+
+
+def indicadores_sistema_distrital():
+    """Agrega los diagnósticos más recientes de cada entidad en indicadores por función."""
+    registros = Censo.query.order_by(Censo.fecha.desc()).all()
+    vistos, entidades = set(), []
+    for r in registros:  # se conserva solo el diagnóstico más reciente por entidad
+        clave = (r.codigo_entidad or '').strip() or clave_entidad(_sda_nombre(r))
+        if clave in vistos:
+            continue
+        vistos.add(clave)
+        try:
+            respuestas = json.loads(r.respuestas_json or '{}')
+        except (TypeError, ValueError):
+            respuestas = {}
+        if not isinstance(respuestas, dict):
+            respuestas = {}
+        entidades.append({
+            'id': r.id, 'nombre': _sda_nombre(r), 'sector': (r.sector or 'Sin sector').strip() or 'Sin sector',
+            'ima': round(r.ima or 0, 2), 'fecha': r.fecha, 'respuestas': respuestas,
+            'componentes': puntajes_componentes(respuestas),
+        })
+
+    n = len(entidades)
+    try:
+        en_curso = BorradorDiagnostico.query.filter_by(estado='borrador').count()
+    except Exception:
+        en_curso = 0
+
+    def nivel(ima):
+        return 'Bajo' if ima <= 33.33 else ('Medio' if ima <= 66.66 else 'Alto')
+
+    niveles = {'Bajo': 0, 'Medio': 0, 'Alto': 0}
+    for e in entidades:
+        niveles[nivel(e['ima'])] += 1
+
+    # SEGUIMIENTO: promedio por componente y por sector.
+    componentes = []
+    for clave, etiqueta in SDA_COMPONENTES:
+        valores = [e['componentes'].get(clave) for e in entidades if e['componentes'].get(clave) is not None]
+        criticas = sum(1 for v in valores if v < 0.5)
+        componentes.append({
+            'clave': clave, 'etiqueta': etiqueta, 'respondidas': len(valores),
+            'promedio': round(sum(valores) / len(valores) * 100, 1) if valores else None,
+            'brecha_critica': criticas, 'brecha_pct': _sda_pct(criticas, len(valores)),
+        })
+    sectores = {}
+    for e in entidades:
+        s = sectores.setdefault(e['sector'], {'sector': e['sector'], 'entidades': 0, 'suma': 0.0})
+        s['entidades'] += 1
+        s['suma'] += e['ima']
+    sectores = sorted(({'sector': s['sector'], 'entidades': s['entidades'],
+                        'promedio': round(s['suma'] / s['entidades'], 1)} for s in sectores.values()),
+                      key=lambda s: (-s['entidades'], s['sector']))
+
+    # ASISTENCIA TÉCNICA: prioridad de acompañamiento y componente más débil.
+    prioridades = {'Alta': [], 'Media': [], 'Baja': []}
+    for e in entidades:
+        p = {'Bajo': 'Alta', 'Medio': 'Media', 'Alto': 'Baja'}[nivel(e['ima'])]
+        puntuados = [(v, et) for (c, et) in SDA_COMPONENTES
+                     for v in [e['componentes'].get(c)] if v is not None]
+        debil = min(puntuados)[1] if puntuados else 'Sin información suficiente'
+        prioridades[p].append({'id': e['id'], 'nombre': e['nombre'], 'ima': e['ima'],
+                               'sector': e['sector'], 'componente_debil': debil})
+    for lista in prioridades.values():
+        lista.sort(key=lambda x: x['ima'])
+    focos = sorted([c for c in componentes if c['brecha_critica']], key=lambda c: -c['brecha_pct'])
+
+    # NORMALIZACIÓN: temas con mayor proporción de entidades con brecha.
+    # Solo cuentan los diagnósticos del formulario actual (versiones antiguas no tienen estas preguntas).
+    con_dato = [e for e in entidades if e['respuestas'].get('q1_politica')]
+    temas = []
+    for clave, tema, instrumento, regla in SDA_TEMAS_NORMALIZACION:
+        brecha = sum(1 for e in con_dato if regla(e['respuestas']))
+        temas.append({'clave': clave, 'tema': tema, 'instrumento': instrumento,
+                      'entidades': brecha, 'pct': _sda_pct(brecha, len(con_dato))})
+    temas.sort(key=lambda t: -t['pct'])
+    procesos = []
+    for proceso in SDA_PROCESOS:
+        con = sum(1 for e in con_dato if proceso in _sda_lista(e['respuestas'].get('q6_procesos')))
+        procesos.append({'proceso': proceso, 'entidades': con, 'pct': _sda_pct(con, len(con_dato))})
+    procesos.sort(key=lambda p: p['pct'])
+
+    # EVALUACIÓN: ciclo de las TRD.
+    estados = {}
+    for e in entidades:
+        estado = e['respuestas'].get('q5_trd') or 'Sin dato'
+        estados[estado] = estados.get(estado, 0) + 1
+    etapas = [{'estado': est, 'etiqueta': et, 'entidades': estados.get(est, 0),
+               'pct': _sda_pct(estados.get(est, 0), n)} for est, et in SDA_ETAPAS_TRD]
+    otros_trd = {k: v for k, v in estados.items() if k not in dict(SDA_ETAPAS_TRD)}
+    con_trd_avanzada = [e for e in entidades if e['respuestas'].get('q5_trd') in
+                        ('Convalidadas', 'En implementación', 'Implementadas')]
+    con_evidencia = sum(1 for e in con_trd_avanzada if e['respuestas'].get('q5_evidencia_estado') == 'Sí, ambas')
+    requieren_actualizacion = estados.get('Requieren actualización', 0)
+
+    return {
+        'n': n, 'en_curso': en_curso, 'diagnosticos_totales': len(registros),
+        'promedio': round(sum(e['ima'] for e in entidades) / n, 1) if n else None,
+        'niveles': niveles, 'niveles_pct': {k: _sda_pct(v, n) for k, v in niveles.items()},
+        'componentes': componentes, 'sectores': sectores,
+        'prioridades': prioridades, 'focos': focos,
+        'temas': temas, 'procesos': procesos, 'n_formulario_actual': len(con_dato),
+        'etapas_trd': etapas, 'otros_trd': otros_trd,
+        'trd_avanzada': len(con_trd_avanzada), 'trd_con_evidencia': con_evidencia,
+        'trd_actualizacion': requieren_actualizacion,
+        'actualizado': max((e['fecha'] for e in entidades), default=None),
+    }
+
+
+# ----- Indicadores del Sistema: solo administración -----
+@app.route('/admin/sistema-distrital')
+@admin_required
+def admin_sistema_distrital():
+    try:
+        datos = indicadores_sistema_distrital()
+    except Exception:
+        app.logger.exception('No fue posible calcular los indicadores del Sistema Distrital')
+        datos = None
+    return render_template('admin_sistema_distrital.html', datos=datos, publicable=bool(datos),
+                           es_admin=True, minimo=0)
+
+
+@app.route('/api/admin/sistema-distrital/indicadores')
+@admin_required
+def api_sistema_distrital():
+    """Indicadores agregados en JSON para uso administrativo (sin nombres de entidades)."""
+    datos = indicadores_sistema_distrital()
+    salida = {k: v for k, v in datos.items() if k not in ('prioridades', 'actualizado')}
+    salida['prioridades'] = {k: len(v) for k, v in datos['prioridades'].items()}
+    salida['actualizado'] = datos['actualizado'].isoformat() if datos['actualizado'] else None
+    return jsonify(ok=True, **salida)
+
+
+# ---------------------------------------------------------------------------
+# Servicios en línea del Sistema Distrital: solicitudes de asistencia técnica y
+# radicación de TRD/TVD para evaluación, con seguimiento por radicado.
+# Tablas nuevas (se crean solas con db.create_all; no alteran las existentes).
+# ---------------------------------------------------------------------------
+class SolicitudSistema(db.Model):
+    __tablename__ = 'solicitud_sistema'
+    id = db.Column(db.Integer, primary_key=True)
+    radicado = db.Column(db.String(40), unique=True, index=True)
+    tipo = db.Column(db.String(20), nullable=False)          # asistencia | evaluacion
+    entidad = db.Column(db.String(300), nullable=False)
+    nit = db.Column(db.String(40), nullable=False)
+    contacto_nombre = db.Column(db.String(200), nullable=False)
+    contacto_cargo = db.Column(db.String(200))
+    correo = db.Column(db.String(200), nullable=False)
+    telefono = db.Column(db.String(60))
+    tema = db.Column(db.String(200), nullable=False)          # tema de asistencia o instrumento
+    modalidad = db.Column(db.String(60))
+    enlace_documentos = db.Column(db.String(600))
+    descripcion = db.Column(db.Text, nullable=False)
+    estado = db.Column(db.String(60), nullable=False)
+    nota_interna = db.Column(db.Text)
+    creado_en = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    actualizado_en = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class SolicitudEvento(db.Model):
+    __tablename__ = 'solicitud_evento'
+    id = db.Column(db.Integer, primary_key=True)
+    solicitud_id = db.Column(db.Integer, db.ForeignKey('solicitud_sistema.id'), nullable=False, index=True)
+    fecha = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    estado = db.Column(db.String(60), nullable=False)
+    observacion = db.Column(db.Text)                          # visible para la entidad
+
+
+SDA_TIPOS = {
+    'asistencia': {
+        'prefijo': 'AT', 'nombre': 'Asistencia técnica',
+        'temas': ['Política y Programa de Gestión Documental', 'Tablas de Retención y Valoración Documental',
+                  'Organización de archivos', 'Conservación y depósitos', 'Documento electrónico y SGDEA',
+                  'Preservación digital', 'Transferencias documentales', 'Capacitación', 'Otro'],
+        'modalidades': ['Virtual', 'Presencial', 'Mesa técnica'],
+        'estados': ['Radicada', 'Asignada', 'En atención', 'Atendida', 'Cerrada'],
+    },
+    'evaluacion': {
+        'prefijo': 'EV', 'nombre': 'Evaluación de instrumentos',
+        'temas': ['TRD – presentación por primera vez', 'TRD – actualización', 'TVD'],
+        'modalidades': [],
+        'estados': ['Radicada', 'Revisión preliminar', 'Mesa técnica', 'Requiere ajustes',
+                    'Para sesión del Consejo', 'Concepto emitido', 'Cerrada'],
+    },
+}
+SDA_MAX_SOLICITUDES_SESION = 5
+
+
+@app.template_filter('hora_col')
+def hora_colombia(valor, formato='%d/%m/%Y %H:%M'):
+    """Fechas guardadas en UTC mostradas en hora de Colombia (UTC-5, sin horario de verano)."""
+    if not valor:
+        return ''
+    return (valor - timedelta(hours=5)).strftime(formato)
+# Anillo decorativo de entidades en el diagrama de la página pública (no son datos).
+app.jinja_env.globals['sda_anillo'] = [
+    (round(320 + 285 * math.cos(i * 2 * math.pi / 44), 1), round(320 + 285 * math.sin(i * 2 * math.pi / 44), 1),
+     5 if i % 3 == 0 else 3.5, '#f1c75b' if i % 7 == 0 else '#8fc1f0', round((i * 0.37) % 4, 2))
+    for i in range(44)]
+_CORREO_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
+
+
+def _sda_radicados_sesion():
+    return list(session.get('sda_radicados', []))
+
+
+@app.route('/sistema-distrital')
+def sistema_distrital():
+    return render_template('sistema_distrital.html', tipos=SDA_TIPOS, normatividad=NORMATIVIDAD,
+                           valores={}, errores={}, tipo_activo=request.args.get('servicio', ''))
+
+
+@app.route('/sistema-distrital/solicitud', methods=['POST'])
+def sistema_distrital_solicitud():
+    f = request.form
+    tipo = f.get('tipo', '')
+    if tipo not in SDA_TIPOS:
+        abort(400)
+    if f.get('sitio_web_alterno'):          # campo trampa contra robots
+        return redirect(url_for('sistema_distrital'))
+    cfg = SDA_TIPOS[tipo]
+    v = {k: (f.get(k, '') or '').strip() for k in
+         ['entidad', 'nit', 'contacto_nombre', 'contacto_cargo', 'correo', 'telefono',
+          'tema', 'modalidad', 'enlace_documentos', 'descripcion']}
+    errores = {}
+    for campo, etiqueta in [('entidad', 'el nombre de la entidad'), ('nit', 'el NIT'),
+                            ('contacto_nombre', 'el nombre de contacto'), ('correo', 'el correo'),
+                            ('descripcion', 'la descripción')]:
+        if not v[campo]:
+            errores[campo] = f'Ingrese {etiqueta}.'
+    if v['correo'] and not _CORREO_RE.match(v['correo']):
+        errores['correo'] = 'Ingrese un correo válido.'
+    if v['tema'] not in cfg['temas']:
+        errores['tema'] = 'Seleccione una opción.'
+    if cfg['modalidades'] and v['modalidad'] not in cfg['modalidades']:
+        errores['modalidad'] = 'Seleccione una modalidad.'
+    if tipo == 'evaluacion':
+        if not re.match(r'^https://\S+$', v['enlace_documentos']):
+            errores['enlace_documentos'] = 'Ingrese un enlace https a la carpeta con los documentos.'
+    elif v['enlace_documentos'] and not re.match(r'^https?://\S+$', v['enlace_documentos']):
+        errores['enlace_documentos'] = 'El enlace debe comenzar por https://'
+    if not f.get('autoriza_datos'):
+        errores['autoriza_datos'] = 'Debe autorizar el tratamiento de datos para radicar.'
+    limites = {'entidad': 300, 'nit': 40, 'contacto_nombre': 200, 'contacto_cargo': 200, 'correo': 200,
+               'telefono': 60, 'enlace_documentos': 600, 'descripcion': 4000}
+    for campo, maximo in limites.items():
+        if len(v[campo]) > maximo:
+            errores[campo] = f'Máximo {maximo} caracteres.'
+    if len(_sda_radicados_sesion()) >= SDA_MAX_SOLICITUDES_SESION:
+        errores['general'] = 'Se alcanzó el número máximo de solicitudes desde este navegador. Intente más tarde.'
+    if errores:
+        return render_template('sistema_distrital.html', tipos=SDA_TIPOS, normatividad=NORMATIVIDAD,
+                               valores=v, errores=errores, tipo_activo=tipo), 400
+    try:
+        s = SolicitudSistema(tipo=tipo, entidad=v['entidad'], nit=v['nit'], contacto_nombre=v['contacto_nombre'],
+                             contacto_cargo=v['contacto_cargo'], correo=v['correo'].lower(), telefono=v['telefono'],
+                             tema=v['tema'], modalidad=v['modalidad'] or None,
+                             enlace_documentos=v['enlace_documentos'] or None,
+                             descripcion=v['descripcion'], estado='Radicada')
+        db.session.add(s)
+        db.session.flush()
+        s.radicado = f"SDA-{cfg['prefijo']}-{datetime.utcnow().year}-{s.id:05d}"
+        db.session.add(SolicitudEvento(solicitud_id=s.id, estado='Radicada',
+                                       observacion='Solicitud recibida por el Sistema Distrital de Archivos.'))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        app.logger.exception('No fue posible radicar la solicitud del Sistema Distrital')
+        errores['general'] = 'No fue posible radicar la solicitud en este momento. Intente de nuevo.'
+        return render_template('sistema_distrital.html', tipos=SDA_TIPOS, normatividad=NORMATIVIDAD,
+                               valores=v, errores=errores, tipo_activo=tipo), 500
+    session['sda_radicados'] = (_sda_radicados_sesion() + [s.radicado])[-20:]
+    return redirect(url_for('sistema_distrital_tramite', radicado=s.radicado, nuevo=1))
+
+
+@app.route('/sistema-distrital/tramite', methods=['GET', 'POST'])
+def sistema_distrital_tramite():
+    radicado = (request.values.get('radicado', '') or '').strip().upper()
+    correo = (request.form.get('correo', '') or '').strip().lower()
+    solicitud, error = None, None
+    if radicado and (request.method == 'POST' or radicado in _sda_radicados_sesion()):
+        candidata = SolicitudSistema.query.filter_by(radicado=radicado).first()
+        # Se exige el correo registrado, salvo para quien acaba de radicar desde este navegador.
+        if candidata and (radicado in _sda_radicados_sesion() or candidata.correo == correo):
+            solicitud = candidata
+        else:
+            error = 'No encontramos un trámite con ese radicado y correo. Verifique los datos.'
+    eventos = []
+    if solicitud:
+        eventos = SolicitudEvento.query.filter_by(solicitud_id=solicitud.id).order_by(SolicitudEvento.fecha.asc()).all()
+    return render_template('sistema_distrital_tramite.html', solicitud=solicitud, eventos=eventos,
+                           tipos=SDA_TIPOS, radicado=radicado, error=error,
+                           nuevo=bool(request.args.get('nuevo')) and solicitud is not None)
+
+
+@app.route('/admin/solicitudes')
+@admin_required
+def admin_solicitudes():
+    tipo = request.args.get('tipo', '')
+    estado = request.args.get('estado', '')
+    q = SolicitudSistema.query
+    if tipo in SDA_TIPOS:
+        q = q.filter_by(tipo=tipo)
+    if estado:
+        q = q.filter_by(estado=estado)
+    solicitudes = q.order_by(SolicitudSistema.creado_en.desc()).all()
+    eventos = {}
+    if solicitudes:
+        for e in SolicitudEvento.query.filter(SolicitudEvento.solicitud_id.in_([s.id for s in solicitudes])) \
+                .order_by(SolicitudEvento.fecha.asc()).all():
+            eventos.setdefault(e.solicitud_id, []).append(e)
+    abiertas = SolicitudSistema.query.filter(SolicitudSistema.estado.notin_(['Cerrada'])).count()
+    return render_template('admin_solicitudes.html', solicitudes=solicitudes, eventos=eventos, tipos=SDA_TIPOS,
+                           filtro_tipo=tipo, filtro_estado=estado, abiertas=abiertas)
+
+
+@app.route('/admin/solicitudes/<int:solicitud_id>', methods=['POST'])
+@admin_required
+def admin_actualizar_solicitud(solicitud_id):
+    s = db.session.get(SolicitudSistema, solicitud_id) or abort(404)
+    nuevo_estado = request.form.get('estado', '')
+    observacion = (request.form.get('observacion', '') or '').strip()[:4000]
+    s.nota_interna = (request.form.get('nota_interna', '') or '').strip()[:4000] or None
+    if nuevo_estado not in SDA_TIPOS[s.tipo]['estados']:
+        flash('Estado no válido.', 'danger')
+        return redirect(url_for('admin_solicitudes'))
+    try:
+        if nuevo_estado != s.estado or observacion:
+            db.session.add(SolicitudEvento(solicitud_id=s.id, estado=nuevo_estado, observacion=observacion or None))
+            s.estado = nuevo_estado
+        db.session.commit()
+        flash(f'Solicitud {s.radicado} actualizada.', 'success')
+    except Exception:
+        db.session.rollback()
+        app.logger.exception('No fue posible actualizar la solicitud')
+        flash('No fue posible actualizar la solicitud.', 'danger')
+    return redirect(url_for('admin_solicitudes', tipo=request.args.get('tipo', ''),
+                            estado=request.args.get('estado', '')) + f'#sol-{s.id}')
 
 with app.app_context():
     db.create_all()
