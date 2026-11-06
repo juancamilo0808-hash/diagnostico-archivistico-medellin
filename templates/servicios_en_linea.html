@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% block title %}Servicios en línea · Sistema Distrital de Archivos{% endblock %}
+{% block body_class %}sda-page{% endblock %}
+{% macro campo(prefijo, nombre, etiqueta, tipo='text', requerido=true, ayuda='', ph='') -%}
+  <div class="sda-field">
+    <label class="form-label" for="{{ prefijo }}-{{ nombre }}">{{ etiqueta }}{% if requerido %} <span class="req">*</span>{% endif %}</label>
+    {% if tipo == 'textarea' %}
+    <textarea class="form-control{% if errores.get(nombre) and tipo_activo == prefijo %} is-invalid{% endif %}" id="{{ prefijo }}-{{ nombre }}" name="{{ nombre }}" rows="4" maxlength="4000" placeholder="{{ ph }}" {% if requerido %}required{% endif %}>{{ valores.get(nombre, '') if tipo_activo == prefijo }}</textarea>
+    {% else %}
+    <input class="form-control{% if errores.get(nombre) and tipo_activo == prefijo %} is-invalid{% endif %}" id="{{ prefijo }}-{{ nombre }}" name="{{ nombre }}" type="{{ tipo }}" value="{{ valores.get(nombre, '') if tipo_activo == prefijo }}" placeholder="{{ ph }}" {% if requerido %}required{% endif %}>
+    {% endif %}
+    {% if errores.get(nombre) and tipo_activo == prefijo %}<div class="invalid-feedback d-block">{{ errores[nombre] }}</div>{% elif ayuda %}<div class="form-text">{{ ayuda }}</div>{% endif %}
+  </div>
+{%- endmacro %}
+{% block content %}
+<style>
+  .sda-page { --f1:#2f7fd1; --f2:#2fa36b; --f3:#e08a1e; --f4:#8b6fd6; --navy:#071f38; --navy2:#0b2d50; --gold:var(--cda-gold,#d6a62c); }
+  .sv-hero { position:relative; overflow:hidden; color:#fff; padding:2.6rem 0 5.5rem;
+    background: radial-gradient(900px 500px at 85% 20%, rgba(47,127,209,.28), transparent 60%), linear-gradient(160deg, var(--navy), var(--navy2) 60%, #0f3a63); }
+  .sv-hero::before { content:""; position:absolute; inset:0; opacity:.07; background-image: linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px); background-size:40px 40px;
+    mask-image: radial-gradient(ellipse at 80% 30%, #000 15%, transparent 70%); -webkit-mask-image: radial-gradient(ellipse at 80% 30%, #000 15%, transparent 70%); }
+  .sv-hero .container { position:relative; }
+  .sda-eyebrow { display:inline-flex; align-items:center; gap:.5rem; font-size:.75rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--gold); }
+  .sda-eyebrow::before { content:""; width:28px; height:2px; background:var(--gold); }
+  .sv-hero h1 { color:#fff; font-weight:800; font-size: clamp(1.9rem, 3.6vw, 2.8rem); margin:.7rem 0 .5rem; }
+  .sv-hero p { color:rgba(255,255,255,.8); max-width:42rem; margin:0; }
+  .sv-steps { display:flex; gap:1.4rem; flex-wrap:wrap; margin-top:1.3rem; font-size:.88rem; color:rgba(255,255,255,.85); }
+  .sv-steps span { display:inline-flex; align-items:center; gap:.5rem; }
+  .sv-steps b { width:1.6rem; height:1.6rem; border-radius:50%; display:grid; place-items:center; background:var(--gold); color:var(--navy); font-size:.8rem; }
+  .sv-wrap { margin-top:-3.8rem; padding-bottom:3rem; position:relative; }
+  .svc-top { margin-top:0 !important; }
+  .sv-back { display:inline-flex; gap:.4rem; align-items:center; margin-top:1.2rem; font-weight:700; font-size:.9rem; text-decoration:none; }
+  /* servicios */
+  .svc { margin-top:2rem; background:#fff; border:1px solid var(--cda-border,#dce4ec); border-radius:24px; overflow:hidden; box-shadow:0 20px 50px rgba(9,41,71,.08); }
+  .svc-tabs { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); background:var(--cda-bg,#f3f6fa); border-bottom:1px solid var(--cda-border,#dce4ec); }
+  .svc-tab { border:0; background:transparent; padding:1.1rem 1rem; text-align:left; display:flex; gap:.8rem; align-items:center; font-weight:700; color:var(--cda-muted,#667789); border-bottom:3px solid transparent; cursor:pointer; }
+  .svc-tab i { font-size:1.4rem; }
+  .svc-tab small { display:block; font-weight:500; font-size:.76rem; }
+  .svc-tab[aria-selected="true"] { background:#fff; color:var(--cda-blue-dark,#092947); border-bottom-color:var(--gold); }
+  .svc-tab:hover { color:var(--cda-blue-dark,#092947); }
+  .svc-pane { padding:2rem; }
+  .sda-js .svc-pane:not(.is-on) { display:none; }
+  .svc-pane .pane-head { display:flex; justify-content:space-between; gap:1rem; flex-wrap:wrap; margin-bottom:1.2rem; }
+  .svc-pane h3 { font-size:1.25rem; font-weight:800; color:var(--cda-blue-dark,#092947); margin:0; }
+  .svc-pane .pane-head p { color:var(--cda-muted,#667789); margin:.25rem 0 0; max-width:40rem; font-size:.92rem; }
+  .svc-badge { align-self:flex-start; font-size:.75rem; font-weight:700; padding:.35rem .7rem; border-radius:999px; background:var(--cda-blue-light,#eaf3fb); color:var(--cda-blue,#123b65); white-space:nowrap; }
+  .sda-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:1rem 1.2rem; }
+  .sda-grid .full { grid-column: 1 / -1; }
+  .sda-field .form-label { font-weight:600; font-size:.88rem; color:var(--cda-blue-dark,#092947); }
+  .req { color:#b42318; }
+  .sda-legal { font-size:.82rem; color:var(--cda-muted,#667789); }
+  .svc-foot { display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; margin-top:1.2rem; padding-top:1.2rem; border-top:1px solid #edf1f5; }
+  .hp { position:absolute !important; left:-9999px !important; width:1px; height:1px; overflow:hidden; }
+  .track-box { display:grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap:2rem; align-items:center; }
+  .track-art { background: linear-gradient(160deg, #f6f9fc, #eaf3fb); border-radius:18px; padding:1.4rem; }
+  .track-art .row-s { display:flex; align-items:center; gap:.6rem; font-size:.85rem; color:var(--cda-text,#243447); padding:.35rem 0; }
+  .track-art .dot { width:14px; height:14px; border-radius:50%; background:#cdd8e3; flex:0 0 14px; }
+  .track-art .done .dot { background:var(--f2); } .track-art .now .dot { background:var(--gold); box-shadow:0 0 0 5px rgba(214,166,44,.25); }
+  .track-art .now { font-weight:700; }
+
+  @media (max-width: 991.98px) { .track-box { grid-template-columns:1fr; } }
+  @media (max-width: 575.98px) {
+    .sda-grid { grid-template-columns:1fr; }
+    .svc-tabs { grid-template-columns:1fr; }
+    .svc-tab { padding:.8rem 1rem; }
+    .svc-pane { padding:1.3rem; }
+  }
+</style>
+<script>document.documentElement.classList.add('sda-js');</script>
+
+<section class="sv-hero">
+  <div class="container">
+    <span class="sda-eyebrow">Sistema Distrital de Archivos · Servicios en línea</span>
+    <h1>Haga su trámite sin salir de la herramienta</h1>
+    <p>Solicite asistencia técnica, radique sus Tablas de Retención o Valoración Documental para evaluación y consulte el avance cuando quiera.</p>
+    <div class="sv-steps"><span><b>1</b> Radique la solicitud</span><span><b>2</b> Reciba su número de radicado</span><span><b>3</b> Consulte etapas y observaciones</span></div>
+  </div>
+</section>
+
+<div class="container sv-wrap">
+  <!-- ================= FORMULARIOS ================= -->
+  <section id="servicios">
+    {% if errores.get('general') %}<div class="alert alert-danger mt-3">{{ errores.general }}</div>{% elif errores %}<div class="alert alert-danger mt-3">Revise los campos marcados para completar la radicación.</div>{% endif %}
+    <div class="svc svc-top">
+      <div class="svc-tabs" role="tablist" aria-label="Servicios en línea">
+        <button type="button" class="svc-tab" role="tab" id="t-asistencia" aria-controls="s-asistencia" data-svc="asistencia"><i class="bi bi-headset"></i><span>Asistencia técnica<small>Solicitar acompañamiento</small></span></button>
+        <button type="button" class="svc-tab" role="tab" id="t-evaluacion" aria-controls="s-evaluacion" data-svc="evaluacion"><i class="bi bi-file-earmark-check"></i><span>Evaluación TRD / TVD<small>Radicar un instrumento</small></span></button>
+        <button type="button" class="svc-tab" role="tab" id="t-consulta" aria-controls="s-consulta" data-svc="consulta"><i class="bi bi-search"></i><span>Consultar trámite<small>Con su radicado</small></span></button>
+      </div>
+
+      {% for prefijo in ['asistencia', 'evaluacion'] %}{% set cfg = tipos[prefijo] %}
+      <div class="svc-pane" role="tabpanel" id="s-{{ prefijo }}" aria-labelledby="t-{{ prefijo }}">
+        <div class="pane-head">
+          <div>
+            <h3>{{ 'Solicitud de asistencia técnica' if prefijo == 'asistencia' else 'Radicación de TRD o TVD para evaluación' }}</h3>
+            <p>{{ 'Cuéntenos qué necesita su entidad; se asignará un profesional y podrá seguir la atención con su radicado.' if prefijo == 'asistencia' else 'Comparta el enlace a la carpeta (Drive, OneDrive o similar) con el instrumento, la memoria descriptiva y los anexos. El equipo evaluador revisará la documentación antes de la mesa técnica.' }}</p>
+          </div>
+          <span class="svc-badge"><i class="bi bi-hash"></i> Radicado SDA-{{ cfg.prefijo }}</span>
+        </div>
+        <form method="post" action="{{ url_for('sistema_distrital_solicitud') }}" novalidate class="sda-form">
+          <input type="hidden" name="tipo" value="{{ prefijo }}">
+          <div class="hp" aria-hidden="true"><label>No diligencie este campo <input name="sitio_web_alterno" tabindex="-1" autocomplete="off"></label></div>
+          <div class="sda-grid">
+            {{ campo(prefijo, 'entidad', 'Entidad') }}
+            {{ campo(prefijo, 'nit', 'NIT', ph='Sin dígito de verificación') }}
+            {{ campo(prefijo, 'contacto_nombre', 'Nombre de contacto') }}
+            {{ campo(prefijo, 'contacto_cargo', 'Cargo', requerido=false) }}
+            {{ campo(prefijo, 'correo', 'Correo institucional', tipo='email', ayuda='Lo necesitará para consultar el trámite.') }}
+            {{ campo(prefijo, 'telefono', 'Teléfono', tipo='tel', requerido=false) }}
+            <div class="sda-field">
+              <label class="form-label" for="{{ prefijo }}-tema">{{ 'Tema' if prefijo == 'asistencia' else 'Instrumento' }} <span class="req">*</span></label>
+              <select class="form-select{% if errores.get('tema') and tipo_activo == prefijo %} is-invalid{% endif %}" id="{{ prefijo }}-tema" name="tema" required>
+                <option value="">Seleccione</option>
+                {% for t in cfg.temas %}<option {% if tipo_activo == prefijo and valores.get('tema') == t %}selected{% endif %}>{{ t }}</option>{% endfor %}
+              </select>
+              {% if errores.get('tema') and tipo_activo == prefijo %}<div class="invalid-feedback d-block">{{ errores.tema }}</div>{% endif %}
+            </div>
+            {% if cfg.modalidades %}
+            <div class="sda-field">
+              <label class="form-label" for="{{ prefijo }}-modalidad">Modalidad preferida <span class="req">*</span></label>
+              <select class="form-select{% if errores.get('modalidad') and tipo_activo == prefijo %} is-invalid{% endif %}" id="{{ prefijo }}-modalidad" name="modalidad" required>
+                <option value="">Seleccione</option>
+                {% for m in cfg.modalidades %}<option {% if tipo_activo == prefijo and valores.get('modalidad') == m %}selected{% endif %}>{{ m }}</option>{% endfor %}
+              </select>
+              {% if errores.get('modalidad') and tipo_activo == prefijo %}<div class="invalid-feedback d-block">{{ errores.modalidad }}</div>{% endif %}
+            </div>
+            {% else %}
+            {{ campo(prefijo, 'enlace_documentos', 'Enlace a la carpeta de documentos', tipo='url', ph='https://', ayuda='Verifique que el enlace permita el acceso de lectura.') }}
+            {% endif %}
+            <div class="full">{{ campo(prefijo, 'descripcion', 'Describa la necesidad' if prefijo == 'asistencia' else 'Observaciones de la radicación', tipo='textarea', ph=('Qué necesita, qué ha avanzado la entidad y qué espera del acompañamiento.' if prefijo == 'asistencia' else 'Versión del instrumento, fecha de aprobación interna, dependencias que cubre, etc.')) }}</div>
+            {% if prefijo == 'asistencia' %}<div class="full">{{ campo(prefijo, 'enlace_documentos', 'Enlace a documentos de soporte', tipo='url', requerido=false, ph='https://', ayuda='Opcional.') }}</div>{% endif %}
+          </div>
+          <div class="svc-foot">
+            <div class="form-check">
+              <input class="form-check-input{% if errores.get('autoriza_datos') and tipo_activo == prefijo %} is-invalid{% endif %}" type="checkbox" name="autoriza_datos" value="1" id="{{ prefijo }}-datos" required>
+              <label class="form-check-label sda-legal" for="{{ prefijo }}-datos">Autorizo el tratamiento de los datos de contacto para gestionar esta solicitud (Ley 1581 de 2012). <span class="req">*</span></label>
+              {% if errores.get('autoriza_datos') and tipo_activo == prefijo %}<div class="invalid-feedback d-block">{{ errores.autoriza_datos }}</div>{% endif %}
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg px-4"><i class="bi bi-send"></i> Radicar solicitud</button>
+          </div>
+        </form>
+      </div>
+      {% endfor %}
+
+      <div class="svc-pane" role="tabpanel" id="s-consulta" aria-labelledby="t-consulta">
+        <div class="track-box">
+          <div>
+            <h3>Consulte el estado de su trámite</h3>
+            <p class="sda-note mt-1">Ingrese el radicado y el correo con el que hizo la solicitud.</p>
+            <form method="post" action="{{ url_for('sistema_distrital_tramite') }}" class="d-grid gap-3 mt-3">
+              <div class="sda-field"><label class="form-label" for="c-rad">Número de radicado</label><input class="form-control form-control-lg" id="c-rad" name="radicado" placeholder="SDA-AT-2026-00001" required></div>
+              <div class="sda-field"><label class="form-label" for="c-cor">Correo registrado</label><input class="form-control form-control-lg" id="c-cor" name="correo" type="email" required></div>
+              <button class="btn btn-primary btn-lg" type="submit"><i class="bi bi-search"></i> Consultar</button>
+            </form>
+          </div>
+          <div class="track-art" aria-hidden="true">
+            <div class="sda-note mb-2">Así verá su trámite</div>
+            <div class="row-s done"><span class="dot"></span>Radicada</div>
+            <div class="row-s done"><span class="dot"></span>Revisión preliminar</div>
+            <div class="row-s now"><span class="dot"></span>Mesa técnica · en curso</div>
+            <div class="row-s"><span class="dot"></span>Sesión del Consejo</div>
+            <div class="row-s"><span class="dot"></span>Concepto emitido</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <a class="sv-back" href="{{ url_for('sistema_distrital') }}"><i class="bi bi-arrow-left"></i> Conocer el Sistema Distrital de Archivos</a>
+</div>
+
+<script>
+(() => {
+  /* ---- Pestañas de servicios ---- */
+  const tabs = [...document.querySelectorAll('.svc-tab')];
+  function openSvc(name, scroll) {
+    const t = tabs.find(x => x.dataset.svc === name) || tabs[0];
+    tabs.forEach(x => {
+      const on = x === t;
+      x.setAttribute('aria-selected', on ? 'true' : 'false'); x.tabIndex = on ? 0 : -1;
+      document.getElementById('s-' + x.dataset.svc).classList.toggle('is-on', on);
+    });
+    if (scroll) document.getElementById('servicios').scrollIntoView({behavior: 'smooth', block: 'start'});
+  }
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => openSvc(t.dataset.svc, false));
+    t.addEventListener('keydown', e => {
+      const k = {ArrowRight: 1, ArrowLeft: -1}[e.key]; if (!k) return;
+      e.preventDefault(); const n = tabs[(i + k + tabs.length) % tabs.length]; n.focus(); openSvc(n.dataset.svc, false);
+    });
+  });
+  document.addEventListener('click', e => {
+    const a = e.target.closest('[data-open]'); if (!a) return;
+    e.preventDefault(); openSvc(a.dataset.open, true);
+    try { history.replaceState(null, '', '?servicio=' + a.dataset.open); } catch (err) {}
+  });
+  const inicial = {{ tipo_activo|tojson }} || new URLSearchParams(location.search).get('servicio') || 'asistencia';
+  openSvc(inicial, false);
+  {% if errores %}document.getElementById('servicios').scrollIntoView();{% endif %}
+
+  /* Validación en el navegador antes de enviar (el servidor valida de nuevo). */
+  document.querySelectorAll('.sda-form').forEach(f => f.addEventListener('submit', e => {
+    const bad = [...f.querySelectorAll('input,select,textarea')].filter(x => x.willValidate && !x.checkValidity());
+    f.querySelectorAll('.is-invalid').forEach(x => x.classList.remove('is-invalid'));
+    if (bad.length) { e.preventDefault(); bad.forEach(x => x.classList.add('is-invalid')); bad[0].focus(); bad[0].reportValidity(); return; }
+    const b = f.querySelector('button[type=submit]'); b.disabled = true; b.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Radicando…';
+  }));
+  window.addEventListener('pageshow', e => { if (e.persisted) document.querySelectorAll('.sda-form button[type=submit]').forEach(b => { b.disabled = false; b.innerHTML = '<i class="bi bi-send"></i> Radicar solicitud'; }); });
+})();
+</script>
+{% endblock %}
