@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Consulta de trámite · Sistema Distrital de Archivos{% endblock %}
+{% block content %}
+<style>
+  .tr-hero { background: linear-gradient(160deg, #071f38, #0b2d50 60%, #0f3a63); color:#fff; padding:2.4rem 0 5rem; }
+  .tr-hero .k { font-size:.75rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--cda-gold,#d6a62c); }
+  .tr-hero h1 { color:#fff; font-weight:800; margin:.4rem 0 .3rem; }
+  .tr-hero p { color:rgba(255,255,255,.78); margin:0; }
+  .tr-wrap { margin-top:-3.5rem; padding-bottom:3rem; }
+  .tr-card { background:#fff; border:1px solid var(--cda-border,#dce4ec); border-radius:22px; box-shadow:0 20px 50px rgba(9,41,71,.08); padding:2rem; }
+  .tr-ok { display:flex; gap:1rem; align-items:center; background:#ecf8f1; border:1px solid #bfe5cf; color:#14532d; border-radius:16px; padding:1rem 1.2rem; margin-bottom:1.5rem; }
+  .tr-ok i { font-size:1.8rem; color:#1d7a4d; }
+  .tr-rad { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:1.5rem; font-weight:800; color:var(--cda-blue-dark,#092947); letter-spacing:.02em; }
+  .tr-meta { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:1rem; margin:1.2rem 0 2rem; }
+  .tr-meta div { background:var(--cda-bg,#f3f6fa); border-radius:12px; padding:.75rem .9rem; }
+  .tr-meta small { display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; color:var(--cda-muted,#667789); font-weight:700; }
+  .tr-meta strong { font-size:.92rem; color:var(--cda-blue-dark,#092947); }
+  .stage { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); position:relative; margin:0 0 2rem; }
+  .stage::before { content:""; position:absolute; left:0; right:0; top:19px; height:4px; background:#e3eaf1; border-radius:4px; }
+  .stage .bar { position:absolute; left:0; top:19px; height:4px; background: linear-gradient(90deg, #2fa36b, #d6a62c); border-radius:4px; }
+  .stage .s { position:relative; text-align:center; padding:0 .25rem; }
+  .stage .d { width:42px; height:42px; margin:0 auto .5rem; border-radius:50%; display:grid; place-items:center; background:#fff; border:3px solid #d5dee8; color:#9aa9b8; font-weight:800; position:relative; z-index:1; }
+  .stage .s.done .d { background:#2fa36b; border-color:#2fa36b; color:#fff; }
+  .stage .s.now .d { background:#d6a62c; border-color:#d6a62c; color:#071f38; box-shadow:0 0 0 7px rgba(214,166,44,.22); animation: now 2s ease-in-out infinite; }
+  @keyframes now { 50% { box-shadow:0 0 0 12px rgba(214,166,44,.08); } }
+  @media (prefers-reduced-motion: reduce) { .stage .s.now .d { animation:none; } }
+  .stage .t { font-size:.8rem; color:var(--cda-muted,#667789); line-height:1.25; }
+  .stage .s.now .t, .stage .s.done .t { color:var(--cda-blue-dark,#092947); font-weight:700; }
+  .hist h2 { font-size:1.1rem; font-weight:800; color:var(--cda-blue-dark,#092947); }
+  .ev { display:grid; grid-template-columns: 9rem 1fr; gap:1rem; padding:.9rem 0; border-bottom:1px solid #edf1f5; }
+  .ev:last-child { border-bottom:0; }
+  .ev .f { font-size:.82rem; color:var(--cda-muted,#667789); font-variant-numeric: tabular-nums; }
+  .ev .e { font-weight:800; color:var(--cda-blue-dark,#092947); }
+  .ev .o { font-size:.9rem; color:var(--cda-text,#243447); white-space:pre-line; }
+  .tr-form { max-width:520px; }
+  @media (max-width: 767.98px) {
+    .tr-meta { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .stage { grid-auto-flow:row; grid-auto-columns:auto; gap:.6rem; }
+    .stage::before, .stage .bar { display:none; }
+    .stage .s { display:flex; align-items:center; gap:.8rem; text-align:left; }
+    .stage .d { margin:0; flex:0 0 42px; }
+    .ev { grid-template-columns:1fr; gap:.2rem; }
+    .tr-card { padding:1.3rem; }
+  }
+</style>
+<section class="tr-hero"><div class="container">
+  <div class="k">Sistema Distrital de Archivos · Servicios en línea</div>
+  <h1>Consulta de trámite</h1>
+  <p>Estado, etapas y observaciones de su solicitud.</p>
+</div></section>
+
+<div class="container tr-wrap">
+  <div class="tr-card">
+  {% if solicitud %}
+    {% set cfg = tipos[solicitud.tipo] %}
+    {% set idx = cfg.estados.index(solicitud.estado) if solicitud.estado in cfg.estados else 0 %}
+    {% if nuevo %}
+    <div class="tr-ok"><i class="bi bi-check-circle-fill"></i><div><strong>Solicitud radicada correctamente.</strong><br><span class="small">Guarde este número de radicado. Para consultarlo más tarde necesitará también el correo registrado ({{ solicitud.correo }}).</span></div></div>
+    {% endif %}
+    <div class="d-flex justify-content-between flex-wrap gap-2 align-items-start">
+      <div><div class="small text-secondary fw-bold text-uppercase">{{ cfg.nombre }}</div><div class="tr-rad" id="radicado">{{ solicitud.radicado }}</div></div>
+      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="navigator.clipboard && navigator.clipboard.writeText(document.getElementById('radicado').textContent.trim()).then(()=>{this.textContent='Copiado'})"><i class="bi bi-clipboard"></i> Copiar radicado</button>
+    </div>
+    <div class="tr-meta">
+      <div><small>Entidad</small><strong>{{ solicitud.entidad }}</strong></div>
+      <div><small>{{ 'Tema' if solicitud.tipo == 'asistencia' else 'Instrumento' }}</small><strong>{{ solicitud.tema }}</strong></div>
+      <div><small>Radicada</small><strong>{{ solicitud.creado_en|hora_col('%d/%m/%Y') }}</strong></div>
+      <div><small>Estado actual</small><strong>{{ solicitud.estado }}</strong></div>
+    </div>
+    <div class="stage" role="list" aria-label="Etapas del trámite">
+      <div class="bar" style="width: {{ (idx / (cfg.estados|length - 1) * 100)|round(1) }}%"></div>
+      {% for e in cfg.estados %}
+      <div class="s {{ 'done' if loop.index0 < idx else ('now' if loop.index0 == idx else '') }}" role="listitem">
+        <div class="d">{% if loop.index0 < idx %}✓{% else %}{{ loop.index }}{% endif %}</div>
+        <div class="t">{{ e }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="hist">
+      <h2>Historial</h2>
+      {% for ev in eventos|reverse %}
+      <div class="ev"><div class="f">{{ ev.fecha|hora_col }}</div><div><div class="e">{{ ev.estado }}</div>{% if ev.observacion %}<div class="o">{{ ev.observacion }}</div>{% endif %}</div></div>
+      {% endfor %}
+    </div>
+    <div class="mt-4 d-flex gap-2 flex-wrap">
+      <a class="btn btn-primary" href="{{ url_for('sistema_distrital') }}#servicios"><i class="bi bi-arrow-left"></i> Volver a servicios</a>
+      <a class="btn btn-outline-secondary" href="{{ url_for('sistema_distrital_tramite') }}">Consultar otro radicado</a>
+    </div>
+  {% else %}
+    <h2 class="h4 fw-bold">Ingrese los datos de su solicitud</h2>
+    <p class="text-secondary">Use el número de radicado que recibió y el correo con el que hizo la solicitud.</p>
+    {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
+    <form method="post" class="tr-form d-grid gap-3">
+      <div><label class="form-label fw-semibold" for="radicado">Número de radicado</label><input class="form-control form-control-lg" id="radicado" name="radicado" value="{{ radicado }}" placeholder="SDA-AT-2026-00001" required></div>
+      <div><label class="form-label fw-semibold" for="correo">Correo registrado</label><input class="form-control form-control-lg" id="correo" name="correo" type="email" required></div>
+      <button class="btn btn-primary btn-lg" type="submit"><i class="bi bi-search"></i> Consultar</button>
+    </form>
+    <p class="mt-3 mb-0 small"><a href="{{ url_for('sistema_distrital') }}#servicios">¿Aún no tiene radicado? Haga su solicitud aquí.</a></p>
+  {% endif %}
+  </div>
+</div>
+{% endblock %}
