@@ -1451,6 +1451,305 @@ def admin_actualizar_solicitud(solicitud_id):
     return redirect(url_for('admin_solicitudes', tipo=request.args.get('tipo', ''),
                             estado=request.args.get('estado', '')) + f'#sol-{s.id}')
 
+# ---------------------------------------------------------------------------
+# MÓDULO NUEVO: ficha de diagnóstico por entidad (solo administración).
+# Muestra cada dimensión con sus respuestas, evidencias y los riesgos que se
+# derivan de ellas. Solo lee datos; no modifica registros.
+# ---------------------------------------------------------------------------
+FICHA_PROCESOS = ['Planeación', 'Producción', 'Gestión y trámite', 'Organización', 'Transferencias',
+                  'Disposición final', 'Preservación a largo plazo', 'Valoración']
+FICHA_PROTECCIONES = ['Copias de seguridad verificadas', 'Controles de acceso', 'Registros de auditoría',
+                      'Verificación de integridad', 'Migración de formatos', 'Plan de preservación digital']
+
+# Dimensiones en el mismo orden y con las mismas preguntas del formulario (secciones A–F).
+FICHA_DIMENSIONES = [
+    {'clave': 'identificacion', 'letra': 'A', 'nombre': 'Identificación y caracterización', 'componente': None,
+     'preguntas': [
+         ('Responsable de gestión documental', ['responsable_nombre', 'responsable_cargo', 'responsable_correo', 'telefono_responsable']),
+         ('Naturaleza jurídica', ['naturaleza']), ('Sector', ['sector']),
+         ('Grupo / relación con el Distrito', ['grupo_relacion']), ('Clasificación preliminar', ['clasificacion_preliminar']),
+         ('Ámbito', ['ambito']), ('Dirección', ['direccion_entidad']), ('Sitio web', ['sitio_web']),
+     ]},
+    {'clave': 'estrategico', 'letra': 'B', 'nombre': 'Estratégico', 'componente': 'estrategico',
+     'preguntas': [
+         ('1. Estado de la Política de Gestión Documental', ['q1_politica', 'q1_acto', 'q1_acto_detalle', 'q1_etapa', 'q1_razon', 'evidencia_q1']),
+         ('2. Seguimiento al PGD y acciones de mejora', ['q2_seguimiento', 'q2_mecanismo', 'q2_pgd_formulado', 'evidencia_q2']),
+     ]},
+    {'clave': 'administracion_archivos', 'letra': 'C', 'nombre': 'Administración de archivos', 'componente': 'administracion_archivos',
+     'preguntas': [
+         ('3. Personas en gestión documental y archivo', ['q3_personal', 'q3_observaciones']),
+         ('4. Condiciones de los depósitos de archivo', ['q4_depositos', 'q4_riesgos', 'evidencia_q4']),
+     ]},
+    {'clave': 'procesos_documentales', 'letra': 'D', 'nombre': 'Procesos de gestión documental', 'componente': 'procesos_documentales',
+     'preguntas': [
+         ('5. Estado de las Tablas de Retención Documental', ['q5_trd', 'q5_avance', 'q5_evaluacion', 'q5_evidencia_estado', 'q5_actualizacion', 'evidencia_q5']),
+         ('6. Procesos con procedimientos documentados', ['q6_procesos', 'evidencia_q6']),
+     ]},
+    {'clave': 'tecnologico', 'letra': 'E', 'nombre': 'Tecnológico', 'componente': 'tecnologico',
+     'preguntas': [
+         ('7. SGDEA o sistema equivalente', ['q7_sgdea', 'q7_sistema_detalle', 'q7_soporte', 'q7_limitacion', 'evidencia_q7']),
+         ('8. Seguridad y preservación digital', ['q8_protecciones', 'evidencia_q8']),
+     ]},
+    {'clave': 'cultural', 'letra': 'F', 'nombre': 'Cultural', 'componente': 'cultural',
+     'preguntas': [
+         ('9. Capacitación y sensibilización', ['q9_capacitacion', 'q9_detalle', 'q9_barreras', 'evidencia_q9']),
+         ('10. Acción prioritaria para el acceso y uso de la información', ['q10_prioridad', 'evidencia_q10']),
+     ]},
+]
+
+FICHA_ETIQUETAS = {
+    'responsable_nombre': 'Nombre', 'responsable_cargo': 'Cargo', 'responsable_correo': 'Correo',
+    'telefono_responsable': 'Teléfono', 'q1_acto': 'Acto administrativo', 'q1_acto_detalle': 'Número y fecha del acto',
+    'q1_etapa': 'Etapa', 'q1_razon': 'Razón por la que no existe', 'q2_mecanismo': 'Mecanismo de seguimiento',
+    'q2_pgd_formulado': 'PGD formulado', 'q3_observaciones': 'Observaciones', 'q4_riesgos': 'Deficiencias identificadas',
+    'q5_avance': 'Avance pendiente', 'q5_evaluacion': 'Instancia y fecha de evaluación',
+    'q5_evidencia_estado': 'Constancia de convalidación e implementación', 'q5_actualizacion': 'Motivo de actualización',
+    'q7_sistema_detalle': 'Sistema y procesos que cubre', 'q7_soporte': 'Documentación o soporte',
+    'q7_limitacion': 'Principal limitación', 'q9_detalle': 'Temas, población y frecuencia', 'q9_barreras': 'Barreras',
+}
+
+FICHA_ORDEN_RIESGO = {'Alto': 0, 'Medio': 1, 'Bajo': 2}
+
+
+def _ficha_valor(r, campo):
+    valor = r.get(campo, '')
+    if isinstance(valor, list):
+        return [str(v).strip() for v in valor if str(v).strip()]
+    return str(valor or '').strip()
+
+
+def evaluar_riesgos(r):
+    """Riesgos derivados de las respuestas del formulario. Reglas explícitas y revisables."""
+    riesgos = []
+
+    def add(dim, nivel, titulo, recomendacion, detalle=''):
+        riesgos.append({'dimension': dim, 'nivel': nivel, 'titulo': titulo,
+                        'detalle': detalle, 'recomendacion': recomendacion})
+
+    g = lambda c: _ficha_valor(r, c) if not isinstance(_ficha_valor(r, c), list) else ', '.join(_ficha_valor(r, c))
+
+    # B. Estratégico
+    q1 = g('q1_politica')
+    if q1 == 'No existe':
+        add('estrategico', 'Alto', 'No existe Política de Gestión Documental',
+            'Formular la Política de Gestión Documental y adoptarla mediante acto administrativo.',
+            g('q1_razon') and f'Razón informada: {g("q1_razon")}')
+    elif q1 == 'En desarrollo':
+        add('estrategico', 'Medio', 'La Política de Gestión Documental está en desarrollo',
+            'Fijar fecha de aprobación y responsable para culminar la política.',
+            g('q1_etapa') and f'Etapa: {g("q1_etapa")}')
+    elif q1 == 'No se tiene información':
+        add('estrategico', 'Medio', 'No hay información sobre la Política de Gestión Documental',
+            'Verificar con la Secretaría General o el área de planeación si existe y en qué estado está.')
+    if q1 in ('Aprobada', 'En implementación', 'Implementada y con seguimiento') and g('q1_acto') in ('No', 'En trámite'):
+        add('estrategico', 'Medio', 'La política no está adoptada mediante acto administrativo',
+            'Expedir el acto administrativo de adopción de la política.', f'Acto administrativo: {g("q1_acto")}')
+
+    q2 = g('q2_seguimiento')
+    if q2 == 'No':
+        sin_pgd = g('q2_pgd_formulado') in ('No', 'No se sabe')
+        add('estrategico', 'Alto' if sin_pgd else 'Medio',
+            'No hay PGD formulado ni seguimiento' if sin_pgd else 'No se hace seguimiento al Programa de Gestión Documental',
+            'Formular el PGD y definir indicadores, responsables y periodicidad de seguimiento.' if sin_pgd
+            else 'Definir indicadores, responsables y periodicidad de seguimiento del PGD.',
+            g('q2_pgd_formulado') and f'PGD formulado: {g("q2_pgd_formulado")}')
+    elif q2 == 'Parcialmente':
+        add('estrategico', 'Bajo', 'El seguimiento al PGD es parcial',
+            'Formalizar el seguimiento y registrar las acciones de mejora.')
+    elif q2 == 'No se tiene información':
+        add('estrategico', 'Bajo', 'No hay información sobre el seguimiento al PGD',
+            'Confirmar si existe seguimiento y dónde se registra.')
+
+    # C. Administración de archivos
+    try:
+        personas = int(float(g('q3_personal').replace(',', '.')))
+    except ValueError:
+        personas = None
+    if personas == 0:
+        add('administracion_archivos', 'Alto', 'No hay personas asignadas a la gestión documental',
+            'Asignar personal con perfil en archivística y definir sus funciones.', g('q3_observaciones'))
+    elif personas == 1:
+        add('administracion_archivos', 'Medio', 'La gestión documental depende de una sola persona',
+            'Respaldar la función con al menos otra persona capacitada para asegurar continuidad.', g('q3_observaciones'))
+
+    q4 = g('q4_depositos')
+    if q4 == 'No':
+        add('administracion_archivos', 'Alto', 'Los depósitos no tienen condiciones adecuadas de almacenamiento y protección',
+            'Priorizar adecuaciones del depósito dentro del Sistema Integrado de Conservación.',
+            g('q4_riesgos') and f'Deficiencias informadas: {g("q4_riesgos")}')
+    elif q4 == 'Parcialmente':
+        add('administracion_archivos', 'Medio', 'Los depósitos cumplen parcialmente las condiciones requeridas',
+            'Diagnosticar condiciones ambientales, de seguridad y de acceso y planear las mejoras.',
+            g('q4_riesgos') and f'Deficiencias informadas: {g("q4_riesgos")}')
+    elif q4 == 'No se tiene información':
+        add('administracion_archivos', 'Medio', 'No hay información sobre las condiciones de los depósitos',
+            'Realizar una visita de verificación a los depósitos de archivo.')
+
+    # D. Procesos de gestión documental
+    q5 = g('q5_trd')
+    if q5 == 'No elaboradas':
+        add('procesos_documentales', 'Alto', 'La entidad no tiene Tablas de Retención Documental',
+            'Iniciar la elaboración de las TRD con base en el Cuadro de Clasificación Documental.')
+    elif q5 == 'En elaboración':
+        add('procesos_documentales', 'Medio', 'Las TRD están en elaboración',
+            'Fijar un cronograma para terminarlas y presentarlas a evaluación del Consejo.',
+            g('q5_avance') and f'Pendiente: {g("q5_avance")}')
+    elif q5 == 'Requieren actualización':
+        add('procesos_documentales', 'Medio', 'Las TRD están desactualizadas',
+            'Actualizar las TRD según los cambios de estructura y funciones, y presentarlas a evaluación.',
+            g('q5_actualizacion') and f'Motivo: {g("q5_actualizacion")}')
+    elif q5 == 'En evaluación':
+        add('procesos_documentales', 'Bajo', 'Las TRD están en evaluación, pendientes de convalidación',
+            'Hacer seguimiento al concepto y atender los ajustes solicitados.',
+            g('q5_evaluacion') and f'Instancia: {g("q5_evaluacion")}')
+    elif q5 == 'No se tiene información':
+        add('procesos_documentales', 'Medio', 'No hay información sobre el estado de las TRD',
+            'Confirmar si existen TRD convalidadas y su fecha.')
+    if q5 in ('Convalidadas', 'En implementación', 'Implementadas'):
+        ev = g('q5_evidencia_estado')
+        if ev == 'No se dispone de evidencia':
+            add('procesos_documentales', 'Medio', 'No hay soporte de la convalidación ni de la implementación de las TRD',
+                'Reunir el acto de convalidación y la evidencia de aplicación (inventarios, transferencias).')
+        elif ev == 'Solo implementación':
+            add('procesos_documentales', 'Medio', 'Las TRD se aplican sin constancia de convalidación',
+                'Verificar la convalidación ante el Consejo Distrital de Archivos.')
+        elif ev == 'Solo convalidación' and q5 == 'Implementadas':
+            add('procesos_documentales', 'Bajo', 'No hay evidencia de la implementación de las TRD',
+                'Documentar la aplicación de las TRD (inventarios, transferencias, eliminaciones).')
+
+    procesos = set(_sda_lista(r.get('q6_procesos')))
+    faltan = [p for p in FICHA_PROCESOS if p not in procesos]
+    if faltan:
+        nivel = 'Alto' if len(faltan) >= 5 else ('Medio' if len(faltan) >= 3 else 'Bajo')
+        add('procesos_documentales', nivel,
+            f'{len(faltan)} de {len(FICHA_PROCESOS)} procesos sin procedimientos documentados',
+            'Documentar los procedimientos faltantes en el Programa de Gestión Documental.',
+            'Sin procedimiento: ' + ', '.join(faltan))
+
+    # E. Tecnológico
+    q7 = g('q7_sgdea')
+    if q7 == 'No':
+        add('tecnologico', 'Medio', 'No hay SGDEA para controlar el ciclo de vida de los documentos electrónicos',
+            'Definir requisitos y una hoja de ruta para un SGDEA.',
+            g('q7_limitacion') and f'Limitación: {g("q7_limitacion")}')
+    elif q7 == 'Parcialmente':
+        add('tecnologico', 'Bajo', 'El SGDEA cubre solo parte de los procesos',
+            'Ampliar la cobertura del sistema a los demás procesos documentales.', g('q7_sistema_detalle'))
+    if q7 in ('Sí', 'Parcialmente') and g('q7_soporte') == 'No':
+        add('tecnologico', 'Bajo', 'El sistema documental no tiene documentación ni soporte',
+            'Documentar el sistema y asegurar su soporte técnico.')
+
+    protecciones = set(_sda_lista(r.get('q8_protecciones')))
+    if 'Ninguno' in protecciones:
+        add('tecnologico', 'Alto', 'No hay mecanismos de seguridad ni de preservación digital',
+            'Implementar copias de seguridad verificadas y controles de acceso como mínimo.')
+    elif 'No se tiene información' in protecciones:
+        add('tecnologico', 'Medio', 'No hay información sobre la seguridad de los documentos digitales',
+            'Verificar con el área de tecnología los mecanismos existentes.')
+    elif protecciones:
+        if 'Copias de seguridad verificadas' not in protecciones:
+            add('tecnologico', 'Alto', 'No hay copias de seguridad verificadas',
+                'Programar copias de seguridad y pruebas periódicas de restauración.')
+        if 'Controles de acceso' not in protecciones:
+            add('tecnologico', 'Medio', 'No hay controles de acceso a los documentos digitales',
+                'Definir permisos por rol para consultar y modificar documentos.')
+        if 'Plan de preservación digital' not in protecciones:
+            add('tecnologico', 'Medio', 'No hay Plan de Preservación Digital a Largo Plazo',
+                'Formular el plan de preservación digital.')
+        if 'Registros de auditoría' not in protecciones and 'Verificación de integridad' not in protecciones:
+            add('tecnologico', 'Bajo', 'No hay trazabilidad ni verificación de integridad',
+                'Activar registros de auditoría y verificación de integridad en los sistemas.')
+
+    # F. Cultural
+    q9 = g('q9_capacitacion')
+    if q9 == 'No se realiza':
+        add('cultural', 'Medio', 'No se capacita en gestión documental',
+            'Incluir la gestión documental en el Plan Institucional de Capacitación.',
+            g('q9_barreras') and f'Barreras: {g("q9_barreras")}')
+    elif q9 == 'Ocasional':
+        add('cultural', 'Bajo', 'La capacitación en gestión documental es ocasional',
+            'Programar capacitaciones periódicas con población objetivo definida.')
+    elif q9 == 'No se tiene información':
+        add('cultural', 'Bajo', 'No hay información sobre la capacitación en gestión documental',
+            'Consultar con talento humano el plan de capacitación.')
+
+    # Transversal: respuestas favorables sin evidencia.
+    favorables = {
+        1: q1 in ('Aprobada', 'En implementación', 'Implementada y con seguimiento'),
+        2: q2 == 'Sí', 4: q4 == 'Sí', 5: q5 in ('Convalidadas', 'En implementación', 'Implementadas'),
+        7: q7 == 'Sí', 9: q9 == 'Planificada y periódica',
+    }
+    sin_evidencia = [str(n) for n, ok in favorables.items() if ok and not g(f'evidencia_q{n}')]
+    if sin_evidencia:
+        add('transversal', 'Bajo', 'Respuestas favorables sin evidencia',
+            'Solicitar a la entidad los enlaces o referencias documentales que las soporten.',
+            'Preguntas sin evidencia: ' + ', '.join(sin_evidencia))
+
+    riesgos.sort(key=lambda x: FICHA_ORDEN_RIESGO[x['nivel']])
+    return riesgos
+
+
+def _ficha_clave(registro):
+    return (registro.codigo_entidad or '').strip() or clave_entidad(_sda_nombre(registro))
+
+
+@app.route('/admin/diagnostico/<int:censo_id>')
+@admin_required
+def ficha_diagnostico(censo_id):
+    censo = db.session.get(Censo, censo_id) or abort(404)
+    try:
+        respuestas = json.loads(censo.respuestas_json or '{}')
+    except (TypeError, ValueError):
+        respuestas = {}
+    if not isinstance(respuestas, dict):
+        respuestas = {}
+    formulario_actual = bool(respuestas.get('q1_politica'))
+    componentes = puntajes_componentes(respuestas) if formulario_actual else {}
+    riesgos = evaluar_riesgos(respuestas) if formulario_actual else []
+
+    dimensiones = []
+    for d in FICHA_DIMENSIONES:
+        puntaje = componentes.get(d['componente']) if d['componente'] else None
+        preguntas = []
+        for titulo, campos in d['preguntas']:
+            principal = _ficha_valor(respuestas, campos[0])
+            detalles = []
+            for c in campos[1:]:
+                v = _ficha_valor(respuestas, c)
+                if v:
+                    detalles.append({'campo': c, 'etiqueta': 'Evidencia' if c.startswith('evidencia_') else FICHA_ETIQUETAS.get(c, c),
+                                     'valor': v, 'es_evidencia': c.startswith('evidencia_')})
+            if d['clave'] == 'identificacion' and campos[0] == 'responsable_nombre':
+                principal = _ficha_valor(respuestas, 'responsable_nombre')
+            preguntas.append({'titulo': titulo, 'campo': campos[0],
+                              'etiqueta_principal': FICHA_ETIQUETAS.get(campos[0]) if d['clave'] == 'identificacion' and len(campos) > 1 else None,
+                              'valor': principal, 'detalles': detalles})
+        extra = None
+        if d['clave'] == 'procesos_documentales':
+            sel = set(_sda_lista(respuestas.get('q6_procesos')))
+            extra = {'tipo': 'checklist', 'titulo': 'Procesos', 'elementos': [(p, p in sel) for p in FICHA_PROCESOS]}
+        elif d['clave'] == 'tecnologico':
+            sel = set(_sda_lista(respuestas.get('q8_protecciones')))
+            extra = {'tipo': 'checklist', 'titulo': 'Mecanismos', 'elementos': [(p, p in sel) for p in FICHA_PROTECCIONES]}
+        dimensiones.append({**d, 'puntaje': None if puntaje is None else round(puntaje * 100, 1),
+                            'preguntas': preguntas, 'extra': extra,
+                            'riesgos': [x for x in riesgos if x['dimension'] == d['clave']]})
+
+    conteo = {n: sum(1 for x in riesgos if x['nivel'] == n) for n in ('Alto', 'Medio', 'Bajo')}
+    nombres_dim = {d['clave']: f"{d['letra']}. {d['nombre']}" for d in FICHA_DIMENSIONES}
+    nombres_dim['transversal'] = 'Transversal'
+
+    todos = Censo.query.order_by(Censo.fecha.desc(), Censo.id.desc()).all()
+    clave = _ficha_clave(censo)
+    historial = [x for x in todos if _ficha_clave(x) == clave]
+    opciones = sorted(todos, key=lambda x: (_sda_nombre(x).lower(), -x.id))
+    return render_template('admin_ficha.html', censo=censo, nombre=_sda_nombre(censo), respuestas=respuestas,
+                           formulario_actual=formulario_actual, dimensiones=dimensiones, riesgos=riesgos,
+                           conteo=conteo, nombres_dim=nombres_dim, historial=historial, opciones=opciones,
+                           nombre_de=_sda_nombre,
+                           transversales=[x for x in riesgos if x['dimension'] == 'transversal'])
+
+
 with app.app_context():
     db.create_all()
     # Migración compatible: agrega las nuevas columnas sin borrar registros existentes.
