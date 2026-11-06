@@ -832,7 +832,8 @@ def admin_logout():
 @app.route('/admin')
 @admin_required
 def admin():
-    registros=Censo.query.order_by(Censo.fecha.desc()).all()
+    # Del más crítico al más avanzado: índice ascendente; a igual índice, el más reciente primero.
+    registros=Censo.query.order_by(Censo.ima.asc(), Censo.fecha.desc(), Censo.id.desc()).all()
     promedio=round(sum(x.ima for x in registros)/len(registros),2) if registros else 0
     niveles={}
     sectores=sorted({(x.sector or 'Sin sector') for x in registros})
