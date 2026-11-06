@@ -1752,25 +1752,92 @@ def ficha_diagnostico(censo_id):
                            transversales=[x for x in riesgos if x['dimension'] == 'transversal'])
 
 
+def _sql_default(columna, dialecto):
+    """Valor DEFAULT en SQL para una columna nueva, o None si no hay uno fijo."""
+    default = columna.default
+    if default is None:
+        return None
+    if getattr(default, 'is_scalar', False):
+        valor = default.arg
+        if isinstance(valor, bool):
+            return 'TRUE' if valor else 'FALSE'
+        if isinstance(valor, (int, float)):
+            return str(valor)
+        if isinstance(valor, str):
+            return "'" + valor.replace("'", "''") + "'"
+        return None
+    # Fechas con default de Python (datetime.utcnow / datetime.now).
+    if isinstance(columna.type, db.DateTime):
+        return 'CURRENT_TIMESTAMP'
+    return None
+
+
+def sincronizar_esquema():
+    """Agrega a cada tabla existente las columnas del modelo que le falten.
+
+    - Columna con valor por defecto fijo: se agrega con ese DEFAULT (y NOT NULL si el
+      modelo lo exige); las filas existentes reciben el valor por defecto.
+    - Columna sin valor por defecto: se agrega aceptando vacíos, para no fallar con
+      filas antiguas.
+    - En PostgreSQL, las columnas antiguas que ya no usa el modelo y exigen valor
+      (NOT NULL sin DEFAULT) pasan a aceptar vacíos, para que los INSERT nuevos no fallen.
+    Nunca se borran tablas, columnas ni registros.
+    """
+    try:
+        inspector = sqlalchemy_inspect(db.engine)
+        dialecto = db.engine.dialect
+        tablas_existentes = set(inspector.get_table_names())
+        for tabla in db.metadata.sorted_tables:
+            if tabla.name not in tablas_existentes:
+                continue
+            columnas_bd = {c['name']: c for c in inspector.get_columns(tabla.name)}
+            for columna in tabla.columns:
+                if columna.name in columnas_bd:
+                    continue
+                tipo = columna.type.compile(dialect=dialecto)
+                default = _sql_default(columna, dialecto)
+                sql = f'ALTER TABLE {tabla.name} ADD COLUMN {columna.name} {tipo}'
+                relleno = None
+                if default == 'CURRENT_TIMESTAMP':
+                    # SQLite no admite un DEFAULT calculado al agregar columnas: se agrega
+                    # la columna y se llenan las filas existentes con la fecha actual.
+                    # Las filas nuevas reciben la fecha desde el modelo (Python).
+                    relleno = f'UPDATE {tabla.name} SET {columna.name} = CURRENT_TIMESTAMP WHERE {columna.name} IS NULL'
+                elif default is not None:
+                    sql += f' DEFAULT {default}'
+                    if not columna.nullable and not columna.primary_key:
+                        sql += ' NOT NULL'
+                try:
+                    with db.engine.begin() as conexion:
+                        conexion.exec_driver_sql(sql)
+                        if relleno:
+                            conexion.exec_driver_sql(relleno)
+                    app.logger.warning('Esquema actualizado: %s', sql)
+                except Exception:
+                    app.logger.exception('No se pudo agregar la columna %s.%s', tabla.name, columna.name)
+            if dialecto.name == 'postgresql':
+                del_modelo = {c.name for c in tabla.columns}
+                for nombre, info in columnas_bd.items():
+                    if nombre in del_modelo or info.get('nullable', True) or info.get('default') is not None:
+                        continue
+                    sql = f'ALTER TABLE {tabla.name} ALTER COLUMN {nombre} DROP NOT NULL'
+                    try:
+                        with db.engine.begin() as conexion:
+                            conexion.exec_driver_sql(sql)
+                        app.logger.warning('Esquema actualizado: %s', sql)
+                    except Exception:
+                        app.logger.exception('No se pudo flexibilizar la columna %s.%s', tabla.name, nombre)
+    except Exception:
+        app.logger.exception('No se pudo sincronizar el esquema de la base de datos')
+
+
 with app.app_context():
     db.create_all()
-    # Migración compatible: agrega las nuevas columnas sin borrar registros existentes.
-    # Se comprueba el esquema real porque create_all() no modifica tablas ya creadas.
-    try:
-        columnas = {col['name'] for col in sqlalchemy_inspect(db.engine).get_columns('censo')}
-        nuevas_columnas = {
-            'respuestas_json': 'TEXT',
-            'codigo_entidad': 'VARCHAR(50)',
-        }
-        for nombre_columna, tipo_sql in nuevas_columnas.items():
-            if nombre_columna not in columnas:
-                with db.engine.begin() as conexion:
-                    conexion.exec_driver_sql(
-                        f'ALTER TABLE censo ADD COLUMN {nombre_columna} {tipo_sql}'
-                    )
-                app.logger.info('Columna agregada a censo: %s', nombre_columna)
-    except Exception:
-        app.logger.exception('No se pudo verificar/agregar una columna nueva a censo')
+    # Migración compatible: create_all() crea tablas nuevas, pero no agrega columnas a
+    # tablas que ya existían (por ejemplo, una tabla creada por una versión anterior en
+    # Neon). Aquí se compara cada tabla con su modelo y se agregan las columnas que
+    # falten, sin borrar ni modificar datos. Ver sincronizar_esquema().
+    sincronizar_esquema()
 
     # Recalcula los diagnósticos guardados con la escala vigente (0 – 0,5 – 1), para
     # que el índice guardado coincida con el de la ficha. Solo cambia puntaje_obtenido,
