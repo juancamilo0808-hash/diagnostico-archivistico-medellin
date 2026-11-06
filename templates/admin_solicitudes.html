@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Solicitudes de entidades · Administración{% endblock %}
+{% block content %}
+<style>
+  .as-hero { background: linear-gradient(125deg,#062d4e,#0b527c 68%,#167d91); color:#fff; border-radius:22px; padding:26px 30px; }
+  .as-hero .k { letter-spacing:.14em; font-size:.75rem; font-weight:800; opacity:.8; }
+  .as-card { background:#fff; border:1px solid #e4ebf1; border-radius:16px; }
+  .as-item { border-bottom:1px solid #edf1f5; }
+  .as-item:last-child { border-bottom:0; }
+  .as-item summary { list-style:none; cursor:pointer; padding:1rem 1.2rem; display:grid; grid-template-columns: 11rem 1fr 12rem 9rem 1rem; gap:1rem; align-items:center; }
+  .as-item summary::-webkit-details-marker { display:none; }
+  .as-item summary::after { content:"›"; font-weight:800; color:#667789; transition: transform .2s; }
+  .as-item[open] summary::after { transform: rotate(90deg); }
+  .as-item[open] summary { background:#f6f9fc; }
+  .as-rad { font-family: ui-monospace, Menlo, monospace; font-weight:800; color:#092947; font-size:.88rem; }
+  .as-pill { display:inline-block; padding:.25rem .6rem; border-radius:999px; font-size:.75rem; font-weight:700; background:#eaf3fb; color:#123b65; }
+  .as-pill.Cerrada, .as-pill.Atendida, .as-pill.Concepto { background:#ecf8f1; color:#14532d; }
+  .as-pill.Radicada { background:#fff4d6; color:#7a5a00; }
+  .as-body { padding:0 1.2rem 1.4rem; display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; }
+  .as-body dl { display:grid; grid-template-columns: 9rem 1fr; gap:.3rem .8rem; font-size:.88rem; margin:0; }
+  .as-body dt { color:#667789; font-weight:600; }
+  .as-body dd { margin:0; word-break:break-word; }
+  .as-hist { font-size:.82rem; border-left:3px solid #d6a62c; padding-left:.8rem; margin-top:1rem; }
+  .as-hist div { margin-bottom:.4rem; }
+  @media (max-width: 991.98px) {
+    .as-item summary { grid-template-columns: 1fr auto; }
+    .as-item summary .hide-sm { display:none; }
+    .as-body { grid-template-columns:1fr; }
+  }
+</style>
+<div class="container-fluid px-lg-5 py-4">
+  <section class="as-hero mb-4 d-flex justify-content-between flex-wrap gap-3 align-items-center">
+    <div><div class="k">ADMINISTRACIÓN · SISTEMA DISTRITAL DE ARCHIVOS</div><h1 class="h3 fw-bold mb-1">Solicitudes de entidades</h1><p class="mb-0 opacity-75">{{ abiertas }} solicitud{{ 'es' if abiertas != 1 }} abierta{{ 's' if abiertas != 1 }}. Las observaciones que registre aquí las ve la entidad al consultar su radicado.</p></div>
+    <div class="d-flex gap-2 flex-wrap"><a class="btn btn-light fw-bold" href="{{ url_for('admin') }}"><i class="bi bi-arrow-left"></i> Panel</a><a class="btn btn-light fw-bold" href="{{ url_for('admin_sistema_distrital') }}"><i class="bi bi-diagram-3"></i> Indicadores del Sistema</a></div>
+  </section>
+
+  <form class="as-card p-3 mb-3 d-flex gap-2 flex-wrap align-items-end" method="get">
+    <div><label class="form-label small fw-bold mb-1" for="ft">Tipo</label><select class="form-select" id="ft" name="tipo"><option value="">Todos</option>{% for k, c in tipos.items() %}<option value="{{ k }}" {% if filtro_tipo == k %}selected{% endif %}>{{ c.nombre }}</option>{% endfor %}</select></div>
+    <div><label class="form-label small fw-bold mb-1" for="fe">Estado</label><select class="form-select" id="fe" name="estado"><option value="">Todos</option>{% set vistos = [] %}{% for c in tipos.values() %}{% for e in c.estados if e not in vistos %}{% set _ = vistos.append(e) %}<option {% if filtro_estado == e %}selected{% endif %}>{{ e }}</option>{% endfor %}{% endfor %}</select></div>
+    <button class="btn btn-primary" type="submit">Filtrar</button>
+    {% if filtro_tipo or filtro_estado %}<a class="btn btn-link" href="{{ url_for('admin_solicitudes') }}">Limpiar</a>{% endif %}
+  </form>
+
+  <div class="as-card">
+    {% for s in solicitudes %}{% set cfg = tipos[s.tipo] %}
+    <details class="as-item" id="sol-{{ s.id }}">
+      <summary>
+        <span class="as-rad">{{ s.radicado }}</span>
+        <span><strong>{{ s.entidad }}</strong><br><span class="small text-secondary">{{ s.tema }}</span></span>
+        <span class="hide-sm small text-secondary">{{ cfg.nombre }}<br>{{ s.creado_en|hora_col('%d/%m/%Y') }}</span>
+        <span class="as-pill {{ s.estado.split(' ')[0] }}">{{ s.estado }}</span>
+      </summary>
+      <div class="as-body">
+        <div>
+          <dl>
+            <dt>NIT</dt><dd>{{ s.nit }}</dd>
+            <dt>Contacto</dt><dd>{{ s.contacto_nombre }}{% if s.contacto_cargo %} · {{ s.contacto_cargo }}{% endif %}</dd>
+            <dt>Correo</dt><dd><a href="mailto:{{ s.correo }}?subject={{ s.radicado|urlencode }}">{{ s.correo }}</a></dd>
+            {% if s.telefono %}<dt>Teléfono</dt><dd>{{ s.telefono }}</dd>{% endif %}
+            {% if s.modalidad %}<dt>Modalidad</dt><dd>{{ s.modalidad }}</dd>{% endif %}
+            {% if s.enlace_documentos %}<dt>Documentos</dt><dd><a href="{{ s.enlace_documentos }}" target="_blank" rel="noopener noreferrer">Abrir enlace <i class="bi bi-box-arrow-up-right"></i></a></dd>{% endif %}
+            <dt>Descripción</dt><dd style="white-space:pre-line">{{ s.descripcion }}</dd>
+          </dl>
+          <div class="as-hist">{% for e in eventos.get(s.id, [])|reverse %}<div><strong>{{ e.estado }}</strong> · <span class="text-secondary">{{ e.fecha|hora_col }}</span>{% if e.observacion %}<br>{{ e.observacion }}{% endif %}</div>{% endfor %}</div>
+        </div>
+        <form method="post" action="{{ url_for('admin_actualizar_solicitud', solicitud_id=s.id, tipo=filtro_tipo, estado=filtro_estado) }}" class="d-grid gap-2 align-content-start">
+          <label class="form-label small fw-bold mb-0" for="e{{ s.id }}">Nuevo estado</label>
+          <select class="form-select" id="e{{ s.id }}" name="estado">{% for e in cfg.estados %}<option {% if e == s.estado %}selected{% endif %}>{{ e }}</option>{% endfor %}</select>
+          <label class="form-label small fw-bold mb-0" for="o{{ s.id }}">Observación para la entidad</label>
+          <textarea class="form-control" id="o{{ s.id }}" name="observacion" rows="3" maxlength="4000" placeholder="Visible al consultar el radicado"></textarea>
+          <label class="form-label small fw-bold mb-0" for="n{{ s.id }}">Nota interna</label>
+          <textarea class="form-control" id="n{{ s.id }}" name="nota_interna" rows="2" maxlength="4000" placeholder="Solo visible en administración">{{ s.nota_interna or '' }}</textarea>
+          <button class="btn btn-primary" type="submit"><i class="bi bi-save"></i> Guardar</button>
+        </form>
+      </div>
+    </details>
+    {% else %}
+    <p class="p-4 mb-0 text-secondary">No hay solicitudes{% if filtro_tipo or filtro_estado %} con estos filtros{% endif %}.</p>
+    {% endfor %}
+  </div>
+</div>
+<script>
+  if (location.hash.startsWith('#sol-')) { const d = document.querySelector(location.hash); if (d) d.open = true; }
+</script>
+{% endblock %}
