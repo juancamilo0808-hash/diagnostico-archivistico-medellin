@@ -133,7 +133,7 @@
         <dt class="col-5">Responsable GD</dt><dd class="col-7">${escapeHtml(e.responsable || 'No informado')}</dd>
         <dt class="col-5">Correo</dt><dd class="col-7">${e.correo ? `<a href="mailto:${escapeHtml(e.correo)}">${escapeHtml(e.correo)}</a>` : 'No informado'}</dd>
       </dl>
-      ${d ? `<div class="alert alert-success small"><strong>Diagnóstico relacionado</strong><br>IMA: ${escapeHtml(d.ima)} % · ${escapeHtml(d.nivel)}<br>Fecha: ${escapeHtml(d.fecha || 'No disponible')}<br><a class="btn btn-sm btn-primary mt-2" href="/resultado/${encodeURIComponent(d.id)}">Consultar resultado</a></div>` : '<div class="alert alert-secondary small">No tiene un diagnóstico relacionado.</div>'}
+      ${d ? `<div class="alert alert-success small"><strong>Diagnóstico relacionado</strong><br>Nivel de madurez: ${escapeHtml(d.ima)} % · Clasificación: ${escapeHtml(d.nivel)}<br>Fecha: ${escapeHtml(d.fecha || 'No disponible')}<br><a class="btn btn-sm btn-primary mt-2" href="/resultado/${encodeURIComponent(d.id)}">Consultar resultado</a></div>` : '<div class="alert alert-secondary small">No tiene un diagnóstico relacionado.</div>'}
       <p class="small mb-2"><a class="btn btn-outline-primary btn-sm" href="${escapeHtml(googleMapsUrl(e))}" target="_blank" rel="noopener noreferrer"><i class="bi bi-google me-1"></i> Verificar sede en Google Maps</a></p>
       <div class="alert ${coord ? 'alert-success' : 'alert-warning'} small" id="estadoCoordenadas">${coord ? `Coordenadas guardadas: ${escapeHtml(coord)}` : 'Esta entidad todavía no tiene coordenadas verificadas.'}</div>
       ${e.codigo ? `

@@ -126,8 +126,8 @@
 <div class="container pb-5">
   <div class="row g-3 sda-kpis">
     <div class="col-6 col-lg-3"><div class="sda-kpi"><div class="v">{{ d.n if ver else '—' }}</div><div class="l">Entidades con diagnóstico</div></div></div>
-    <div class="col-6 col-lg-3"><div class="sda-kpi"><div class="v">{{ d.promedio if ver and d.promedio is not none else '—' }}</div><div class="l">Índice promedio (0–100)</div></div></div>
-    <div class="col-6 col-lg-3"><div class="sda-kpi"><div class="v">{{ (d.niveles_pct.Bajo ~ ' %') if ver else '—' }}</div><div class="l">Entidades en nivel bajo</div></div></div>
+    <div class="col-6 col-lg-3"><div class="sda-kpi"><div class="v">{{ d.promedio if ver and d.promedio is not none else '—' }}</div><div class="l">Nivel de madurez promedio (%)</div></div></div>
+    <div class="col-6 col-lg-3"><div class="sda-kpi"><div class="v">{{ (d.niveles_pct.Bajo ~ ' %') if ver else '—' }}</div><div class="l">Entidades con clasificación baja</div></div></div>
     <div class="col-6 col-lg-3"><div class="sda-kpi"><div class="v">{{ d.en_curso if d else '—' }}</div><div class="l">Diagnósticos en curso</div></div></div>
   </div>
 
@@ -168,7 +168,7 @@
           <div class="hd"><i class="bi bi-bar-chart-fill"></i> Seguimiento</div>
           <div class="bd">
             <div class="desc">Seguimiento a la implementación de la gestión documental en las entidades.</div>
-            <div class="live"><div class="n">{{ d.promedio if ver and d.promedio is not none else '—' }}</div><div class="t">índice promedio de madurez archivística</div></div>
+            <div class="live"><div class="n">{{ d.promedio if ver and d.promedio is not none else '—' }}</div><div class="t">nivel de madurez promedio</div></div>
             <span class="more">Ver detalle →</span>
           </div>
         </button>
@@ -194,9 +194,9 @@
       <p class="sub">Quiénes necesitan acompañamiento primero y en qué componente concentrarlo.</p>
       {% if ver %}
       <div class="prio">
-        <div class="alta"><div class="n">{{ d.prioridades.Alta|length }}</div><div class="t">Prioridad alta · nivel bajo</div></div>
-        <div class="media"><div class="n">{{ d.prioridades.Media|length }}</div><div class="t">Prioridad media · nivel medio</div></div>
-        <div class="baja"><div class="n">{{ d.prioridades.Baja|length }}</div><div class="t">Prioridad baja · nivel alto</div></div>
+        <div class="alta"><div class="n">{{ d.prioridades.Alta|length }}</div><div class="t">Prioridad alta · clasificación baja</div></div>
+        <div class="media"><div class="n">{{ d.prioridades.Media|length }}</div><div class="t">Prioridad media · clasificación media</div></div>
+        <div class="baja"><div class="n">{{ d.prioridades.Baja|length }}</div><div class="t">Prioridad baja · clasificación alta</div></div>
       </div>
       <h4>Componentes donde más entidades tienen brecha crítica</h4>
       {% for c in d.componentes|sort(attribute='brecha_pct', reverse=true) if c.respondidas %}
@@ -207,10 +207,10 @@
       <h4><i class="bi bi-lock-fill"></i> Entidades con prioridad alta (solo administración)</h4>
       {% if d.prioridades.Alta %}
       <div class="table-responsive"><table class="table sda-table align-middle mb-0">
-        <thead><tr><th>Entidad</th><th>Sector</th><th class="text-end">Índice</th><th>Componente más débil</th><th></th></tr></thead>
+        <thead><tr><th>Entidad</th><th>Sector</th><th class="text-end">Nivel de madurez</th><th>Componente más débil</th><th></th></tr></thead>
         <tbody>{% for e in d.prioridades.Alta %}<tr><td>{{ e.nombre }}</td><td>{{ e.sector }}</td><td class="text-end">{{ e.ima }}</td><td>{{ e.componente_debil }}</td><td><a href="{{ url_for('resultado', censo_id=e.id) }}">Resultado</a></td></tr>{% endfor %}</tbody>
       </table></div>
-      {% else %}<p class="sda-note">No hay entidades en nivel bajo.</p>{% endif %}
+      {% else %}<p class="sda-note">No hay entidades con clasificación baja.</p>{% endif %}
       {% endif %}
       {% else %}<p class="sda-note mb-0">Los indicadores aparecerán cuando haya suficientes diagnósticos.</p>{% endif %}
     </div>
@@ -232,9 +232,9 @@
 
     <div class="sda-panel f-segu" id="panel-segu" role="tabpanel" aria-labelledby="tab-segu">
       <h3>Seguimiento</h3>
-      <p class="sub">Cómo está la gestión documental del Distrito por nivel, componente y sector.</p>
+      <p class="sub">Cómo está la gestión documental del Distrito por clasificación, componente y sector.</p>
       {% if ver %}
-      <h4>Distribución por nivel</h4>
+      <h4>Distribución por clasificación</h4>
       <div class="stack" role="img" aria-label="Bajo {{ d.niveles_pct.Bajo }} %, Medio {{ d.niveles_pct.Medio }} %, Alto {{ d.niveles_pct.Alto }} %">
         <span style="width: {{ d.niveles_pct.Bajo }}%; background:#dc3545"></span><span style="width: {{ d.niveles_pct.Medio }}%; background:#e0a800"></span><span style="width: {{ d.niveles_pct.Alto }}%; background:#198754"></span>
       </div>
@@ -245,7 +245,7 @@
       {% endfor %}
       <h4>Por sector</h4>
       <div class="table-responsive"><table class="table sda-table mb-0">
-        <thead><tr><th>Sector</th><th class="text-end">Entidades</th><th class="text-end">Índice promedio</th></tr></thead>
+        <thead><tr><th>Sector</th><th class="text-end">Entidades</th><th class="text-end">Nivel de madurez promedio (%)</th></tr></thead>
         <tbody>{% for s in d.sectores %}<tr><td>{{ s.sector }}</td><td class="text-end">{{ s.entidades }}</td><td class="text-end">{{ s.promedio }}</td></tr>{% endfor %}</tbody>
       </table></div>
       <p class="sda-note mt-2">Se toma el diagnóstico más reciente de cada entidad ({{ d.n }} entidades; {{ d.diagnosticos_totales }} diagnósticos registrados en total).</p>

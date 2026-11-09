@@ -89,15 +89,15 @@
         </div>
       </div>
       <div class="fx-ima">
-        <div class="n">{{ '%.1f'|format(censo.ima or 0) }}</div>
-        <div class="l mb-2">Índice de madurez (0–100)</div>
-        <span class="fx-pill" style="color:{{ semaforo(censo.ima or 0) }}"><i style="background:{{ semaforo(censo.ima or 0) }}"></i>Nivel {{ etiqueta(censo.ima or 0) }}</span>
+        <div class="n">{{ '%.1f'|format(censo.ima or 0) }}%</div>
+        <div class="l mb-2">Nivel de madurez</div>
+        <span class="fx-pill" style="color:{{ semaforo(censo.ima or 0) }}"><i style="background:{{ semaforo(censo.ima or 0) }}"></i>Clasificación {{ etiqueta(censo.ima or 0) | lower }}</span>
       </div>
     </div>
     <div class="fx-tools">
       <label class="visually-hidden" for="cambiarEntidad">Ver otra entidad</label>
       <select id="cambiarEntidad" class="form-select form-select-sm" onchange="if(this.value) location.href=this.value">
-        {% for o in opciones %}<option value="{{ url_for('ficha_diagnostico', censo_id=o.id) }}" {% if o.id == censo.id %}selected{% endif %}>{{ nombre_de(o) }} · {{ o.fecha|hora_col('%d/%m/%Y') }} · {{ '%.1f'|format(o.ima or 0) }}</option>{% endfor %}
+        {% for o in opciones %}<option value="{{ url_for('ficha_diagnostico', censo_id=o.id) }}" {% if o.id == censo.id %}selected{% endif %}>{{ nombre_de(o) }} · {{ o.fecha|hora_col('%d/%m/%Y') }} · {{ '%.1f'|format(o.ima or 0) }}%</option>{% endfor %}
       </select>
       <button type="button" class="btn btn-light btn-sm fw-bold" onclick="window.print()"><i class="bi bi-printer me-1"></i>Imprimir o guardar PDF</button>
       <a class="btn btn-outline-light btn-sm fw-bold" href="{{ url_for('admin') }}"><i class="bi bi-arrow-left me-1"></i>Panel</a>
@@ -120,16 +120,16 @@
     <div class="col-12">
       <section class="fx-card">
         <h2>Perfil por dimensión</h2>
-        <p class="fx-sub">Puntaje de 0 a 100 de cada dimensión evaluada. Clic en el nombre para ver su detalle.</p>
+        <p class="fx-sub">Nivel de madurez de cada dimensión evaluada. Clic en el nombre para ver su detalle.</p>
         {% for d in dimensiones if d.componente %}
         <div class="dim-row">
           <a href="#dim-{{ d.clave }}">{{ d.letra }}. {{ d.nombre }}</a>
           <div class="dim-bar" role="img" aria-label="{{ d.nombre }}: {{ d.puntaje if d.puntaje is not none else 'sin puntaje' }}"><span style="width: {{ d.puntaje or 0 }}%; background: {{ semaforo(d.puntaje) }}"></span></div>
-          <div class="dim-val" style="color: {{ semaforo(d.puntaje) }}">{{ d.puntaje if d.puntaje is not none else '—' }}</div>
+          <div class="dim-val" style="color: {{ semaforo(d.puntaje) }}">{{ (d.puntaje ~ '%') if d.puntaje is not none else '—' }}</div>
           <div class="dim-risk">{{ d.riesgos|length }} riesgo{{ 's' if d.riesgos|length != 1 }}</div>
         </div>
         {% endfor %}
-        <p class="small text-secondary mt-3 mb-0">Bajo: 0–33,3 · Medio: 33,4–66,6 · Alto: 66,7–100. Cada respuesta vale 0 (no cumple), 0,5 (avance parcial) o 1 (cumple); las preguntas 3, 6, 8 y 10 son descriptivas y no suman puntaje.</p>
+        <p class="small text-secondary mt-3 mb-0">Bajo: 0–33,3 % · Medio: 33,4–66,6 % · Alto: 66,7–100 %. Cada respuesta vale 0 (no cumple), 0,5 (avance parcial) o 1 (cumple); las preguntas 3, 6, 8 y 10 son descriptivas y no suman puntaje.</p>
       </section>
     </div>
     <div class="col-12">
@@ -138,7 +138,7 @@
         <p class="fx-sub">Derivados de las respuestas de la entidad, ordenados de mayor a menor prioridad.</p>
         {% if riesgos %}
         <div class="table-responsive"><table class="table rk-table mb-0">
-          <thead><tr><th style="width:6rem">Nivel</th><th style="width:16rem">Dimensión</th><th>Riesgo</th><th style="width:34%">Recomendación</th></tr></thead>
+          <thead><tr><th style="width:6rem">Prioridad</th><th style="width:16rem">Dimensión</th><th>Riesgo</th><th style="width:34%">Recomendación</th></tr></thead>
           <tbody>{% for x in riesgos %}<tr><td><span class="rk-badge rk-{{ x.nivel }}">{{ x.nivel }}</span></td><td class="text-nowrap">{{ nombres_dim[x.dimension] }}</td><td><strong>{{ x.titulo }}</strong>{% if x.detalle %}<span class="rk-det">{{ x.detalle }}</span>{% endif %}</td><td>{{ x.recomendacion }}</td></tr>{% endfor %}</tbody>
         </table></div>
         {% else %}<p class="mb-0 text-secondary">No se identificaron riesgos con las reglas actuales.</p>{% endif %}
@@ -151,7 +151,7 @@
   <section class="fx-card mb-3 dim" id="dim-{{ d.clave }}">
     <div class="dim-head">
       <h2><span class="dim-letter">{{ d.letra }}</span>{{ d.nombre }}</h2>
-      {% if d.componente and formulario_actual %}<span class="fx-pill" style="border:1px solid #e4ebf1; color: {{ semaforo(d.puntaje) }}"><i style="background: {{ semaforo(d.puntaje) }}"></i>{{ d.puntaje if d.puntaje is not none else '—' }} · {{ etiqueta(d.puntaje) }}</span>{% endif %}
+      {% if d.componente and formulario_actual %}<span class="fx-pill" style="border:1px solid #e4ebf1; color: {{ semaforo(d.puntaje) }}"><i style="background: {{ semaforo(d.puntaje) }}"></i>{{ (d.puntaje ~ '%') if d.puntaje is not none else '—' }} · {{ etiqueta(d.puntaje) }}</span>{% endif %}
     </div>
     {% for q in d.preguntas %}
     <div class="q">
@@ -190,10 +190,10 @@
     <p class="fx-sub">{% if historial|length > 1 %}La entidad tiene {{ historial|length }} diagnósticos; el más reciente va primero.{% else %}Es el único diagnóstico registrado de esta entidad.{% endif %}</p>
     {% if historial|length > 1 %}
     <div class="table-responsive"><table class="table hist-table mb-0">
-      <thead><tr><th>Fecha</th><th class="text-end">Índice</th><th>Nivel</th><th class="text-end">Cambio</th><th></th></tr></thead>
+      <thead><tr><th>Fecha</th><th class="text-end">Nivel de madurez</th><th>Clasificación</th><th class="text-end">Cambio</th><th></th></tr></thead>
       <tbody>{% for h in historial %}{% set prev = historial[loop.index] if loop.index < historial|length else none %}
-        <tr {% if h.id == censo.id %}class="table-active"{% endif %}><td>{{ h.fecha|hora_col('%d/%m/%Y') }}</td><td class="text-end fw-bold">{{ '%.1f'|format(h.ima or 0) }}</td><td>{{ etiqueta(h.ima or 0) }}</td>
-        <td class="text-end">{% if prev %}{% set dlt = (h.ima or 0) - (prev.ima or 0) %}<span style="color: {{ '#198754' if dlt > 0 else ('#b42318' if dlt < 0 else '#617487') }}">{{ '%+.1f'|format(dlt) }}</span>{% else %}—{% endif %}</td>
+        <tr {% if h.id == censo.id %}class="table-active"{% endif %}><td>{{ h.fecha|hora_col('%d/%m/%Y') }}</td><td class="text-end fw-bold">{{ '%.1f'|format(h.ima or 0) }}%</td><td>{{ etiqueta(h.ima or 0) }}</td>
+        <td class="text-end">{% if prev %}{% set dlt = (h.ima or 0) - (prev.ima or 0) %}<span style="color: {{ '#198754' if dlt > 0 else ('#b42318' if dlt < 0 else '#617487') }}">{{ '%+.1f'|format(dlt) }} pts</span>{% else %}—{% endif %}</td>
         <td>{% if h.id != censo.id %}<a href="{{ url_for('ficha_diagnostico', censo_id=h.id) }}">Ver ficha</a>{% else %}<span class="text-secondary small">En pantalla</span>{% endif %}</td></tr>{% endfor %}</tbody>
     </table></div>
     {% endif %}

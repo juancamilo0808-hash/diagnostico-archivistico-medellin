@@ -95,7 +95,7 @@
             <h3>{{ 'Solicitud de asistencia técnica' if prefijo == 'asistencia' else 'Radicación de TRD o TVD para evaluación' }}</h3>
             <p>{{ 'Cuéntenos qué necesita su entidad; se asignará un profesional y podrá seguir la atención con su radicado.' if prefijo == 'asistencia' else 'Comparta el enlace a la carpeta (Drive, OneDrive o similar) con el instrumento, la memoria descriptiva y los anexos. El equipo evaluador revisará la documentación antes de la mesa técnica.' }}</p>
           </div>
-          <span class="svc-badge"><i class="bi bi-hash"></i> Radicado SDA-{{ cfg.prefijo }}</span>
+          <span class="svc-badge"><i class="bi bi-hash"></i> Radicado CDA-{{ cfg.prefijo }}</span>
         </div>
         <form method="post" action="{{ url_for('sistema_distrital_solicitud') }}" novalidate class="sda-form">
           <input type="hidden" name="tipo" value="{{ prefijo }}">
@@ -148,7 +148,7 @@
             <h3>Consulte el estado de su trámite</h3>
             <p class="sda-note mt-1">Ingrese el radicado y el correo con el que hizo la solicitud.</p>
             <form method="post" action="{{ url_for('sistema_distrital_tramite') }}" class="d-grid gap-3 mt-3">
-              <div class="sda-field"><label class="form-label" for="c-rad">Número de radicado</label><input class="form-control form-control-lg" id="c-rad" name="radicado" placeholder="SDA-AT-2026-00001" required></div>
+              <div class="sda-field"><label class="form-label" for="c-rad">Número de radicado</label><input class="form-control form-control-lg" id="c-rad" name="radicado" placeholder="CDA-AT-890905211-2026-0001" required></div>
               <div class="sda-field"><label class="form-label" for="c-cor">Correo registrado</label><input class="form-control form-control-lg" id="c-cor" name="correo" type="email" required></div>
               <button class="btn btn-primary btn-lg" type="submit"><i class="bi bi-search"></i> Consultar</button>
             </form>

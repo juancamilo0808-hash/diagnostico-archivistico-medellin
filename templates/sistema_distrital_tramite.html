@@ -91,7 +91,7 @@
     <p class="text-secondary">Use el número de radicado que recibió y el correo con el que hizo la solicitud.</p>
     {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
     <form method="post" class="tr-form d-grid gap-3">
-      <div><label class="form-label fw-semibold" for="radicado">Número de radicado</label><input class="form-control form-control-lg" id="radicado" name="radicado" value="{{ radicado }}" placeholder="SDA-AT-2026-00001" required></div>
+      <div><label class="form-label fw-semibold" for="radicado">Número de radicado</label><input class="form-control form-control-lg" id="radicado" name="radicado" value="{{ radicado }}" placeholder="CDA-AT-890905211-2026-0001" required></div>
       <div><label class="form-label fw-semibold" for="correo">Correo registrado</label><input class="form-control form-control-lg" id="correo" name="correo" type="email" required></div>
       <button class="btn btn-primary btn-lg" type="submit"><i class="bi bi-search"></i> Consultar</button>
     </form>

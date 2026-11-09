@@ -6,13 +6,14 @@
   <div class="result-card">
     <p class="eyebrow">RESULTADO DEL DIAGNÓSTICO</p>
     <h1>{{ censo.nombre_entidad }}</h1>
+    <p class="mb-1">Nivel de madurez</p>
     <div class="ima-number">{{ '%.2f'|format(censo.ima) }}%</div>
     {% if censo.ima <= 33.33 %}
-      <h2>Bajo</h2>
+      <h2>Clasificación: Bajo</h2>
     {% elif censo.ima <= 66.66 %}
-      <h2>Medio</h2>
+      <h2>Clasificación: Medio</h2>
     {% else %}
-      <h2>Alto</h2>
+      <h2>Clasificación: Alto</h2>
     {% endif %}
     <p>Resultado calculado automáticamente.</p>
 

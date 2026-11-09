@@ -915,7 +915,7 @@ def exportar_excel():
         'P7 - TRD', 'P8 - Organización del archivo', 'P9 - PGD',
         'P10 - PINAR', 'P11', 'P12', 'P13', 'P14 - Organización e inventarios',
         'P15', 'P16 - Conservación', 'P17', 'P18', 'P19', 'P20', 'P21',
-        'Puntaje obtenido', 'Variables aplicables', 'IMA (%)', 'Nivel de madurez',
+        'Puntaje obtenido', 'Variables aplicables', 'Nivel de madurez (%)', 'Clasificación',
     ])
     ws.append(encabezados)
 
@@ -951,10 +951,10 @@ def exportar_excel():
         max_length = min(max(len(str(cell.value or '')) for cell in column_cells) + 2, 42)
         ws.column_dimensions[get_column_letter(column_cells[0].column)].width = max(max_length, 14)
 
-    resumen = wb.create_sheet('Resumen IMA')
+    resumen = wb.create_sheet('Resumen nivel de madurez')
     resumen.append([
         'ID de registro', 'Fecha de registro', 'Entidad / NIT', 'Naturaleza',
-        'Sector', 'Puntaje obtenido', 'Variables aplicables', 'IMA (%)', 'Nivel de madurez'
+        'Sector', 'Puntaje obtenido', 'Variables aplicables', 'Nivel de madurez (%)', 'Clasificación'
     ])
     for r in registros:
         resumen.append([
@@ -1005,7 +1005,7 @@ def exportar_excel():
     respuestas_ws = wb.create_sheet('Respuestas completas')
     respuestas_ws.append([
         'ID de registro', 'Fecha de registro', 'Código de entidad',
-        'Entidad / NIT', 'IMA (%)', 'Nivel', *campos_ordenados
+        'Entidad / NIT', 'Nivel de madurez (%)', 'Clasificación', *campos_ordenados
     ])
     for registro, respuestas in respuestas_registros:
         valores = []
@@ -1311,6 +1311,24 @@ app.jinja_env.globals['sda_anillo'] = [
 _CORREO_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 
 
+def nit_base(nit):
+    """Dígitos del NIT sin el dígito de verificación (890905211-1 -> 890905211)."""
+    return re.sub(r'\D', '', (nit or '').split('-')[0])
+
+
+def generar_radicado(prefijo, nit):
+    """Radicado del Consejo Distrital de Archivos: CDA-<tipo>-<NIT>-<año>-<consecutivo>.
+    El consecutivo es independiente por tipo de solicitud y se reinicia cada año."""
+    anio = datetime.utcnow().year
+    patron = f'CDA-{prefijo}-%-{anio}-%'
+    n = SolicitudSistema.query.filter(SolicitudSistema.radicado.like(patron)).count() + 1
+    while True:
+        radicado = f'CDA-{prefijo}-{nit_base(nit)}-{anio}-{n:04d}'
+        if not SolicitudSistema.query.filter_by(radicado=radicado).first():
+            return radicado
+        n += 1
+
+
 def _sda_radicados_sesion():
     return list(session.get('sda_radicados', []))
 
@@ -1356,6 +1374,8 @@ def sistema_distrital_solicitud():
             errores['enlace_documentos'] = 'Ingrese un enlace https a la carpeta con los documentos.'
     elif v['enlace_documentos'] and not re.match(r'^https?://\S+$', v['enlace_documentos']):
         errores['enlace_documentos'] = 'El enlace debe comenzar por https://'
+    if v['nit'] and not 6 <= len(nit_base(v['nit'])) <= 10:
+        errores['nit'] = 'Ingrese un NIT válido, por ejemplo 890905211-1.'
     if not f.get('autoriza_datos'):
         errores['autoriza_datos'] = 'Debe autorizar el tratamiento de datos para radicar.'
     limites = {'entidad': 300, 'nit': 40, 'contacto_nombre': 200, 'contacto_cargo': 200, 'correo': 200,
@@ -1376,9 +1396,9 @@ def sistema_distrital_solicitud():
                              descripcion=v['descripcion'], estado='Radicada')
         db.session.add(s)
         db.session.flush()
-        s.radicado = f"SDA-{cfg['prefijo']}-{datetime.utcnow().year}-{s.id:05d}"
+        s.radicado = generar_radicado(cfg['prefijo'], v['nit'])
         db.session.add(SolicitudEvento(solicitud_id=s.id, estado='Radicada',
-                                       observacion='Solicitud recibida por el Sistema Distrital de Archivos.'))
+                                       observacion='Solicitud recibida por el Consejo Distrital de Archivos.'))
         db.session.commit()
     except Exception:
         db.session.rollback()
