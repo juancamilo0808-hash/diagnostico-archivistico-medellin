@@ -262,7 +262,6 @@
                 <a href="{{ url_for('politica_datos') }}">Política de tratamiento de datos</a>
                 <a href="{{ url_for('terminos') }}">Términos y condiciones</a>
                 <a href="{{ url_for('accesibilidad') }}">Accesibilidad</a>
-                <a href="{{ url_for('siglas') }}">Siglas y abreviaturas</a>
                 <a href="{{ url_for('mapa_del_sitio') }}">Mapa del sitio</a>
             </nav>
 
@@ -314,34 +313,6 @@
         guardar(p); pintar(p);
       });
       pintar(leer());
-      /* Siglas: la primera aparición de cada una en el contenido se marca con <abbr>,
-         que muestra su significado al pasar el cursor y lo anuncia a lectores de pantalla. */
-      try {
-        var SIGLAS = {{ siglas_cda|tojson }}, vistas = {}, mapa = {};
-        SIGLAS.forEach(function (s) { mapa[s[0]] = s[1]; });
-        var patron = new RegExp('(?<![\\w.-])(' + SIGLAS.map(function (s) { return s[0].replace('.', '\\.'); })
-                       .sort(function (a, b) { return b.length - a.length; }).join('|') + ')(?![\\w-])', 'g');
-        var omitir = 'A,BUTTON,ABBR,SCRIPT,STYLE,TEXTAREA,SELECT,OPTION,INPUT,CODE,svg,TITLE,H1';
-        var raizSiglas = document.getElementById('contenido');
-        var caminante = document.createTreeWalker(raizSiglas, NodeFilter.SHOW_TEXT, { acceptNode: function (n) {
-          for (var e = n.parentNode; e && e !== raizSiglas; e = e.parentNode) {
-            if (omitir.indexOf(e.nodeName) !== -1 || e.classList && e.classList.contains('sin-siglas')) return NodeFilter.FILTER_REJECT;
-          }
-          patron.lastIndex = 0; return patron.test(n.nodeValue) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT; } });
-        var nodos = []; while (caminante.nextNode()) nodos.push(caminante.currentNode);
-        nodos.forEach(function (n) {
-          var texto = n.nodeValue, frag = document.createDocumentFragment(), ultimo = 0, m, cambio = false;
-          patron.lastIndex = 0;
-          while ((m = patron.exec(texto))) {
-            if (vistas[m[1]]) continue;
-            vistas[m[1]] = true; cambio = true;
-            frag.appendChild(document.createTextNode(texto.slice(ultimo, m.index)));
-            var ab = document.createElement('abbr'); ab.title = mapa[m[1]]; ab.textContent = m[1]; frag.appendChild(ab);
-            ultimo = m.index + m[1].length;
-          }
-          if (cambio) { frag.appendChild(document.createTextNode(texto.slice(ultimo))); n.parentNode.replaceChild(frag, n); }
-        });
-      } catch (e) {}
       /* Página activa del menú anunciada a lectores de pantalla. */
       document.querySelectorAll('.cda-nav .nav-link.active').forEach(function (a) { a.setAttribute('aria-current', 'page'); });
     })();

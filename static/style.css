@@ -644,4 +644,3 @@ main:focus { outline: none; }
 .cda-nav .cda-dropdown .dropdown-item { color: var(--cda-blue-dark) !important; }
 @media (max-width: 1399.98px) { .cda-nav .cda-dropdown .dropdown-item { color: #fff !important; } }
 .tp-table tbody th { font-size: .9rem; color: var(--cda-blue-dark); vertical-align: top; }
-abbr[title] { text-decoration: underline dotted; text-underline-offset: 2px; cursor: help; }

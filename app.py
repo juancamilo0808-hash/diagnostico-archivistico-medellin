@@ -2154,46 +2154,6 @@ def terminos():
     return render_template('politica.html', pagina='terminos')
 
 
-# Siglas y abreviaturas: fuente única para la página de glosario y para la explicación
-# emergente (<abbr>) que se agrega a la primera aparición de cada sigla en cada página.
-SIGLAS = [
-    ('AGN', 'Archivo General de la Nación'),
-    ('AT', 'Asistencia técnica (prefijo del radicado CDA-AT)'),
-    ('CCD', 'Cuadro de Clasificación Documental'),
-    ('CDA', 'Consejo Distrital de Archivos'),
-    ('CSV', 'Valores separados por comas, formato abierto de datos en tabla'),
-    ('EV', 'Evaluación de instrumentos archivísticos (prefijo del radicado CDA-EV)'),
-    ('FUID', 'Formato Único de Inventario Documental'),
-    ('GD', 'Gestión documental'),
-    ('GOV.CO', 'Portal Único del Estado colombiano'),
-    ('JSON', 'Notación de objetos de JavaScript, formato abierto de datos estructurados'),
-    ('KB', 'Kilobytes, unidad de tamaño de archivo'),
-    ('MB', 'Megabytes, unidad de tamaño de archivo'),
-    ('MinTIC', 'Ministerio de Tecnologías de la Información y las Comunicaciones'),
-    ('NIT', 'Número de Identificación Tributaria'),
-    ('NTC', 'Norma Técnica Colombiana'),
-    ('PDF', 'Formato de documento portátil'),
-    ('PGD', 'Programa de Gestión Documental'),
-    ('PINAR', 'Plan Institucional de Archivos'),
-    ('PQRSD', 'Peticiones, quejas, reclamos, sugerencias y denuncias'),
-    ('RUSD', 'Registro Único de Series Documentales'),
-    ('SGDEA', 'Sistema de Gestión de Documentos Electrónicos de Archivo'),
-    ('TRD', 'Tabla de Retención Documental'),
-    ('TVD', 'Tabla de Valoración Documental'),
-    ('WCAG', 'Pautas de Accesibilidad para el Contenido Web'),
-]
-
-
-@app.context_processor
-def inyectar_siglas():
-    return {'siglas_cda': SIGLAS}
-
-
-@app.route('/siglas-y-abreviaturas')
-def siglas():
-    return render_template('siglas.html')
-
-
 @app.route('/mapa-del-sitio')
 def mapa_del_sitio():
     return render_template('mapa_sitio.html')
