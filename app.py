@@ -353,7 +353,14 @@ def buscar_entidades_directorio(termino):
 
 
 CAMPOS_DIRECTORIO_PUBLICOS = {'Código', 'Entidad', 'Sigla', 'Grupo / relación con el Distrito',
-                               'Clasificación preliminar', 'Ámbito', 'Sitio web / fuente', 'Dirección'}
+                               'Clasificación preliminar', 'Ámbito', 'Responsable de gestión documental',
+                               'Cargo Responsable GD', 'Correo Responsable GD', 'Teléfono Responsable GD',
+                               'Sitio web / fuente', 'Dirección'}
+# Campos del formulario que se precargan desde el directorio y la entidad puede corregir.
+CAMPOS_CORREGIBLES = {'grupo_relacion': 'Grupo / relación', 'clasificacion_preliminar': 'Clasificación preliminar',
+                      'ambito': 'Ámbito', 'responsable_nombre': 'Responsable', 'responsable_cargo': 'Cargo',
+                      'responsable_correo': 'Correo', 'telefono_responsable': 'Teléfono',
+                      'sitio_web': 'Sitio web', 'direccion_entidad': 'Dirección'}
 
 
 @app.route('/api/buscar-entidades')
@@ -366,9 +373,9 @@ def api_buscar_entidades():
 
     resultados = buscar_entidades_directorio(termino)
 
-    # Minimización (Ley 1581 de 2012): la consulta es pública, así que solo se
-    # entregan datos institucionales. Los datos del responsable de gestión
-    # documental los diligencia la propia entidad en el formulario.
+    # Solo se entregan las columnas del directorio, que son datos de contacto
+    # institucional de servidores públicos (Ley 1712 de 2014, art. 9, lit. c).
+    # La entidad puede corregirlos en el formulario.
     return jsonify([
         {
             'nombre': resultado['nombre'],
@@ -498,6 +505,8 @@ def censo():
             'sitio_web': request.form.get('sitio_web', ''),
             'direccion_entidad': request.form.get('direccion_entidad', ''),
             'nit_entidad': request.form.get('nit_entidad', ''),
+            'correcciones_directorio': ', '.join(CAMPOS_CORREGIBLES[c] for c in request.form.get('campos_corregidos', '').split(',')
+                                                 if c in CAMPOS_CORREGIBLES),
             'responsable_nombre': request.form.get('responsable_nombre', ''),
             'responsable_cargo': request.form.get('responsable_cargo', ''),
             'responsable_correo': correo,
@@ -1043,7 +1052,7 @@ def exportar_excel():
     columnas_prioritarias = [
         'codigo_entidad', 'sigla_entidad', 'grupo_relacion',
         'clasificacion_preliminar', 'ambito', 'nit_entidad',
-        'telefono_responsable', 'sitio_web', 'direccion_entidad',
+        'telefono_responsable', 'sitio_web', 'direccion_entidad', 'correcciones_directorio',
         'q1_politica', 'q1_acto', 'q1_acto_detalle', 'q1_etapa', 'q1_razon', 'evidencia_q1',
         'q2_seguimiento', 'q2_mecanismo', 'q2_pgd_formulado', 'evidencia_q2',
         'q3_personal', 'q3_observaciones', 'q4_depositos', 'q4_riesgos', 'evidencia_q4',
@@ -1545,6 +1554,7 @@ FICHA_DIMENSIONES = [
          ('Naturaleza jurídica', ['naturaleza']), ('Sector', ['sector']),
          ('Grupo / relación con el Distrito', ['grupo_relacion']), ('Clasificación preliminar', ['clasificacion_preliminar']),
          ('Ámbito', ['ambito']), ('Dirección', ['direccion_entidad']), ('Sitio web', ['sitio_web']),
+         ('Datos corregidos frente al directorio', ['correcciones_directorio']),
      ]},
     {'clave': 'estrategico', 'letra': 'B', 'nombre': 'Estratégico', 'componente': 'estrategico',
      'preguntas': [
@@ -1575,7 +1585,7 @@ FICHA_DIMENSIONES = [
 
 FICHA_ETIQUETAS = {
     'responsable_nombre': 'Nombre', 'responsable_cargo': 'Cargo', 'responsable_correo': 'Correo',
-    'telefono_responsable': 'Teléfono', 'q1_acto': 'Acto administrativo', 'q1_acto_detalle': 'Número y fecha del acto',
+    'telefono_responsable': 'Teléfono', 'correcciones_directorio': 'Datos corregidos frente al directorio', 'q1_acto': 'Acto administrativo', 'q1_acto_detalle': 'Número y fecha del acto',
     'q1_etapa': 'Etapa', 'q1_razon': 'Razón por la que no existe', 'q2_mecanismo': 'Mecanismo de seguimiento',
     'q2_pgd_formulado': 'PGD formulado', 'q3_observaciones': 'Observaciones', 'q4_riesgos': 'Deficiencias identificadas',
     'q5_avance': 'Avance pendiente', 'q5_evaluacion': 'Instancia y fecha de evaluación',
