@@ -66,9 +66,13 @@
   .tier { position:relative; display:grid; grid-template-columns: 4.5rem 1fr; gap:1.2rem; align-items:center; background:#fff; border:1px solid var(--cda-border,#dce4ec); border-radius:18px; padding:1.25rem 1.4rem; box-shadow:0 10px 30px rgba(9,41,71,.05); }
   .tier:nth-child(2) { margin-left: clamp(0px, 4vw, 3rem); }
   .tier:nth-child(3) { margin-left: clamp(0px, 8vw, 6rem); }
+  .tier:nth-child(4) { margin-left: clamp(0px, 12vw, 9rem); }
   .tier .ico { width:4.5rem; height:4.5rem; border-radius:16px; display:grid; place-items:center; font-size:1.8rem; color:#fff; background: linear-gradient(140deg, var(--cda-blue,#123b65), var(--cda-blue-mid,#1c5688)); }
   .tier:nth-child(2) .ico { background: linear-gradient(140deg, #1c5688, #2f7fd1); }
   .tier:nth-child(3) .ico { background: linear-gradient(140deg, #2f7fd1, #63a7e8); }
+  .tier:nth-child(4) .ico { background: linear-gradient(140deg, #4f97e0, #8cc0ef); }
+  .tier.tier-asesor { border-color:#e8d9a8; background:#fffcf3; }
+  .tier.tier-asesor .ico { background: linear-gradient(140deg, #a57a12, #d6a62c); }
   .tier .lvl { font-size:.72rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:#8a6510; }
   .tier h3 { font-size:1.15rem; font-weight:800; color:var(--cda-blue-dark,#092947); margin:.1rem 0 .3rem; }
   .tier p { margin:0; color:var(--cda-text,#243447); font-size:.93rem; }
@@ -141,7 +145,7 @@
     .sda-hero { padding-top:2rem; }
     .tier { grid-template-columns: 3.2rem 1fr; padding:1rem; }
     .tier .ico { width:3.2rem; height:3.2rem; font-size:1.3rem; border-radius:12px; }
-    .tier:nth-child(2), .tier:nth-child(3) { margin-left:0; }
+    .tier:nth-child(2), .tier:nth-child(3), .tier:nth-child(4) { margin-left:0; }
     .sda-grid, .res { grid-template-columns:1fr; }
     .flow, .council-dark { padding:1.3rem; }
     .eco .lbl2 { display:none; }
@@ -267,12 +271,13 @@
   <!-- ================= NIVELES ================= -->
   <section class="sda-sec" id="como-funciona">
     <div class="sda-kicker">Cómo funciona</div>
-    <h2>Tres niveles, un mismo sistema</h2>
+    <h2>Cuatro instancias, un mismo sistema</h2>
     <p class="intro">El Sistema Distrital de Archivos articula a todas las entidades del Distrito para planear, ejecutar y coordinar la función archivística, proteger el patrimonio documental de la ciudad y ponerlo al servicio de la ciudadanía.</p>
     <div class="tiers">
-      <div class="tier"><div class="ico"><i class="bi bi-bank2"></i></div><div><div class="lvl">Nivel 1 · Rector</div><h3>Instancia rectora</h3><p>Fija la política archivística del Distrito, articula a los integrantes del Sistema, brinda asistencia técnica y produce los instrumentos de normalización.</p><div class="who"><span>Política archivística</span><span>Coordinación</span><span>Consejo Distrital de Archivos</span></div></div></div>
-      <div class="tier"><div class="ico"><i class="bi bi-diagram-3-fill"></i></div><div><div class="lvl">Nivel 2 · Articulador</div><h3>Instancias articuladoras</h3><p>Coordinan la gestión documental en su ámbito y llevan los lineamientos del Sistema a cada dependencia.</p><div class="who"><span>Cabezas de sector</span><span>Dependencias de archivo</span><span>Comités de gestión y desempeño</span></div></div></div>
-      <div class="tier"><div class="ico"><i class="bi bi-archive-fill"></i></div><div><div class="lvl">Nivel 3 · Ejecutor</div><h3>Instancias ejecutoras</h3><p>Aplican las políticas y normas archivísticas en el día a día: producen, organizan, conservan y dan acceso a los documentos.</p><div class="who"><span>Archivos de gestión</span><span>Archivos centrales</span><span>Particulares con funciones públicas</span><span>Archivos privados de interés público</span></div></div></div>
+      <div class="tier"><div class="ico"><i class="bi bi-bank2"></i></div><div><div class="lvl">Nivel 1 · Rector</div><h3>Instancia rectora</h3><p>Fija la política archivística del Distrito, articula a los integrantes del Sistema y produce los instrumentos de normalización.</p><div class="who"><span>Política archivística</span><span>Coordinación</span><span>Normalización</span></div></div></div>
+      <div class="tier tier-asesor"><div class="ico"><i class="bi bi-people-fill"></i></div><div><div class="lvl">Nivel 2 · Asesor</div><h3>Consejo Distrital de Archivos</h3><p>Asesora a la Administración Distrital en materia archivística, evalúa y convalida las Tablas de Retención y de Valoración Documental, y hace seguimiento a la política. No ejecuta: recomienda, orienta y conceptúa.</p><div class="who"><span>Asesoría técnica</span><span>Convalidación de TRD y TVD</span><span>Conceptos técnicos</span><span>Seguimiento a la política</span></div></div></div>
+      <div class="tier"><div class="ico"><i class="bi bi-diagram-3-fill"></i></div><div><div class="lvl">Nivel 3 · Articulador</div><h3>Instancias articuladoras</h3><p>Coordinan la gestión documental en su ámbito y llevan los lineamientos del Sistema a cada dependencia.</p><div class="who"><span>Cabezas de sector</span><span>Dependencias de archivo</span><span>Comités de gestión y desempeño</span></div></div></div>
+      <div class="tier"><div class="ico"><i class="bi bi-archive-fill"></i></div><div><div class="lvl">Nivel 4 · Ejecutor</div><h3>Instancias ejecutoras</h3><p>Aplican las políticas y normas archivísticas en el día a día: producen, organizan, conservan y dan acceso a los documentos.</p><div class="who"><span>Archivos de gestión</span><span>Archivos centrales</span><span>Particulares con funciones públicas</span><span>Archivos privados de interés público</span></div></div></div>
     </div>
   </section>
 
