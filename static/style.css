@@ -610,12 +610,10 @@ main:focus { outline: none; }
 .cda-dropdown .dropdown-item:hover, .cda-dropdown .dropdown-item:focus { background: var(--cda-blue-light); }
 .subrayar-enlaces a { text-decoration: underline !important; }
 .alto-contraste body { background: #000 !important; color: #fff !important; }
-.alto-contraste main, .alto-contraste main section, .alto-contraste main div, .alto-contraste main article,
-.alto-contraste main table, .alto-contraste main td, .alto-contraste main th, .alto-contraste main li, .alto-contraste main dl,
-.alto-contraste main details, .alto-contraste main summary, .alto-contraste .cda-footer, .alto-contraste .cda-footer * {
-    background: #000 !important; color: #fff !important; border-color: #fff !important; box-shadow: none !important; }
+.alto-contraste main, .alto-contraste main :where(*:not(img, svg, svg *)), .alto-contraste .cda-footer, .alto-contraste .cda-footer :where(*:not(img)) {
+    background-color: #000 !important; background-image: none !important; color: #fff !important; border-color: #fff !important; box-shadow: none !important; }
 .alto-contraste main a, .alto-contraste .cda-footer a { color: #ffef00 !important; background: #000 !important; text-decoration: underline !important; }
-.alto-contraste main a * { color: inherit !important; background: transparent !important; }
+.alto-contraste main a *, .alto-contraste .cda-footer a * { color: #ffef00 !important; }
 .alto-contraste main .btn, .alto-contraste main input, .alto-contraste main select, .alto-contraste main textarea {
     background: #000 !important; color: #ffef00 !important; border: 2px solid #ffef00 !important; }
 .alto-contraste main img, .alto-contraste main svg { filter: grayscale(1) contrast(1.2); }
