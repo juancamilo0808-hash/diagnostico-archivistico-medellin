@@ -18,11 +18,6 @@
   .is-wizard .wizard-js-only:not([hidden]) { display: block !important; }
   .is-wizard .wizard-nav .wizard-js-only:not([hidden]) { display: inline-flex !important; }
 
-  .dir-tag { display:inline-block; margin-left:.4rem; padding:.05rem .45rem; border-radius:999px; font-size:.68rem; font-weight:700; background:#e6f0fa; color:#123b65; vertical-align:middle; }
-  .dir-tag.is-edit { background:#fff1cc; color:#6b4e00; }
-  .form-control.dir-ok { background:#f5f9fd; }
-  .form-control.dir-edit { border-color:#c99a1e; background:#fffdf4; }
-  .dir-aviso { font-size:.85rem; background:#f2f7fc; border:1px solid #d6e4f2; border-radius:10px; padding:.6rem .8rem; color:#243447; }
   .wizard-progress { margin-bottom: 1rem; }
   .wizard-pills { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .4rem; list-style: none; padding: 0; margin: 0 0 .6rem; }
   .wizard-pill { display: flex; align-items: center; gap: .45rem; padding: .45rem .55rem; border: 1px solid var(--cda-border, #dce4ec); border-radius: 10px; background: #fff; color: var(--cda-muted, #56687a); font-size: .78rem; line-height: 1.2; min-width: 0; }
@@ -98,8 +93,7 @@
       <div class="col-md-4"><label class="form-label" for="telefono_responsable">Teléfono</label><input class="form-control" name="telefono_responsable" id="telefono_responsable"></div>
       <div class="col-md-4"><label class="form-label" for="sitio_web">Sitio web</label><input class="form-control" name="sitio_web" id="sitio_web"></div>
       <div class="col-md-8"><label class="form-label" for="direccion_entidad">Dirección</label><input class="form-control" name="direccion_entidad" id="direccion_entidad"></div>
-    </div><div class="dir-aviso mt-3" id="dirAviso" hidden><i class="bi bi-database-check" aria-hidden="true"></i> Los campos marcados como <span class="dir-tag">Del directorio</span> se cargaron del directorio de entidades del Distrito. Si alguno está desactualizado, corríjalo: el Consejo verá qué datos se corrigieron para actualizar el directorio.</div>
-    <small class="text-muted d-block mt-3" id="dirAyuda">Escriba el nombre de la entidad y selecciónela de la lista para cargar sus datos del directorio.</small></div></section>
+    </div><small class="text-muted d-block mt-3">Escriba el nombre de la entidad y selecciónela de la lista para cargar sus datos. Verifíquelos y corrija los que estén desactualizados.</small></div></section>
     </div>
     <div class="wizard-step" data-step="2" data-step-label="B. Estratégico">
     <div class="section-header mt-4" data-step-header="2"><div><h2>B. ESTRATÉGICO</h2></div></div><section class="card form-card mb-4" data-step-panel="2"><div class="card-body">
@@ -173,35 +167,27 @@
  document.querySelectorAll('.proteccion').forEach(el=>el.addEventListener('change',()=>{const checks=[...document.querySelectorAll('.proteccion:checked')];const exclusive=checks.find(x=>['Ninguno','No se tiene información'].includes(x.value));if(exclusive)checks.forEach(x=>{if(x!==exclusive)x.checked=false});else document.querySelectorAll('.proteccion').forEach(x=>{if(['Ninguno','No se tiene información'].includes(x.value))x.checked=false})}));
  refreshConditional();
  const name=document.getElementById('nombre_entidad'), box=document.getElementById('sugerencias'); let timer;
- /* Datos precargados del directorio: se marcan y, si la entidad los cambia, quedan
-    registrados como corrección para que el Consejo actualice el directorio. */
+ /* Datos precargados del directorio: si la entidad los cambia, la corrección queda
+    registrada (sin mostrarse en el formulario) para que el Consejo actualice el directorio. */
  const DIR_CORREGIBLES=['grupo_relacion','clasificacion_preliminar','ambito','responsable_nombre','responsable_cargo',
    'responsable_correo','telefono_responsable','sitio_web','direccion_entidad'];
- function marcarDir(el){
-   const cont=el.parentElement; let tag=cont.querySelector('.dir-tag');
-   if(el.dataset.dir===undefined){ if(tag) tag.remove(); el.classList.remove('dir-ok','dir-edit'); return; }
-   const cambiado=el.value.trim()!==el.dataset.dir.trim();
-   if(!tag){ tag=document.createElement('span'); tag.className='dir-tag'; cont.querySelector('label').appendChild(tag); }
-   tag.textContent=cambiado?'Corregido':'Del directorio'; tag.classList.toggle('is-edit',cambiado);
-   el.classList.toggle('dir-ok',!cambiado); el.classList.toggle('dir-edit',cambiado);
- }
  function actualizarCorregidos(){
    document.getElementById('campos_corregidos').value=DIR_CORREGIBLES.filter(id=>{const el=document.getElementById(id);
      return el&&el.dataset.dir!==undefined&&el.value.trim()!==el.dataset.dir.trim();}).join(',');
  }
- DIR_CORREGIBLES.forEach(id=>{const el=document.getElementById(id); if(el) el.addEventListener('input',()=>{marcarDir(el);actualizarCorregidos();});});
+ DIR_CORREGIBLES.forEach(id=>{const el=document.getElementById(id); if(el) el.addEventListener('input',actualizarCorregidos);});
  name.addEventListener('input',()=>{
   // Si cambia el nombre después de seleccionar una entidad, limpia los datos
   // vinculados anteriores para evitar asociar por error el diagnóstico equivocado.
   ['codigo_entidad','sigla_entidad','grupo_relacion','clasificacion_preliminar','ambito',
    'responsable_nombre','responsable_cargo','responsable_correo','telefono_responsable','sitio_web','direccion_entidad']
-   .forEach(id=>{const el=document.getElementById(id);if(el){el.value='';delete el.dataset.dir;marcarDir(el);}});
+   .forEach(id=>{const el=document.getElementById(id);if(el){el.value='';delete el.dataset.dir;}});
   actualizarCorregidos();
   clearTimeout(timer);const q=name.value.trim();if(q.length<2){box.innerHTML='';return}
   timer=setTimeout(async()=>{try{const res=await fetch(`/api/buscar-entidades?q=${encodeURIComponent(q)}`);const items=await res.json();box.innerHTML='';items.forEach(item=>{const b=document.createElement('button');b.type='button';b.className='list-group-item list-group-item-action';b.textContent=item.nombre+(item.sigla?' ('+item.sigla+')':'');b.addEventListener('click',()=>{name.value=item.nombre;const d=item.datos||{};const map={'Código':'codigo_entidad','Sigla':'sigla_entidad','Grupo / relación con el Distrito':'grupo_relacion','Clasificación preliminar':'clasificacion_preliminar','Ámbito':'ambito','Responsable de gestión documental':'responsable_nombre','Cargo Responsable GD':'responsable_cargo','Correo Responsable GD':'responsable_correo','Teléfono Responsable GD':'telefono_responsable','Sitio web / fuente':'sitio_web','Dirección':'direccion_entidad'};Object.entries(map).forEach(([k,id])=>{const el=document.getElementById(id);if(el&&d[k]){
   /* Si el directorio trae varios correos, se usa el primero; los saltos de línea se vuelven espacios. */
   let v=String(d[k]).trim(); v=id==='responsable_correo'?(v.split(/[\s,;]+/).find(s=>s.includes('@'))||v):v.replace(/\s*\n\s*/g,' · ');
-  el.value=v;if(DIR_CORREGIBLES.includes(id)){el.dataset.dir=el.value;marcarDir(el);}}});box.innerHTML='';actualizarCorregidos();document.getElementById('dirAviso').hidden=false;document.getElementById('dirAyuda').hidden=true});box.appendChild(b)})}catch(e){console.error('No se pudo consultar el directorio',e)}},220)});
+  el.value=v;if(DIR_CORREGIBLES.includes(id)){el.dataset.dir=el.value;}}});box.innerHTML='';actualizarCorregidos()});box.appendChild(b)})}catch(e){console.error('No se pudo consultar el directorio',e)}},220)});
 
  /* ===== 2. Navegación por secciones A–F =====
     Se activa antes que el autoguardado, de modo que un error de almacenamiento
