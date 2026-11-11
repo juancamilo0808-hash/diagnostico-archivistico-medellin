@@ -13,7 +13,7 @@
   .tr-rad { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:1.5rem; font-weight:800; color:var(--cda-blue-dark,#092947); letter-spacing:.02em; }
   .tr-meta { display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap:1rem; margin:1.2rem 0 2rem; }
   .tr-meta div { background:var(--cda-bg,#f3f6fa); border-radius:12px; padding:.75rem .9rem; }
-  .tr-meta small { display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; color:var(--cda-muted,#667789); font-weight:700; }
+  .tr-meta small { display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; color:var(--cda-muted,#56687a); font-weight:700; }
   .tr-meta strong { font-size:.92rem; color:var(--cda-blue-dark,#092947); }
   .stage { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(0,1fr); position:relative; margin:0 0 2rem; }
   .stage::before { content:""; position:absolute; left:0; right:0; top:19px; height:4px; background:#e3eaf1; border-radius:4px; }
@@ -24,12 +24,12 @@
   .stage .s.now .d { background:#d6a62c; border-color:#d6a62c; color:#071f38; box-shadow:0 0 0 7px rgba(214,166,44,.22); animation: now 2s ease-in-out infinite; }
   @keyframes now { 50% { box-shadow:0 0 0 12px rgba(214,166,44,.08); } }
   @media (prefers-reduced-motion: reduce) { .stage .s.now .d { animation:none; } }
-  .stage .t { font-size:.8rem; color:var(--cda-muted,#667789); line-height:1.25; }
+  .stage .t { font-size:.8rem; color:var(--cda-muted,#56687a); line-height:1.25; }
   .stage .s.now .t, .stage .s.done .t { color:var(--cda-blue-dark,#092947); font-weight:700; }
   .hist h2 { font-size:1.1rem; font-weight:800; color:var(--cda-blue-dark,#092947); }
   .ev { display:grid; grid-template-columns: 9rem 1fr; gap:1rem; padding:.9rem 0; border-bottom:1px solid #edf1f5; }
   .ev:last-child { border-bottom:0; }
-  .ev .f { font-size:.82rem; color:var(--cda-muted,#667789); font-variant-numeric: tabular-nums; }
+  .ev .f { font-size:.82rem; color:var(--cda-muted,#56687a); font-variant-numeric: tabular-nums; }
   .ev .e { font-weight:800; color:var(--cda-blue-dark,#092947); }
   .ev .o { font-size:.9rem; color:var(--cda-text,#243447); white-space:pre-line; }
   .tr-form { max-width:520px; }

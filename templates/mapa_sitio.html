@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Mapa del sitio | Consejo Distrital de Archivos{% endblock %}
+{% block content %}
+<section class="tp-hero"><div class="container">
+  <h1>Mapa del sitio</h1>
+  <p>Todas las secciones del micrositio del Consejo Distrital de Archivos de Medellín.</p>
+</div></section>
+<div class="container tp-wrap">
+  <div class="row g-3">
+    <div class="col-md-4"><section class="tp-card h-100"><h2 class="h6 fw-bold">Información y servicios</h2><ul class="mb-0">
+      <li><a href="{{ url_for('index') }}">Inicio</a></li>
+      <li><a href="{{ url_for('sistema_distrital') }}">Sistema Distrital de Archivos</a></li>
+      <li><a href="{{ url_for('censo') }}">Diagnóstico territorial archivístico</a></li>
+      <li><a href="{{ url_for('servicios_en_linea') }}">Servicios en línea</a>
+        <ul><li><a href="{{ url_for('servicios_en_linea', servicio='asistencia') }}">Solicitar asistencia técnica</a></li>
+            <li><a href="{{ url_for('servicios_en_linea', servicio='evaluacion') }}">Radicar evaluación de TRD / TVD</a></li>
+            <li><a href="{{ url_for('servicios_en_linea', servicio='consulta') }}">Consultar un trámite</a></li></ul></li>
+      <li><a href="{{ url_for('normatividad') }}">Normatividad</a></li>
+      <li><a href="{{ url_for('ayuda') }}">Ayuda</a></li>
+    </ul></section></div>
+    <div class="col-md-4"><section class="tp-card h-100"><h2 class="h6 fw-bold">Transparencia</h2><ul class="mb-0">
+      <li><a href="{{ url_for('transparencia') }}">Transparencia y acceso a la información</a></li>
+      <li><a href="{{ url_for('actas_publicas') }}">Actas del Consejo</a></li>
+      <li><a href="{{ url_for('convalidaciones_publicas') }}">TRD y TVD convalidadas</a></li>
+      <li><a href="{{ url_for('documentos_publicos') }}">Planes, informes y reglamento</a></li>
+      <li><a href="{{ url_for('datos_abiertos') }}">Datos abiertos</a></li>
+      <li><a href="https://www.medellin.gov.co/es/pqrsd/" target="_blank" rel="noopener">PQRSD de la Alcaldía</a></li>
+    </ul></section></div>
+    <div class="col-md-4"><section class="tp-card h-100"><h2 class="h6 fw-bold">Políticas y administración</h2><ul class="mb-0">
+      <li><a href="{{ url_for('politica_datos') }}">Política de tratamiento de datos personales</a></li>
+      <li><a href="{{ url_for('terminos') }}">Términos y condiciones</a></li>
+      <li><a href="{{ url_for('accesibilidad') }}">Declaración de accesibilidad</a></li>
+      <li><a href="{{ url_for('admin') }}">Administración (acceso restringido)</a></li>
+    </ul></section></div>
+  </div>
+</div>
+{% endblock %}

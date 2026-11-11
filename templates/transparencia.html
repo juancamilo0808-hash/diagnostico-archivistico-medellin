@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Transparencia y acceso a la información | Consejo Distrital de Archivos{% endblock %}
+{% block description %}Información pública del Consejo Distrital de Archivos de Medellín: actas, TRD y TVD convalidadas, planes, informes, normativa y datos abiertos.{% endblock %}
+{% block content %}
+<style>
+  .tr-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+  .tr-item { display: grid; grid-template-columns: 2.8rem 1fr; gap: .9rem; background: #fff; border: 1px solid var(--cda-border); border-radius: 16px; padding: 1.1rem; text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
+  .tr-item:hover, .tr-item:focus { border-color: var(--cda-blue-mid); box-shadow: 0 8px 22px rgba(13,42,72,.1); color: inherit; }
+  .tr-ico { width: 2.8rem; height: 2.8rem; border-radius: 12px; display: grid; place-items: center; background: var(--cda-blue-light); color: var(--cda-blue); font-size: 1.25rem; }
+  .tr-num { font-size: .7rem; font-weight: 800; letter-spacing: .08em; color: #8a6510; text-transform: uppercase; }
+  .tr-item h2 { font-size: 1rem; font-weight: 800; color: var(--cda-blue-dark); margin: .1rem 0 .3rem; }
+  .tr-item p { font-size: .87rem; margin: 0; color: var(--cda-text); }
+  .tr-count { font-size: .78rem; color: var(--cda-muted); margin-top: .4rem; }
+  @media (max-width: 991.98px) { .tr-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 575.98px) { .tr-grid { grid-template-columns: 1fr; } }
+</style>
+<section class="tp-hero"><div class="container">
+  <div class="k">Ley 1712 de 2014 · Resolución MinTIC 1519 de 2020</div>
+  <h1>Transparencia y acceso a la información</h1>
+  <p>Información pública del Consejo Distrital de Archivos de Medellín, organizada según el esquema de publicación de la Resolución 1519 de 2020. La información general del Distrito se encuentra en el <a class="text-white fw-bold" href="https://www.medellin.gov.co/es/transparencia/" target="_blank" rel="noopener">menú de transparencia de la Alcaldía de Medellín</a>.</p>
+</div></section>
+<div class="container tp-wrap">
+  <div class="tr-grid">
+    <a class="tr-item" href="{{ url_for('sistema_distrital') }}">
+      <span class="tr-ico"><i class="bi bi-diagram-3" aria-hidden="true"></i></span>
+      <span><span class="tr-num">1 · Información de la entidad</span><h2>Conformación y funciones</h2><p>Qué es el Sistema Distrital de Archivos, quiénes integran el Consejo y cuáles son sus funciones.</p></span>
+    </a>
+    <a class="tr-item" href="{{ url_for('normatividad') }}">
+      <span class="tr-ico"><i class="bi bi-journal-text" aria-hidden="true"></i></span>
+      <span><span class="tr-num">2 · Normativa</span><h2>Normatividad archivística</h2><p>Leyes, decretos, acuerdos del AGN y guías técnicas que orientan la función archivística.</p></span>
+    </a>
+    <a class="tr-item" href="{{ url_for('documentos_publicos') }}">
+      <span class="tr-ico"><i class="bi bi-clipboard-data" aria-hidden="true"></i></span>
+      <span><span class="tr-num">4 · Planeación e informes</span><h2>Planes, informes y reglamento</h2><p>Plan de acción anual, informes semestrales al Archivo General de la Nación y reglamento interno.</p><span class="tr-count d-block">{{ conteos.documentos }} documento{{ 's' if conteos.documentos != 1 }}</span></span>
+    </a>
+    <a class="tr-item" href="{{ url_for('actas_publicas') }}">
+      <span class="tr-ico"><i class="bi bi-journal-check" aria-hidden="true"></i></span>
+      <span><span class="tr-num">4 · Decisiones</span><h2>Actas de sesión</h2><p>Actas firmadas de las sesiones ordinarias y extraordinarias, con sus temas y decisiones.</p><span class="tr-count d-block">{{ conteos.actas }} acta{{ 's' if conteos.actas != 1 }} publicada{{ 's' if conteos.actas != 1 }}</span></span>
+    </a>
+    <a class="tr-item" href="{{ url_for('convalidaciones_publicas') }}">
+      <span class="tr-ico"><i class="bi bi-patch-check" aria-hidden="true"></i></span>
+      <span><span class="tr-num">8 · Grupos de interés</span><h2>TRD y TVD convalidadas</h2><p>Registro de los instrumentos archivísticos convalidados y su estado de inscripción en el RUSD.</p><span class="tr-count d-block">{{ conteos.convalidaciones }} registro{{ 's' if conteos.convalidaciones != 1 }}</span></span>
+    </a>
+    <a class="tr-item" href="{{ url_for('servicios_en_linea') }}">
+      <span class="tr-ico"><i class="bi bi-send-check" aria-hidden="true"></i></span>
+      <span><span class="tr-num">5 · Trámites</span><h2>Servicios en línea</h2><p>Radicación de asistencia técnica y de evaluación de TRD y TVD, y consulta del estado con el radicado.</p></span>
+    </a>
+    <a class="tr-item" href="{{ url_for('datos_abiertos') }}">
+      <span class="tr-ico"><i class="bi bi-database" aria-hidden="true"></i></span>
+      <span><span class="tr-num">7 · Datos abiertos</span><h2>Conjuntos de datos</h2><p>Convalidaciones y actas en formatos CSV y JSON, con su diccionario de datos.</p></span>
+    </a>
+    <a class="tr-item" href="https://www.medellin.gov.co/es/pqrsd/" target="_blank" rel="noopener">
+      <span class="tr-ico"><i class="bi bi-chat-square-text" aria-hidden="true"></i></span>
+      <span><span class="tr-num">6 · Participa</span><h2>Peticiones, quejas y sugerencias</h2><p>Canal oficial de PQRSD de la Alcaldía de Medellín (abre en una pestaña nueva).</p></span>
+    </a>
+    <a class="tr-item" href="{{ url_for('politica_datos') }}">
+      <span class="tr-ico"><i class="bi bi-shield-lock" aria-hidden="true"></i></span>
+      <span><span class="tr-num">Políticas</span><h2>Datos personales y accesibilidad</h2><p>Política de tratamiento de datos, términos y condiciones, y declaración de accesibilidad.</p></span>
+    </a>
+  </div>
+  <p class="tp-meta mt-4 mb-0"><i class="bi bi-clock-history" aria-hidden="true"></i> Última actualización de esta sección: {{ ultima|hora_col('%d/%m/%Y') if ultima else 'sin publicaciones aún' }}. Los números corresponden a las categorías del menú de transparencia del anexo 2 de la Resolución 1519 de 2020.</p>
+</div>
+{% endblock %}

@@ -59,7 +59,7 @@
   .sda-sec { padding: 4rem 0 0; }
   .sda-kicker { font-size:.75rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--cda-blue-mid,#1c5688); }
   .sda-sec h2 { font-size: clamp(1.6rem, 2.6vw, 2.2rem); font-weight:800; color:var(--cda-blue-dark,#092947); margin:.4rem 0 .6rem; letter-spacing:-.01em; }
-  .sda-sec .intro { color:var(--cda-muted,#667789); max-width:46rem; font-size:1.02rem; }
+  .sda-sec .intro { color:var(--cda-muted,#56687a); max-width:46rem; font-size:1.02rem; }
 
   /* niveles */
   .tiers { position:relative; display:grid; gap:1rem; margin-top:2rem; }
@@ -69,7 +69,7 @@
   .tier .ico { width:4.5rem; height:4.5rem; border-radius:16px; display:grid; place-items:center; font-size:1.8rem; color:#fff; background: linear-gradient(140deg, var(--cda-blue,#123b65), var(--cda-blue-mid,#1c5688)); }
   .tier:nth-child(2) .ico { background: linear-gradient(140deg, #1c5688, #2f7fd1); }
   .tier:nth-child(3) .ico { background: linear-gradient(140deg, #2f7fd1, #63a7e8); }
-  .tier .lvl { font-size:.72rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--gold); }
+  .tier .lvl { font-size:.72rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:#8a6510; }
   .tier h3 { font-size:1.15rem; font-weight:800; color:var(--cda-blue-dark,#092947); margin:.1rem 0 .3rem; }
   .tier p { margin:0; color:var(--cda-text,#243447); font-size:.93rem; }
   .tier .who { display:flex; flex-wrap:wrap; gap:.35rem; margin-top:.55rem; }
@@ -112,7 +112,7 @@
   .flow .n { width:2.4rem; height:2.4rem; border-radius:50%; display:grid; place-items:center; font-weight:800; color:#fff; background:var(--f4); box-shadow:0 0 0 5px #efeafc; }
   .flow .st:last-child .n { background:var(--gold); color:var(--navy); box-shadow:0 0 0 5px #fbf2d9; }
   .flow strong { display:block; color:var(--cda-blue-dark,#092947); font-size:.95rem; }
-  .flow span { font-size:.85rem; color:var(--cda-muted,#667789); }
+  .flow span { font-size:.85rem; color:var(--cda-muted,#56687a); }
 
   /* recursos */
   .res { display:grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap:1rem; margin-top:2rem; }
@@ -120,13 +120,13 @@
   .res a:hover { border-color: var(--cda-blue-mid,#1c5688); transform: translateY(-2px); }
   .res i { font-size:1.4rem; color:var(--cda-blue-mid,#1c5688); }
   .res strong { display:block; color:var(--cda-blue-dark,#092947); font-size:.93rem; }
-  .res span { font-size:.82rem; color:var(--cda-muted,#667789); }
+  .res span { font-size:.82rem; color:var(--cda-muted,#56687a); }
   .res small { font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--gold); }
 
   .sda-band { margin:4rem 0 3rem; background: linear-gradient(120deg, var(--navy), #0f3a63); border-radius:24px; padding:2.2rem; color:#fff; display:flex; justify-content:space-between; align-items:center; gap:1.5rem; flex-wrap:wrap; position:relative; overflow:hidden; }
   .sda-band h2 { color:#fff; font-weight:800; font-size:1.6rem; margin:0 0 .3rem; }
   .sda-band p { color:rgba(255,255,255,.78); margin:0; }
-  .sda-note { font-size:.8rem; color:var(--cda-muted,#667789); }
+  .sda-note { font-size:.8rem; color:var(--cda-muted,#56687a); }
 
   @media (prefers-reduced-motion: reduce) {
     .eco .orbit-rot, .eco .orbit-rot2, .eco .ent, .eco .pulse { animation:none; }
@@ -205,7 +205,7 @@
 
             <!-- núcleo: instancia rectora -->
             <circle class="pulse" cx="320" cy="320" r="78" fill="none" stroke="#d6a62c" stroke-width="2"/>
-            <g class="node" data-f="core" tabindex="0" role="button" aria-label="Instancia rectora del Sistema Distrital de Archivos">
+            <g class="node" data-f="core" tabindex="0" role="button">
               <circle class="halo" cx="320" cy="320" r="100" fill="#d6a62c"/>
               <g class="disc">
                 <circle cx="320" cy="320" r="78" fill="url(#gCore)" stroke="url(#gGold)" stroke-width="3"/>
@@ -216,7 +216,7 @@
             </g>
 
             <!-- Consejo Distrital de Archivos -->
-            <g class="node" data-f="cda" tabindex="0" role="button" aria-label="Consejo Distrital de Archivos">
+            <g class="node" data-f="cda" tabindex="0" role="button">
               <circle class="halo" cx="545" cy="95" r="58" fill="#d6a62c"/>
               <g class="disc">
                 <circle cx="545" cy="95" r="42" fill="#0b2d50" stroke="url(#gGold)" stroke-width="2.5" stroke-dasharray="5 4"/>
@@ -235,7 +235,7 @@
               ('segu', 320, 505, '#e08a1e', 'Seguimiento', 'diagnóstico'),
               ('eval', 135, 320, '#8b6fd6', 'Evaluación', 'TRD y TVD') ] %}
             {% for k, x, y, c, t, s in fs %}
-            <g class="node" data-f="{{ k }}" tabindex="0" role="button" aria-label="{{ t }}">
+            <g class="node" data-f="{{ k }}" tabindex="0" role="button">
               <circle class="halo" cx="{{ x }}" cy="{{ y }}" r="66" fill="{{ c }}"/>
               <g class="disc">
                 <circle cx="{{ x }}" cy="{{ y }}" r="48" fill="{{ c }}" stroke="rgba(255,255,255,.85)" stroke-width="3"/>

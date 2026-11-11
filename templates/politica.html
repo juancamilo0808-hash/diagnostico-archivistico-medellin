@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% set titulos = {'datos': 'Política de tratamiento de datos personales', 'terminos': 'Términos y condiciones de uso', 'accesibilidad': 'Declaración de accesibilidad'} %}
+{% block title %}{{ titulos[pagina] }} | Consejo Distrital de Archivos{% endblock %}
+{% block content %}
+<section class="tp-hero"><div class="container">
+  <nav class="tp-crumb" aria-label="Ruta de navegación"><a href="{{ url_for('transparencia') }}">Transparencia</a> › Políticas</nav>
+  <h1>{{ titulos[pagina] }}</h1>
+  <p>Micrositio del Consejo Distrital de Archivos de Medellín · versión 1.0 · noviembre de 2026</p>
+</div></section>
+<div class="container tp-wrap">
+  <div class="row g-3">
+    <div class="col-lg-3"><nav class="tp-card" aria-label="Políticas del micrositio"><ul class="list-unstyled mb-0 small d-grid gap-2">
+      <li><a href="{{ url_for('politica_datos') }}" {% if pagina == 'datos' %}aria-current="page" class="fw-bold"{% endif %}>Tratamiento de datos personales</a></li>
+      <li><a href="{{ url_for('terminos') }}" {% if pagina == 'terminos' %}aria-current="page" class="fw-bold"{% endif %}>Términos y condiciones</a></li>
+      <li><a href="{{ url_for('accesibilidad') }}" {% if pagina == 'accesibilidad' %}aria-current="page" class="fw-bold"{% endif %}>Accesibilidad</a></li>
+    </ul></nav></div>
+    <article class="col-lg-9"><div class="tp-card tp-legal">
+{% if pagina == 'datos' %}
+      <p>Este aviso explica cómo el micrositio trata los datos personales que recoge. Aplica la política general del Distrito, adoptada por el Decreto 0268 de 2025, y lo dispuesto en la Ley 1581 de 2012 y el Decreto 1074 de 2015.</p>
+      <h2>1. Responsable del tratamiento</h2>
+      <p>Distrito Especial de Ciencia, Tecnología e Innovación de Medellín, NIT 890.905.211-1, Centro Administrativo Distrital (CAD), Calle 44 N.º 52-165, Medellín. La gestión del micrositio está a cargo de la Secretaría Técnica del Consejo Distrital de Archivos.</p>
+      <h2>2. Datos que se recogen y para qué</h2>
+      <div class="table-responsive"><table class="table table-sm tp-table">
+        <thead><tr><th scope="col">Dónde</th><th scope="col">Datos</th><th scope="col">Finalidad</th></tr></thead>
+        <tbody>
+          <tr><td>Diagnóstico territorial</td><td>Nombre, cargo, correo y teléfono del responsable de gestión documental de la entidad</td><td>Contactar a la entidad sobre su diagnóstico, validar la información y orientar el acompañamiento técnico.</td></tr>
+          <tr><td>Servicios en línea</td><td>Nombre, cargo, correo y teléfono de la persona de contacto</td><td>Gestionar la solicitud de asistencia técnica o de evaluación de instrumentos y comunicar su estado.</td></tr>
+          <tr><td>Preferencias del navegador</td><td>Tamaño de texto, contraste y borrador del formulario, guardados solo en el equipo del usuario</td><td>Mantener los ajustes de accesibilidad y no perder el avance del formulario.</td></tr>
+        </tbody></table></div>
+      <p>El micrositio no solicita datos sensibles ni datos de niños, niñas o adolescentes. Las actas, convalidaciones y conjuntos de datos abiertos publicados contienen información institucional, no datos personales.</p>
+      <h2>3. Autorización</h2>
+      <p>Los formularios piden la autorización expresa del titular antes de guardar la información. Sin esa autorización el formulario no se envía.</p>
+      <h2>4. Derechos del titular</h2>
+      <p>Usted puede conocer, actualizar y rectificar sus datos; solicitar prueba de la autorización; ser informado sobre su uso; presentar quejas ante la Superintendencia de Industria y Comercio; revocar la autorización o pedir la supresión cuando no exista un deber legal de conservarlos, y acceder gratuitamente a ellos (Ley 1581 de 2012, artículo 8).</p>
+      <h2>5. Cómo ejercerlos</h2>
+      <p>Escriba a <a href="mailto:consejodarchivo@medellin.gov.co">consejodarchivo@medellin.gov.co</a> o use el <a href="https://www.medellin.gov.co/es/pqrsd/" target="_blank" rel="noopener">canal de PQRSD de la Alcaldía</a>. Las consultas se responden en máximo 10 días hábiles y los reclamos en máximo 15 días hábiles, prorrogables en los casos que prevé la ley (artículos 14 y 15).</p>
+      <h2>6. Seguridad y conservación</h2>
+      <p>La información viaja cifrada (HTTPS). El panel de administración exige contraseña, limita los intentos fallidos y cierra la sesión tras 60 minutos sin actividad. Los resultados de cada diagnóstico solo los ve quien lo envió y el equipo del Consejo. Los datos se conservan durante el tiempo que fijen las Tablas de Retención Documental del Distrito.</p>
+      <h2>7. Proveedores tecnológicos</h2>
+      <p>El micrositio funciona en servicios de alojamiento y base de datos en la nube que actúan como encargados del tratamiento, bajo las instrucciones del responsable y con las medidas de seguridad descritas.</p>
+{% elif pagina == 'terminos' %}
+      <h2>1. Objeto</h2>
+      <p>Estos términos regulan el uso del micrositio del Consejo Distrital de Archivos de Medellín, que ofrece información sobre el Sistema Distrital de Archivos, el diagnóstico territorial archivístico, servicios en línea y la información pública del Consejo.</p>
+      <h2>2. Uso adecuado</h2>
+      <p>Quien diligencia un formulario declara que actúa en nombre de la entidad que registra y que la información es veraz. No está permitido usar el micrositio para fines distintos a los institucionales, ni intentar acceder a las áreas restringidas sin autorización.</p>
+      <h2>3. Información publicada</h2>
+      <p>Las actas, convalidaciones, informes y conjuntos de datos son información pública y pueden reutilizarse citando como fuente al Consejo Distrital de Archivos de Medellín. Las marcas y logotipos de la Alcaldía de Medellín no pueden usarse sin autorización.</p>
+      <h2>4. Radicados y plazos</h2>
+      <p>El número de radicado identifica la solicitud ante el Consejo. Los plazos de respuesta son los de la normativa aplicable; las etapas que muestra la consulta son informativas.</p>
+      <h2>5. Enlaces externos</h2>
+      <p>Los enlaces a otros sitios (Archivo General de la Nación, GOV.CO, Alcaldía de Medellín) se ofrecen como referencia; su contenido es responsabilidad de cada emisor.</p>
+      <h2>6. Disponibilidad</h2>
+      <p>Se procura el funcionamiento continuo del micrositio, pero pueden presentarse interrupciones por mantenimiento. Los cambios a estos términos se publicarán en esta página.</p>
+{% else %}
+      <p>El Consejo Distrital de Archivos se compromete a que este micrositio cumpla el nivel AA de las Pautas de Accesibilidad para el Contenido Web (WCAG) 2.1, como exige el anexo 1 de la Resolución MinTIC 1519 de 2020, y la NTC 5854.</p>
+      <h2>Qué ofrece el micrositio</h2>
+      <ul>
+        <li>Enlace «Saltar al contenido principal» al inicio de cada página.</li>
+        <li>Barra de accesibilidad para aumentar o reducir el texto, activar alto contraste y subrayar enlaces; los ajustes se recuerdan en el navegador.</li>
+        <li>Navegación completa con teclado y foco visible en todos los elementos.</li>
+        <li>Textos alternativos en imágenes, etiquetas en todos los campos de formulario y mensajes de error asociados al campo.</li>
+        <li>Tablas con encabezados y título descriptivo para lectores de pantalla.</li>
+        <li>Diseño adaptable a celulares y respeto por la preferencia de reducir animaciones.</li>
+        <li>Idioma de la página declarado en español.</li>
+      </ul>
+      <h2>Limitaciones conocidas</h2>
+      <ul>
+        <li>Algunos PDF publicados (actas firmadas o escaneadas) pueden no ser accesibles para lectores de pantalla; si necesita una versión accesible, solicítela al correo indicado abajo.</li>
+        <li>El diagrama interactivo del Sistema Distrital tiene una descripción textual equivalente en la misma página.</li>
+      </ul>
+      <h2>Reportar una barrera</h2>
+      <p>Si encuentra un contenido que no puede usar, escriba a <a href="mailto:consejodarchivo@medellin.gov.co">consejodarchivo@medellin.gov.co</a> indicando la página y la dificultad. Se responderá en un plazo máximo de 15 días hábiles.</p>
+      <p class="tp-meta mb-0">Última revisión: noviembre de 2026, con pruebas automáticas (axe-core) y navegación con teclado.</p>
+{% endif %}
+    </div></article>
+  </div>
+</div>
+{% endblock %}

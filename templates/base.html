@@ -16,26 +16,65 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20261023footer1">
+    <meta name="description" content="{% block description %}Micrositio del Consejo Distrital de Archivos de Medellín: diagnóstico territorial archivístico, servicios en línea, actas, convalidaciones y transparencia.{% endblock %}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20261111a11y">
+    <script>
+      /* Preferencias de accesibilidad guardadas en este navegador (tamaño de texto y contraste). */
+      (function () { try { var p = JSON.parse(localStorage.getItem('cda-a11y') || '{}');
+        if (p.fs) document.documentElement.style.fontSize = p.fs + '%';
+        if (p.contraste) document.documentElement.classList.add('alto-contraste');
+        if (p.enlaces) document.documentElement.classList.add('subrayar-enlaces'); } catch (e) {} })();
+    </script>
     <style>
       /* Menú en una sola fila: sin cortes de línea y más compacto en pantallas medianas. */
       .cda-nav .nav-link, .cda-nav .btn-nav, .brand-cda-line { white-space: nowrap; }
-      @media (min-width: 1200px) and (max-width: 1499.98px) {
-        .cda-nav .nav-link { padding: .6rem .6rem !important; font-size: .84rem; }
-        .cda-nav .official-alcaldia-logo { width: 150px; height: 66px; }
+      @media (min-width: 1400px) and (max-width: 1699.98px) {
+        .cda-nav .nav-link { padding: .55rem .5rem !important; font-size: .82rem; }
+        .cda-nav .btn-nav { padding: .5rem .7rem; font-size: .85rem; }
+        .cda-nav .official-alcaldia-logo { width: 130px; height: 58px; }
+        .cda-nav .brand-cda-line { font-size: .72rem; }
+      }
+      @media (max-width: 1399.98px) {
+        .cda-nav .navbar-collapse { padding: .5rem 0 1rem; }
+        .cda-nav .cda-dropdown { background: #0e3358; border-color: rgba(255,255,255,.2); box-shadow: none; }
+        .cda-nav .cda-dropdown .dropdown-item { color: #fff; }
+        .cda-nav .cda-dropdown .dropdown-item i { color: #f1c75b; }
+        .cda-nav .cda-dropdown .dropdown-item:hover, .cda-nav .cda-dropdown .dropdown-item:focus { background: rgba(255,255,255,.12); }
+        .cda-nav .btn-nav { align-self: flex-start; margin-top: .4rem; }
       }
     </style>
 </head>
 
 <body class="{% block body_class %}{% endblock %}">
 
+    <a class="cda-skip" href="#contenido">Saltar al contenido principal</a>
+
+    <!-- BARRA SUPERIOR GOV.CO (Res. MinTIC 1519 de 2020, anexo 2, numeral 2.1) -->
+    <div class="govco-bar">
+        <div class="container-fluid cda-nav-inner d-flex justify-content-between align-items-center">
+            <a href="https://www.gov.co/" target="_blank" rel="noopener" class="govco-logo" aria-label="Portal Único del Estado colombiano GOV.CO (abre en una pestaña nueva)">GOV.CO</a>
+            <button type="button" class="a11y-toggle" aria-expanded="false" aria-controls="a11yPanel">
+                <i class="bi bi-universal-access-circle" aria-hidden="true"></i> Accesibilidad
+            </button>
+        </div>
+        <div class="a11y-panel" id="a11yPanel" hidden>
+            <div class="container-fluid cda-nav-inner d-flex flex-wrap gap-2 align-items-center justify-content-end" role="group" aria-label="Opciones de accesibilidad">
+                <button type="button" data-a11y="menos" aria-label="Reducir el tamaño del texto">A−</button>
+                <button type="button" data-a11y="mas" aria-label="Aumentar el tamaño del texto">A+</button>
+                <button type="button" data-a11y="contraste" aria-pressed="false">Alto contraste</button>
+                <button type="button" data-a11y="enlaces" aria-pressed="false">Subrayar enlaces</button>
+                <button type="button" data-a11y="restablecer">Restablecer</button>
+                <a href="{{ url_for('accesibilidad') }}">Declaración de accesibilidad</a>
+            </div>
+        </div>
+    </div>
+
     <!-- NAVEGACIÓN INSTITUCIONAL -->
-    <nav class="navbar navbar-expand-xl navbar-dark cda-nav">
+    <nav class="navbar navbar-expand-xxl navbar-dark cda-nav" aria-label="Menú principal">
         <div class="container-fluid cda-nav-inner">
 
             <a class="navbar-brand d-flex align-items-center gap-3"
-               href="{{ url_for('index') }}"
-               aria-label="Inicio Diagnóstico Territorial Archivístico">
+               href="{{ url_for('index') }}">
 
                 <img
                     class="official-alcaldia-logo"
@@ -68,7 +107,7 @@
             </button>
 
             <div class="collapse navbar-collapse" id="cdaMenu">
-                <div class="navbar-nav ms-auto align-items-xl-center gap-xl-1">
+                <div class="navbar-nav ms-auto align-items-xxl-center gap-xxl-1">
 
                     <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}"
                        href="{{ url_for('index') }}">
@@ -95,13 +134,29 @@
                         <i class="bi bi-journal-text"></i> Normatividad
                     </a>
 
+                    {% set ep_transp = ('transparencia', 'actas_publicas', 'convalidaciones_publicas', 'documentos_publicos', 'datos_abiertos') %}
+                    <div class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {% if request.endpoint in ep_transp %}active{% endif %}" href="{{ url_for('transparencia') }}"
+                           role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-eye"></i> Transparencia
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end cda-dropdown">
+                            <li><a class="dropdown-item" href="{{ url_for('transparencia') }}">Transparencia y acceso a la información</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('actas_publicas') }}"><i class="bi bi-journal-check"></i> Actas del Consejo</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('convalidaciones_publicas') }}"><i class="bi bi-patch-check"></i> TRD y TVD convalidadas</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('documentos_publicos') }}"><i class="bi bi-folder2-open"></i> Planes, informes y reglamento</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('datos_abiertos') }}"><i class="bi bi-database"></i> Datos abiertos</a></li>
+                        </ul>
+                    </div>
+
                     <a class="nav-link {% if request.endpoint == 'ayuda' %}active{% endif %}"
                        href="{{ url_for('ayuda') }}">
                         <i class="bi bi-question-circle"></i> Ayuda
                     </a>
 
                     <a class="btn btn-nav" href="{{ url_for('admin') }}">
-                        <i class="bi bi-gear"></i> Administración<span class="d-none d-xl-inline"> y resultados</span>
+                        <i class="bi bi-gear"></i> Administración
                     </a>
 
                 </div>
@@ -121,7 +176,7 @@
     {% endwith %}
 
     <!-- CONTENIDO PRINCIPAL -->
-    <main>
+    <main id="contenido" tabindex="-1">
         {% block content %}{% endblock %}
     </main>
 
@@ -154,6 +209,27 @@
                     </div>
                 </div>
 
+                <!-- DIRECCIÓN Y TELÉFONOS (anexo 2, numeral 2.2) -->
+                <div class="cda-contact-item">
+                    <span class="cda-contact-icon">
+                        <i class="bi bi-geo-alt-fill"></i>
+                    </span>
+                    <div>
+                        <strong>Dirección:</strong>
+                        <p>Centro Administrativo Distrital (CAD), Calle 44 N.º 52-165, código postal 050015, Medellín, Antioquia</p>
+                    </div>
+                </div>
+
+                <div class="cda-contact-item">
+                    <span class="cda-contact-icon">
+                        <i class="bi bi-telephone-fill"></i>
+                    </span>
+                    <div>
+                        <strong>Teléfonos:</strong>
+                        <p>Línea de atención a la ciudadanía <a href="tel:+576044444144">+57 604 444 4144</a> · Conmutador <a href="tel:+576043855555">+57 604 385 5555</a></p>
+                    </div>
+                </div>
+
                 <!-- HORARIO DE ATENCIÓN -->
                 <div class="cda-contact-item">
                     <span class="cda-contact-icon">
@@ -179,21 +255,15 @@
             </div>
 
             <!-- ENLACES INSTITUCIONALES -->
-            <div class="cda-footer-links">
-
-                <a href="mailto:consejodarchivo@medellin.gov.co">
-                    Contacto institucional
-                </a>
-
-                <a href="{{ url_for('index') }}">
-                    Inicio
-                </a>
-
-                <a href="{{ url_for('ayuda') }}">
-                    Ayuda
-                </a>
-
-            </div>
+            <nav class="cda-footer-links" aria-label="Enlaces de pie de página">
+                <a href="{{ url_for('transparencia') }}">Transparencia y acceso a la información</a>
+                <a href="https://www.medellin.gov.co/es/pqrsd/" target="_blank" rel="noopener">PQRSD de la Alcaldía</a>
+                <a href="{{ url_for('datos_abiertos') }}">Datos abiertos</a>
+                <a href="{{ url_for('politica_datos') }}">Política de tratamiento de datos</a>
+                <a href="{{ url_for('terminos') }}">Términos y condiciones</a>
+                <a href="{{ url_for('accesibilidad') }}">Accesibilidad</a>
+                <a href="{{ url_for('mapa_del_sitio') }}">Mapa del sitio</a>
+            </nav>
 
         </div>
 
@@ -215,6 +285,38 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    (function () {
+      var raiz = document.documentElement, panel = document.getElementById('a11yPanel'),
+          boton = document.querySelector('.a11y-toggle');
+      function leer() { try { return JSON.parse(localStorage.getItem('cda-a11y') || '{}'); } catch (e) { return {}; } }
+      function guardar(p) { try { localStorage.setItem('cda-a11y', JSON.stringify(p)); } catch (e) {} }
+      function pintar(p) {
+        raiz.style.fontSize = p.fs ? p.fs + '%' : '';
+        raiz.classList.toggle('alto-contraste', !!p.contraste);
+        raiz.classList.toggle('subrayar-enlaces', !!p.enlaces);
+        panel.querySelector('[data-a11y="contraste"]').setAttribute('aria-pressed', !!p.contraste);
+        panel.querySelector('[data-a11y="enlaces"]').setAttribute('aria-pressed', !!p.enlaces);
+      }
+      boton.addEventListener('click', function () {
+        var abierto = boton.getAttribute('aria-expanded') === 'true';
+        boton.setAttribute('aria-expanded', !abierto); panel.hidden = abierto;
+      });
+      panel.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-a11y]'); if (!b) return;
+        var p = leer(), fs = p.fs || 100;
+        if (b.dataset.a11y === 'mas') p.fs = Math.min(fs + 10, 150);
+        if (b.dataset.a11y === 'menos') p.fs = Math.max(fs - 10, 90);
+        if (b.dataset.a11y === 'contraste') p.contraste = !p.contraste;
+        if (b.dataset.a11y === 'enlaces') p.enlaces = !p.enlaces;
+        if (b.dataset.a11y === 'restablecer') p = {};
+        guardar(p); pintar(p);
+      });
+      pintar(leer());
+      /* Página activa del menú anunciada a lectores de pantalla. */
+      document.querySelectorAll('.cda-nav .nav-link.active').forEach(function (a) { a.setAttribute('aria-current', 'page'); });
+    })();
+    </script>
 
 </body>
 </html>

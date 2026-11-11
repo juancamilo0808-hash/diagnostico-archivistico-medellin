@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Datos abiertos | Consejo Distrital de Archivos{% endblock %}
+{% block content %}
+<section class="tp-hero"><div class="container">
+  <nav class="tp-crumb" aria-label="Ruta de navegación"><a href="{{ url_for('transparencia') }}">Transparencia</a> › Datos abiertos</nav>
+  <h1>Datos abiertos</h1>
+  <p>Conjuntos de datos del Consejo en formatos abiertos (CSV en UTF-8 y JSON), actualizados automáticamente con cada publicación. Pueden reutilizarse citando la fuente: Consejo Distrital de Archivos de Medellín.</p>
+</div></section>
+<div class="container tp-wrap">
+  {% for clave, ds in datasets.items() %}
+  <section class="tp-card mb-3" aria-labelledby="ds-{{ clave }}">
+    <div class="d-flex justify-content-between flex-wrap gap-2 align-items-start">
+      <div><h2 class="h5 fw-bold mb-1" id="ds-{{ clave }}">{{ ds.titulo }}</h2><p class="small mb-1">{{ ds.descripcion }}</p><p class="tp-meta mb-0">{{ conteos[clave] }} registro{{ 's' if conteos[clave] != 1 }} · actualización automática</p></div>
+      <div class="d-flex gap-2">
+        <a class="btn btn-sm btn-primary" href="{{ url_for('descargar_dataset', nombre=clave, formato='csv') }}"><i class="bi bi-filetype-csv" aria-hidden="true"></i> CSV<span class="visually-hidden"> de {{ ds.titulo }}</span></a>
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('descargar_dataset', nombre=clave, formato='json') }}"><i class="bi bi-filetype-json" aria-hidden="true"></i> JSON<span class="visually-hidden"> de {{ ds.titulo }}</span></a>
+      </div>
+    </div>
+    <details class="mt-3"><summary class="fw-semibold small">Diccionario de datos</summary>
+      <div class="table-responsive mt-2"><table class="table table-sm tp-table mb-0">
+        <thead><tr><th scope="col">Campo</th><th scope="col">Tipo</th><th scope="col">Descripción</th></tr></thead>
+        <tbody>{% for c, t, d in ds.campos %}<tr><td><code>{{ c }}</code></td><td>{{ t }}</td><td>{{ d }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+    </details>
+  </section>
+  {% endfor %}
+  <p class="tp-meta mb-0">Los conjuntos no contienen datos personales. Para su federación en el Portal de Datos Abiertos del Estado (datos.gov.co) se siguen las directrices del anexo 4 de la Resolución MinTIC 1519 de 2020.</p>
+</div>
+{% endblock %}

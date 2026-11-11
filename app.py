@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, jsonify, abort
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect as sqlalchemy_inspect
+from sqlalchemy.orm import deferred
 from datetime import datetime, timedelta
 from pathlib import Path
 from functools import wraps
@@ -8,8 +9,12 @@ from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
+import hashlib
+import hmac
+import io
 import json
 import math
+import time
 import os
 import csv
 import unicodedata
@@ -53,6 +58,8 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
     SESSION_COOKIE_SECURE=os.environ.get("RENDER", "").lower() == "true",
+    # Límite de carga: PDF de actas y convalidaciones de hasta 10 MB.
+    MAX_CONTENT_LENGTH=12 * 1024 * 1024,
     # Recupera conexiones inactivas o cerradas por Neon antes de usarlas.
     SQLALCHEMY_ENGINE_OPTIONS={
         "pool_pre_ping": True,
@@ -65,6 +72,12 @@ if os.environ.get("RENDER", "").lower() == "true" and not _database_url and not 
         "La aplicación usa SQLite dentro de la carpeta del proyecto en Render. "
         "Ese almacenamiento puede perderse al desplegar o reiniciar. Configure "
         "DATABASE_URL o DB_PATH apuntando a almacenamiento persistente."
+    )
+
+if os.environ.get("RENDER", "").lower() == "true" and not os.environ.get("SECRET_KEY"):
+    app.logger.error(
+        "SECRET_KEY no está configurada en Render: las sesiones usan una clave de desarrollo. "
+        "Defina SECRET_KEY en Environment con un valor aleatorio largo."
     )
 
 app.logger.info("Almacén de datos configurado: %s", "DATABASE_URL" if _database_url else _db_path)
@@ -339,6 +352,10 @@ def buscar_entidades_directorio(termino):
     return resultados
 
 
+CAMPOS_DIRECTORIO_PUBLICOS = {'Código', 'Entidad', 'Sigla', 'Grupo / relación con el Distrito',
+                               'Clasificación preliminar', 'Ámbito', 'Sitio web / fuente', 'Dirección'}
+
+
 @app.route('/api/buscar-entidades')
 def api_buscar_entidades():
     """Devuelve coincidencias para el buscador del formulario."""
@@ -349,11 +366,14 @@ def api_buscar_entidades():
 
     resultados = buscar_entidades_directorio(termino)
 
+    # Minimización (Ley 1581 de 2012): la consulta es pública, así que solo se
+    # entregan datos institucionales. Los datos del responsable de gestión
+    # documental los diligencia la propia entidad en el formulario.
     return jsonify([
         {
             'nombre': resultado['nombre'],
             'sigla': resultado['sigla'],
-            'datos': resultado['datos']
+            'datos': {k: v for k, v in resultado['datos'].items() if k in CAMPOS_DIRECTORIO_PUBLICOS}
         }
         for resultado in resultados
     ])
@@ -441,6 +461,9 @@ def censo():
         if any(not request.form.get(k, '').strip() for k in obligatorios):
             flash('Complete los campos obligatorios de identificación y las 10 preguntas principales.', 'danger')
             return render_template('diagnostico.html')
+        if not request.form.get('autoriza_datos'):
+            flash('Debe autorizar el tratamiento de los datos personales para guardar el diagnóstico.', 'danger')
+            return render_template('diagnostico.html')
         correo = request.form.get('responsable_correo', '').strip()
         if '@' not in correo or '.' not in correo.rsplit('@', 1)[-1]:
             flash('Ingrese un correo institucional válido.', 'danger')
@@ -520,6 +543,7 @@ def censo():
                 if borrador is not None and borrador.estado == 'finalizado':
                     borrador.censo_id = r.id
             db.session.commit()
+            session['mis_diagnosticos'] = (session.get('mis_diagnosticos', []) + [r.id])[-10:]
             flash('Diagnóstico guardado correctamente.', 'success')
             return redirect(url_for('resultado', censo_id=r.id))
         except Exception:
@@ -593,7 +617,11 @@ def calcular_diagnostico_nuevo(form):
     return total, aplicables, ima, nivel
 
 @app.route('/resultado/<int:censo_id>')
-def resultado(censo_id): return render_template('resultado.html',censo=Censo.query.get_or_404(censo_id))
+def resultado(censo_id):
+    # Solo lo ve la persona que envió el diagnóstico (en su sesión) o el equipo administrador.
+    if not session.get('admin_authenticated') and censo_id not in session.get('mis_diagnosticos', []):
+        abort(404)
+    return render_template('resultado.html', censo=Censo.query.get_or_404(censo_id))
 
 @app.route('/normatividad')
 def normatividad(): return render_template('normatividad.html',normatividad=NORMATIVIDAD)
@@ -604,12 +632,26 @@ def ayuda():
 
 
 
+ADMIN_INACTIVIDAD_SEG = 60 * 60
+_INTENTOS_LOGIN = {}  # IP -> lista de marcas de tiempo de intentos fallidos
+
+
+def _ip_cliente():
+    return (request.headers.get('X-Forwarded-For', request.remote_addr or '').split(',')[0]).strip()
+
+
 def admin_required(view):
     """Exige una sesión administrativa válida para las rutas protegidas."""
     @wraps(view)
     def wrapped_view(*args, **kwargs):
         if not session.get("admin_authenticated"):
             return redirect(url_for("admin_login", next=request.path))
+        # Cierre automático tras 60 minutos sin actividad.
+        if time.time() - session.get("admin_ultima_actividad", 0) > ADMIN_INACTIVIDAD_SEG:
+            session.clear()
+            flash("La sesión administrativa se cerró por inactividad.", "warning")
+            return redirect(url_for("admin_login", next=request.path))
+        session["admin_ultima_actividad"] = time.time()
         return view(*args, **kwargs)
     return wrapped_view
 
@@ -807,9 +849,18 @@ def admin_login():
             flash('El acceso administrativo no está configurado. Contacte al administrador técnico.', 'danger')
             return render_template('admin_login.html'), 503
 
-        if request.form.get('password', '') == configured_password:
+        ip = _ip_cliente()
+        recientes = [t for t in _INTENTOS_LOGIN.get(ip, []) if time.time() - t < 900]
+        _INTENTOS_LOGIN[ip] = recientes
+        if len(recientes) >= 5:
+            flash('Demasiados intentos fallidos. Espere 15 minutos e intente de nuevo.', 'danger')
+            return render_template('admin_login.html'), 429
+
+        if hmac.compare_digest(request.form.get('password', '').encode(), configured_password.encode()):
+            _INTENTOS_LOGIN.pop(ip, None)
             session.clear()
             session['admin_authenticated'] = True
+            session['admin_ultima_actividad'] = time.time()
             flash('Acceso administrativo autorizado.', 'success')
             destination = request.args.get('next', '')
             # Solo permitir rutas locales; impedir redirecciones externas.
@@ -817,6 +868,8 @@ def admin_login():
                 destination = url_for('admin')
             return redirect(destination)
 
+        _INTENTOS_LOGIN[ip].append(time.time())
+        app.logger.warning('Intento fallido de acceso administrativo desde %s', ip)
         flash('Contraseña incorrecta.', 'danger')
 
     return render_template('admin_login.html')
@@ -1771,6 +1824,508 @@ def ficha_diagnostico(censo_id):
                            conteo=conteo, nombres_dim=nombres_dim, historial=historial, opciones=opciones,
                            nombre_de=_sda_nombre,
                            transversales=[x for x in riesgos if x['dimension'] == 'transversal'])
+
+
+# ============================================================
+# TRANSPARENCIA, ACTAS Y CONVALIDACIONES
+# Publicación de las actas y documentos del Consejo Distrital de Archivos y registro
+# público de las TRD y TVD convalidadas (Ley 1712 de 2014, Res. MinTIC 1519 de 2020,
+# Acuerdo AGN 001 de 2024). Los archivos PDF se guardan en la base de datos para que
+# no se pierdan al desplegar en Render.
+# ============================================================
+
+PUB_CATEGORIAS = {
+    'acta': {'nombre': 'Actas de sesión', 'singular': 'Acta', 'icono': 'bi-journal-check'},
+    'plan_accion': {'nombre': 'Plan de acción anual', 'singular': 'Plan de acción', 'icono': 'bi-calendar2-check'},
+    'informe_semestral': {'nombre': 'Informes semestrales al AGN', 'singular': 'Informe semestral', 'icono': 'bi-clipboard-data'},
+    'reglamento': {'nombre': 'Reglamento y actos de creación', 'singular': 'Reglamento', 'icono': 'bi-bank'},
+    'otro': {'nombre': 'Otros documentos', 'singular': 'Documento', 'icono': 'bi-file-earmark-text'},
+}
+PUB_TIPOS_SESION = ['Ordinaria', 'Extraordinaria']
+PUB_MODALIDADES = ['Presencial', 'Virtual', 'Mixta']
+CONV_INSTRUMENTOS = {'TRD': 'Tabla de Retención Documental', 'TVD': 'Tabla de Valoración Documental'}
+CONV_TRAMITES = ['Primera vez', 'Actualización']
+CONV_ESTADOS_RUSD = ['Pendiente de solicitud', 'Solicitada al AGN', 'Inscrita en el RUSD', 'Devuelta por el AGN']
+PDF_MAX_BYTES = 10 * 1024 * 1024
+
+
+class PublicacionCDA(db.Model):
+    __tablename__ = 'publicacion_cda'
+    id = db.Column(db.Integer, primary_key=True)
+    categoria = db.Column(db.String(30), nullable=False, index=True)
+    titulo = db.Column(db.String(250), nullable=False)
+    numero = db.Column(db.Integer)
+    anio = db.Column(db.Integer, index=True)
+    fecha = db.Column(db.Date)
+    tipo_sesion = db.Column(db.String(20))
+    modalidad = db.Column(db.String(20))
+    resumen = db.Column(db.Text)
+    palabras_clave = db.Column(db.String(250))
+    enlace = db.Column(db.String(500))
+    archivo_nombre = db.Column(db.String(200))
+    archivo_tamano = db.Column(db.Integer)
+    archivo_hash = db.Column(db.String(64))
+    archivo = deferred(db.Column(db.LargeBinary))
+    publicado = db.Column(db.Boolean, default=True, nullable=False)
+    fecha_publicacion = db.Column(db.DateTime)
+    creado = db.Column(db.DateTime, default=datetime.utcnow)
+    actualizado = db.Column(db.DateTime, default=datetime.utcnow)
+
+    @property
+    def nombre_acta(self):
+        if self.categoria != 'acta':
+            return self.titulo
+        return f'Acta N.º {self.numero or 0:02d} de {self.anio}'
+
+
+class ConvalidacionCDA(db.Model):
+    __tablename__ = 'convalidacion_cda'
+    id = db.Column(db.Integer, primary_key=True)
+    entidad = db.Column(db.String(250), nullable=False)
+    nit = db.Column(db.String(30), nullable=False)
+    instrumento = db.Column(db.String(5), nullable=False)
+    tramite = db.Column(db.String(30))
+    version = db.Column(db.String(40))
+    fecha_aprobacion_comite = db.Column(db.Date)
+    fecha_convalidacion = db.Column(db.Date, nullable=False)
+    acta_id = db.Column(db.Integer, db.ForeignKey('publicacion_cda.id'))
+    acta = db.relationship('PublicacionCDA')
+    numero_concepto = db.Column(db.String(60))
+    radicado = db.Column(db.String(40))
+    estado_rusd = db.Column(db.String(40), default='Pendiente de solicitud')
+    fecha_rusd = db.Column(db.Date)
+    observaciones = db.Column(db.Text)
+    enlace = db.Column(db.String(500))
+    archivo_nombre = db.Column(db.String(200))
+    archivo_tamano = db.Column(db.Integer)
+    archivo_hash = db.Column(db.String(64))
+    archivo = deferred(db.Column(db.LargeBinary))
+    publicado = db.Column(db.Boolean, default=True, nullable=False)
+    creado = db.Column(db.DateTime, default=datetime.utcnow)
+    actualizado = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+def _fecha_form(valor):
+    try:
+        return datetime.strptime((valor or '').strip(), '%Y-%m-%d').date()
+    except ValueError:
+        return None
+
+
+def _entero_form(valor):
+    try:
+        return int((valor or '').strip())
+    except ValueError:
+        return None
+
+
+def _enlace_form(valor):
+    valor = (valor or '').strip()[:500]
+    return valor if valor.startswith(('https://', 'http://')) else ''
+
+
+def _leer_pdf(campo='archivo'):
+    """Devuelve (bytes, nombre, error). Solo acepta PDF reales de hasta 10 MB."""
+    archivo = request.files.get(campo)
+    if not archivo or not archivo.filename:
+        return None, None, None
+    datos = archivo.read(PDF_MAX_BYTES + 1)
+    if len(datos) > PDF_MAX_BYTES:
+        return None, None, 'El archivo supera 10 MB.'
+    if not datos.startswith(b'%PDF-'):
+        return None, None, 'El archivo debe ser un PDF.'
+    nombre = re.sub(r'[^A-Za-z0-9._-]+', '_', unicodedata.normalize('NFKD', archivo.filename)
+                    .encode('ascii', 'ignore').decode())[-150:] or 'documento.pdf'
+    if not nombre.lower().endswith('.pdf'):
+        nombre += '.pdf'
+    return datos, nombre, None
+
+
+def _asignar_pdf(obj, datos, nombre):
+    obj.archivo, obj.archivo_nombre = datos, nombre
+    obj.archivo_tamano, obj.archivo_hash = len(datos), hashlib.sha256(datos).hexdigest()
+
+
+def _enviar_pdf(obj):
+    if not obj.archivo_nombre:
+        abort(404)
+    respuesta = send_file(BytesIO(obj.archivo), mimetype='application/pdf',
+                          download_name=obj.archivo_nombre, as_attachment=False)
+    respuesta.headers['Cache-Control'] = 'public, max-age=3600'
+    return respuesta
+
+
+def _anios(columna):
+    return sorted({a for (a,) in db.session.query(columna).distinct() if a}, reverse=True)
+
+
+@app.template_filter('tamano')
+def tamano_legible(n):
+    if not n:
+        return ''
+    return f'{n / 1024:.0f} KB' if n < 1024 * 1024 else f'{n / 1024 / 1024:.1f} MB'
+
+
+@app.template_filter('fecha_larga')
+def fecha_larga(valor):
+    if not valor:
+        return ''
+    meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto',
+             'septiembre', 'octubre', 'noviembre', 'diciembre']
+    return f'{valor.day} de {meses[valor.month - 1]} de {valor.year}'
+
+
+def _actas_publicadas():
+    return (PublicacionCDA.query.filter_by(categoria='acta', publicado=True)
+            .order_by(PublicacionCDA.anio.desc(), PublicacionCDA.numero.desc()))
+
+
+def _convalidaciones_publicadas():
+    return (ConvalidacionCDA.query.filter_by(publicado=True)
+            .order_by(ConvalidacionCDA.fecha_convalidacion.desc(), ConvalidacionCDA.id.desc()))
+
+
+# ---------- Páginas públicas ----------
+
+@app.route('/transparencia')
+def transparencia():
+    ultima = [x for x in (
+        db.session.query(db.func.max(PublicacionCDA.fecha_publicacion)).filter(PublicacionCDA.publicado.is_(True)).scalar(),
+        db.session.query(db.func.max(ConvalidacionCDA.actualizado)).filter(ConvalidacionCDA.publicado.is_(True)).scalar(),
+    ) if x]
+    conteos = {
+        'actas': _actas_publicadas().count(),
+        'convalidaciones': _convalidaciones_publicadas().count(),
+        'documentos': PublicacionCDA.query.filter(PublicacionCDA.categoria != 'acta', PublicacionCDA.publicado.is_(True)).count(),
+    }
+    return render_template('transparencia.html', conteos=conteos, ultima=max(ultima) if ultima else None)
+
+
+@app.route('/transparencia/actas')
+def actas_publicas():
+    consulta = _actas_publicadas()
+    anio = _entero_form(request.args.get('anio'))
+    tipo = request.args.get('tipo', '')
+    texto = request.args.get('q', '').strip()[:80]
+    if anio:
+        consulta = consulta.filter(PublicacionCDA.anio == anio)
+    if tipo in PUB_TIPOS_SESION:
+        consulta = consulta.filter(PublicacionCDA.tipo_sesion == tipo)
+    if texto:
+        patron = f'%{texto}%'
+        consulta = consulta.filter(db.or_(PublicacionCDA.resumen.ilike(patron), PublicacionCDA.palabras_clave.ilike(patron),
+                                          PublicacionCDA.titulo.ilike(patron)))
+    actas = consulta.all()
+    convalidadas = {}
+    for c in ConvalidacionCDA.query.filter(ConvalidacionCDA.publicado.is_(True), ConvalidacionCDA.acta_id.isnot(None)).all():
+        convalidadas.setdefault(c.acta_id, []).append(c)
+    return render_template('actas.html', actas=actas, anios=_anios(PublicacionCDA.anio), tipos=PUB_TIPOS_SESION,
+                           filtro={'anio': anio, 'tipo': tipo, 'q': texto}, convalidadas=convalidadas)
+
+
+@app.route('/transparencia/convalidaciones')
+def convalidaciones_publicas():
+    consulta = _convalidaciones_publicadas()
+    instrumento = request.args.get('instrumento', '')
+    estado = request.args.get('estado', '')
+    anio = _entero_form(request.args.get('anio'))
+    texto = request.args.get('q', '').strip()[:80]
+    if instrumento in CONV_INSTRUMENTOS:
+        consulta = consulta.filter(ConvalidacionCDA.instrumento == instrumento)
+    if estado in CONV_ESTADOS_RUSD:
+        consulta = consulta.filter(ConvalidacionCDA.estado_rusd == estado)
+    if anio:
+        consulta = consulta.filter(db.extract('year', ConvalidacionCDA.fecha_convalidacion) == anio)
+    if texto:
+        patron = f'%{texto}%'
+        consulta = consulta.filter(db.or_(ConvalidacionCDA.entidad.ilike(patron), ConvalidacionCDA.nit.ilike(patron)))
+    registros = consulta.all()
+    anios = sorted({c.fecha_convalidacion.year for c in _convalidaciones_publicadas().all() if c.fecha_convalidacion}, reverse=True)
+    return render_template('convalidaciones.html', registros=registros, instrumentos=CONV_INSTRUMENTOS,
+                           estados=CONV_ESTADOS_RUSD, anios=anios,
+                           filtro={'instrumento': instrumento, 'estado': estado, 'anio': anio, 'q': texto})
+
+
+@app.route('/transparencia/documentos')
+def documentos_publicos():
+    docs = (PublicacionCDA.query.filter(PublicacionCDA.categoria != 'acta', PublicacionCDA.publicado.is_(True))
+            .order_by(PublicacionCDA.fecha.desc().nullslast(), PublicacionCDA.id.desc()).all())
+    grupos = {k: [d for d in docs if d.categoria == k] for k in PUB_CATEGORIAS if k != 'acta'}
+    return render_template('documentos_cda.html', grupos=grupos, categorias=PUB_CATEGORIAS)
+
+
+@app.route('/transparencia/documento/<int:pub_id>')
+def documento_publicacion(pub_id):
+    pub = PublicacionCDA.query.get_or_404(pub_id)
+    if not pub.publicado and not session.get('admin_authenticated'):
+        abort(404)
+    return _enviar_pdf(pub)
+
+
+@app.route('/transparencia/convalidaciones/<int:conv_id>/documento')
+def documento_convalidacion(conv_id):
+    conv = ConvalidacionCDA.query.get_or_404(conv_id)
+    if not conv.publicado and not session.get('admin_authenticated'):
+        abort(404)
+    return _enviar_pdf(conv)
+
+
+DATASETS = {
+    'convalidaciones': {
+        'titulo': 'TRD y TVD convalidadas por el Consejo Distrital de Archivos',
+        'descripcion': 'Instrumentos archivísticos convalidados, con la entidad, el acta de convalidación y el estado de inscripción en el Registro Único de Series Documentales (RUSD).',
+        'campos': [('entidad', 'Texto', 'Nombre de la entidad'), ('nit', 'Texto', 'NIT de la entidad'),
+                   ('instrumento', 'Texto', 'TRD o TVD'), ('tramite', 'Texto', 'Primera vez o actualización'),
+                   ('version', 'Texto', 'Versión del instrumento'), ('fecha_convalidacion', 'Fecha (AAAA-MM-DD)', 'Fecha de la sesión que convalidó'),
+                   ('acta', 'Texto', 'Acta del Consejo en la que consta la convalidación'), ('numero_concepto', 'Texto', 'Número del informe o concepto técnico'),
+                   ('estado_rusd', 'Texto', 'Estado de la inscripción en el RUSD'), ('fecha_rusd', 'Fecha (AAAA-MM-DD)', 'Fecha del último cambio de estado en el RUSD')],
+    },
+    'actas': {
+        'titulo': 'Actas de sesión del Consejo Distrital de Archivos',
+        'descripcion': 'Índice de las actas publicadas, con la fecha, el tipo de sesión y los temas tratados.',
+        'campos': [('acta', 'Texto', 'Número y año del acta'), ('fecha_sesion', 'Fecha (AAAA-MM-DD)', 'Fecha de la sesión'),
+                   ('tipo_sesion', 'Texto', 'Ordinaria o extraordinaria'), ('modalidad', 'Texto', 'Presencial, virtual o mixta'),
+                   ('temas', 'Texto', 'Temas y decisiones principales'), ('fecha_publicacion', 'Fecha (AAAA-MM-DD)', 'Fecha de publicación en el micrositio')],
+    },
+}
+
+
+def _filas_dataset(nombre):
+    if nombre == 'convalidaciones':
+        for c in _convalidaciones_publicadas().all():
+            yield {'entidad': c.entidad, 'nit': c.nit, 'instrumento': c.instrumento, 'tramite': c.tramite or '',
+                   'version': c.version or '', 'fecha_convalidacion': c.fecha_convalidacion.isoformat() if c.fecha_convalidacion else '',
+                   'acta': c.acta.nombre_acta if c.acta else '', 'numero_concepto': c.numero_concepto or '',
+                   'estado_rusd': c.estado_rusd or '', 'fecha_rusd': c.fecha_rusd.isoformat() if c.fecha_rusd else ''}
+    else:
+        for a in _actas_publicadas().all():
+            yield {'acta': a.nombre_acta, 'fecha_sesion': a.fecha.isoformat() if a.fecha else '',
+                   'tipo_sesion': a.tipo_sesion or '', 'modalidad': a.modalidad or '', 'temas': a.resumen or '',
+                   'fecha_publicacion': a.fecha_publicacion.date().isoformat() if a.fecha_publicacion else ''}
+
+
+@app.route('/datos-abiertos')
+def datos_abiertos():
+    return render_template('datos_abiertos.html', datasets=DATASETS,
+                           conteos={k: sum(1 for _ in _filas_dataset(k)) for k in DATASETS})
+
+
+@app.route('/datos-abiertos/<nombre>.<formato>')
+def descargar_dataset(nombre, formato):
+    if nombre not in DATASETS or formato not in ('csv', 'json'):
+        abort(404)
+    filas = list(_filas_dataset(nombre))
+    if formato == 'json':
+        respuesta = jsonify({'titulo': DATASETS[nombre]['titulo'], 'publicador': 'Consejo Distrital de Archivos de Medellín',
+                             'generado': datetime.utcnow().isoformat(timespec='seconds') + 'Z', 'registros': filas})
+    else:
+        salida = io.StringIO()
+        escritor = csv.DictWriter(salida, fieldnames=[c for c, _, _ in DATASETS[nombre]['campos']])
+        escritor.writeheader()
+        escritor.writerows(filas)
+        respuesta = app.response_class('﻿' + salida.getvalue(), mimetype='text/csv; charset=utf-8')
+        respuesta.headers['Content-Disposition'] = f'attachment; filename=cda_medellin_{nombre}.csv'
+    respuesta.headers['Access-Control-Allow-Origin'] = '*'
+    return respuesta
+
+
+@app.route('/accesibilidad')
+def accesibilidad():
+    return render_template('politica.html', pagina='accesibilidad')
+
+
+@app.route('/politica-de-tratamiento-de-datos')
+def politica_datos():
+    return render_template('politica.html', pagina='datos')
+
+
+@app.route('/terminos-y-condiciones')
+def terminos():
+    return render_template('politica.html', pagina='terminos')
+
+
+@app.route('/mapa-del-sitio')
+def mapa_del_sitio():
+    return render_template('mapa_sitio.html')
+
+
+# ---------- Administración ----------
+
+def _formulario_publicacion(pub):
+    f = request.form
+    categoria = f.get('categoria', 'acta')
+    if categoria not in PUB_CATEGORIAS:
+        return 'Seleccione una categoría válida.'
+    pub.categoria = categoria
+    pub.anio = _entero_form(f.get('anio'))
+    pub.fecha = _fecha_form(f.get('fecha'))
+    pub.resumen = f.get('resumen', '').strip()[:4000]
+    pub.palabras_clave = f.get('palabras_clave', '').strip()[:250]
+    pub.enlace = _enlace_form(f.get('enlace'))
+    pub.publicado = f.get('publicado') == '1'
+    if categoria == 'acta':
+        pub.numero = _entero_form(f.get('numero'))
+        pub.tipo_sesion = f.get('tipo_sesion') if f.get('tipo_sesion') in PUB_TIPOS_SESION else None
+        pub.modalidad = f.get('modalidad') if f.get('modalidad') in PUB_MODALIDADES else None
+        if not (pub.numero and pub.anio and pub.fecha and pub.tipo_sesion):
+            return 'Para un acta indique número, año, fecha de la sesión y tipo de sesión.'
+        duplicada = PublicacionCDA.query.filter(PublicacionCDA.categoria == 'acta', PublicacionCDA.numero == pub.numero,
+                                                PublicacionCDA.anio == pub.anio, PublicacionCDA.id != (pub.id or 0)).first()
+        if duplicada:
+            return f'Ya existe el {duplicada.nombre_acta}.'
+        pub.titulo = f'Acta N.º {pub.numero:02d} de {pub.anio} · Sesión {pub.tipo_sesion.lower()}'
+    else:
+        pub.numero = pub.tipo_sesion = pub.modalidad = None
+        pub.titulo = f.get('titulo', '').strip()[:250]
+        if not pub.titulo:
+            return 'Escriba el título del documento.'
+    datos, nombre, error = _leer_pdf()
+    if error:
+        return error
+    if datos:
+        _asignar_pdf(pub, datos, nombre)
+    if not pub.archivo_nombre and not pub.enlace:
+        return 'Adjunte el PDF o indique un enlace al documento.'
+    if pub.publicado and not pub.fecha_publicacion:
+        pub.fecha_publicacion = datetime.utcnow()
+    pub.actualizado = datetime.utcnow()
+    return None
+
+
+@app.route('/admin/transparencia', methods=['GET', 'POST'])
+@admin_required
+def admin_publicaciones():
+    pub = None
+    if request.method == 'POST':
+        pub_id = _entero_form(request.form.get('id'))
+        pub = db.session.get(PublicacionCDA, pub_id) if pub_id else PublicacionCDA()
+        if pub is None:
+            abort(404)
+        error = _formulario_publicacion(pub)
+        if error:
+            flash(error, 'danger')
+        else:
+            if not pub.id:
+                db.session.add(pub)
+            db.session.commit()
+            flash(f'«{pub.titulo}» guardado{" y publicado" if pub.publicado else " sin publicar"}.', 'success')
+            return redirect(url_for('admin_publicaciones'))
+    elif request.args.get('editar'):
+        pub = db.session.get(PublicacionCDA, _entero_form(request.args.get('editar')) or 0)
+    items = PublicacionCDA.query.order_by(PublicacionCDA.categoria, PublicacionCDA.anio.desc().nullslast(),
+                                          PublicacionCDA.numero.desc().nullslast(), PublicacionCDA.id.desc()).all()
+    return render_template('admin_transparencia.html', items=items, pub=pub, categorias=PUB_CATEGORIAS,
+                           tipos=PUB_TIPOS_SESION, modalidades=PUB_MODALIDADES, hoy=datetime.utcnow().date())
+
+
+@app.route('/admin/transparencia/<int:pub_id>/eliminar', methods=['POST'])
+@admin_required
+def admin_eliminar_publicacion(pub_id):
+    pub = PublicacionCDA.query.get_or_404(pub_id)
+    if ConvalidacionCDA.query.filter_by(acta_id=pub.id).count():
+        flash('No se puede eliminar: hay convalidaciones asociadas a esta acta. Despublíquela si es necesario.', 'danger')
+    else:
+        db.session.delete(pub)
+        db.session.commit()
+        flash('Documento eliminado.', 'success')
+    return redirect(url_for('admin_publicaciones'))
+
+
+def _formulario_convalidacion(conv):
+    f = request.form
+    conv.entidad = f.get('entidad', '').strip()[:250]
+    conv.nit = f.get('nit', '').strip()[:30]
+    conv.instrumento = f.get('instrumento') if f.get('instrumento') in CONV_INSTRUMENTOS else None
+    conv.tramite = f.get('tramite') if f.get('tramite') in CONV_TRAMITES else None
+    conv.version = f.get('version', '').strip()[:40]
+    conv.fecha_aprobacion_comite = _fecha_form(f.get('fecha_aprobacion_comite'))
+    conv.fecha_convalidacion = _fecha_form(f.get('fecha_convalidacion'))
+    acta_id = _entero_form(f.get('acta_id'))
+    conv.acta_id = acta_id if acta_id and db.session.get(PublicacionCDA, acta_id) else None
+    conv.numero_concepto = f.get('numero_concepto', '').strip()[:60]
+    conv.radicado = f.get('radicado', '').strip().upper()[:40]
+    conv.estado_rusd = f.get('estado_rusd') if f.get('estado_rusd') in CONV_ESTADOS_RUSD else CONV_ESTADOS_RUSD[0]
+    conv.fecha_rusd = _fecha_form(f.get('fecha_rusd'))
+    conv.observaciones = f.get('observaciones', '').strip()[:2000]
+    conv.enlace = _enlace_form(f.get('enlace'))
+    conv.publicado = f.get('publicado') == '1'
+    if not (conv.entidad and conv.nit and conv.instrumento and conv.fecha_convalidacion):
+        return 'Indique entidad, NIT, instrumento y fecha de convalidación.'
+    if not 6 <= len(nit_base(conv.nit)) <= 10:
+        return 'Ingrese un NIT válido, por ejemplo 890905211-1.'
+    datos, nombre, error = _leer_pdf()
+    if error:
+        return error
+    if datos:
+        _asignar_pdf(conv, datos, nombre)
+    conv.actualizado = datetime.utcnow()
+    return None
+
+
+@app.route('/admin/convalidaciones', methods=['GET', 'POST'])
+@admin_required
+def admin_convalidaciones():
+    conv = None
+    if request.method == 'POST':
+        conv_id = _entero_form(request.form.get('id'))
+        conv = db.session.get(ConvalidacionCDA, conv_id) if conv_id else ConvalidacionCDA()
+        if conv is None:
+            abort(404)
+        error = _formulario_convalidacion(conv)
+        if error:
+            flash(error, 'danger')
+        else:
+            if not conv.id:
+                db.session.add(conv)
+            db.session.commit()
+            flash(f'Convalidación de {conv.instrumento} de {conv.entidad} guardada.', 'success')
+            return redirect(url_for('admin_convalidaciones'))
+    elif request.args.get('editar'):
+        conv = db.session.get(ConvalidacionCDA, _entero_form(request.args.get('editar')) or 0)
+    elif request.args.get('radicado'):
+        # Precarga desde una solicitud de evaluación de instrumentos (CDA-EV-…).
+        s = SolicitudSistema.query.filter_by(radicado=request.args.get('radicado', '').strip().upper()).first()
+        if s:
+            conv = ConvalidacionCDA(entidad=s.entidad, nit=s.nit, radicado=s.radicado,
+                                    instrumento='TVD' if 'TVD' in (s.tema or '') else 'TRD',
+                                    tramite='Actualización' if 'actualización' in (s.tema or '').lower() else 'Primera vez',
+                                    publicado=True)
+    items = ConvalidacionCDA.query.order_by(ConvalidacionCDA.fecha_convalidacion.desc(), ConvalidacionCDA.id.desc()).all()
+    actas = PublicacionCDA.query.filter_by(categoria='acta').order_by(PublicacionCDA.anio.desc(), PublicacionCDA.numero.desc()).all()
+    return render_template('admin_convalidaciones.html', items=items, conv=conv, actas=actas,
+                           instrumentos=CONV_INSTRUMENTOS, tramites=CONV_TRAMITES, estados=CONV_ESTADOS_RUSD)
+
+
+@app.route('/admin/convalidaciones/<int:conv_id>/eliminar', methods=['POST'])
+@admin_required
+def admin_eliminar_convalidacion(conv_id):
+    db.session.delete(ConvalidacionCDA.query.get_or_404(conv_id))
+    db.session.commit()
+    flash('Registro de convalidación eliminado.', 'success')
+    return redirect(url_for('admin_convalidaciones'))
+
+
+@app.errorhandler(413)
+def archivo_muy_grande(_error):
+    flash('El archivo supera el tamaño permitido (10 MB).', 'danger')
+    return redirect(request.referrer or url_for('admin'))
+
+
+# ============================================================
+# PROTECCIÓN DE LA INFORMACIÓN
+# ============================================================
+
+@app.after_request
+def cabeceras_seguridad(respuesta):
+    respuesta.headers.setdefault('X-Content-Type-Options', 'nosniff')
+    respuesta.headers.setdefault('X-Frame-Options', 'SAMEORIGIN')
+    respuesta.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+    respuesta.headers.setdefault('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=()')
+    if app.config.get('SESSION_COOKIE_SECURE'):
+        respuesta.headers.setdefault('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
+    if request.path.startswith('/admin') or request.path.startswith('/api/') or request.path.startswith('/resultado'):
+        respuesta.headers['Cache-Control'] = 'no-store'
+    return respuesta
 
 
 def _sql_default(columna, dialecto):

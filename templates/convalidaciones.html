@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}TRD y TVD convalidadas | Consejo Distrital de Archivos{% endblock %}
+{% block description %}Registro de Tablas de Retención y Valoración Documental convalidadas por el Consejo Distrital de Archivos de Medellín.{% endblock %}
+{% block content %}
+<section class="tp-hero"><div class="container">
+  <nav class="tp-crumb" aria-label="Ruta de navegación"><a href="{{ url_for('transparencia') }}">Transparencia</a> › Convalidaciones</nav>
+  <h1>TRD y TVD convalidadas</h1>
+  <p>Instrumentos archivísticos que el Consejo evaluó y convalidó, con el acta en que consta la decisión y el estado de su inscripción en el Registro Único de Series Documentales (RUSD) del Archivo General de la Nación.</p>
+</div></section>
+<div class="container tp-wrap">
+  <form class="tp-card tp-filtros mb-3" method="get" role="search" aria-label="Filtrar convalidaciones">
+    <div><label for="f-q">Entidad o NIT</label><input class="form-control" id="f-q" name="q" value="{{ filtro.q }}" placeholder="Ej.: Secretaría, 890905211"></div>
+    <div><label for="f-ins">Instrumento</label><select class="form-select" id="f-ins" name="instrumento"><option value="">TRD y TVD</option>{% for k, v in instrumentos.items() %}<option value="{{ k }}" {% if filtro.instrumento == k %}selected{% endif %}>{{ k }} · {{ v }}</option>{% endfor %}</select></div>
+    <div><label for="f-anio">Año de convalidación</label><select class="form-select" id="f-anio" name="anio"><option value="">Todos</option>{% for a in anios %}<option {% if filtro.anio == a %}selected{% endif %}>{{ a }}</option>{% endfor %}</select></div>
+    <div><label for="f-est">Estado en el RUSD</label><select class="form-select" id="f-est" name="estado"><option value="">Todos</option>{% for e in estados %}<option {% if filtro.estado == e %}selected{% endif %}>{{ e }}</option>{% endfor %}</select></div>
+    <div class="d-flex gap-2"><button class="btn btn-primary flex-fill" type="submit"><i class="bi bi-funnel" aria-hidden="true"></i> Filtrar</button>{% if filtro.q or filtro.anio or filtro.instrumento or filtro.estado %}<a class="btn btn-outline-secondary" href="{{ url_for('convalidaciones_publicas') }}">Limpiar</a>{% endif %}</div>
+  </form>
+  <div class="tp-card p-0">
+    {% if registros %}
+    <div class="table-responsive">
+      <table class="table tp-table mb-0">
+        <caption class="visually-hidden">TRD y TVD convalidadas por el Consejo Distrital de Archivos</caption>
+        <thead><tr><th scope="col">Entidad</th><th scope="col">Instrumento</th><th scope="col">Convalidación</th><th scope="col">RUSD</th><th scope="col">Documento</th></tr></thead>
+        <tbody>
+        {% for c in registros %}
+          {% set clase = 'ok' if c.estado_rusd == 'Inscrita en el RUSD' else ('bad' if c.estado_rusd == 'Devuelta por el AGN' else 'warn') %}
+          <tr>
+            <th scope="row" class="fw-semibold">{{ c.entidad }}<div class="tp-meta fw-normal">NIT {{ c.nit }}</div></th>
+            <td class="text-nowrap"><span class="tp-pill">{{ c.instrumento }}</span><div class="tp-meta">{{ c.tramite or '' }}{% if c.version %} · versión {{ c.version }}{% endif %}</div></td>
+            <td class="text-nowrap">{{ c.fecha_convalidacion|fecha_larga }}
+              {% if c.acta %}<div class="tp-meta">{% if c.acta.publicado and c.acta.archivo_nombre %}<a href="{{ url_for('documento_publicacion', pub_id=c.acta.id) }}" target="_blank" rel="noopener">{{ c.acta.nombre_acta }}</a>{% else %}{{ c.acta.nombre_acta }}{% endif %}</div>{% endif %}
+              {% if c.numero_concepto %}<div class="tp-meta">Concepto {{ c.numero_concepto }}</div>{% endif %}</td>
+            <td><span class="tp-pill {{ clase }}">{{ c.estado_rusd }}</span>{% if c.fecha_rusd %}<div class="tp-meta">{{ c.fecha_rusd.strftime('%d/%m/%Y') }}</div>{% endif %}</td>
+            <td class="text-nowrap">
+              {% if c.archivo_nombre %}<a class="btn btn-sm btn-outline-primary" href="{{ url_for('documento_convalidacion', conv_id=c.id) }}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> PDF<span class="visually-hidden"> de la convalidación de {{ c.entidad }}</span></a>{% endif %}
+              {% if c.enlace %}<a class="btn btn-sm btn-outline-secondary" href="{{ c.enlace }}" target="_blank" rel="noopener">Ver instrumento<span class="visually-hidden"> de {{ c.entidad }}</span></a>{% endif %}
+              {% if not c.archivo_nombre and not c.enlace %}<span class="tp-meta">—</span>{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="tp-vacio"><i class="bi bi-patch-check" style="font-size:2rem" aria-hidden="true"></i><p class="mb-0 mt-2">{% if filtro.q or filtro.anio or filtro.instrumento or filtro.estado %}No hay registros que coincidan con el filtro.{% else %}Aún no hay convalidaciones publicadas.{% endif %}</p></div>
+    {% endif %}
+  </div>
+  <div class="tp-card mt-3">
+    <h2 class="h6 fw-bold mb-2">¿Su entidad necesita convalidar sus TRD o TVD?</h2>
+    <p class="mb-2 small">Radique la solicitud de evaluación en Servicios en línea dentro de los 30 días hábiles siguientes a la aprobación del instrumento por el Comité Institucional de Gestión y Desempeño. El Consejo cuenta con hasta 60 días hábiles para emitir el informe técnico de evaluación (Acuerdo AGN 001 de 2024, artículos 5.1.2.1 y 5.1.2.4).</p>
+    <a class="btn btn-sm btn-primary" href="{{ url_for('servicios_en_linea', servicio='evaluacion') }}"><i class="bi bi-file-earmark-check" aria-hidden="true"></i> Radicar evaluación de TRD / TVD</a>
+    <span class="tp-meta ms-2">Datos en <a href="{{ url_for('descargar_dataset', nombre='convalidaciones', formato='csv') }}">CSV</a> · <a href="{{ url_for('descargar_dataset', nombre='convalidaciones', formato='json') }}">JSON</a></span>
+  </div>
+</div>
+{% endblock %}

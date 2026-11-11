@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Actas del Consejo | Consejo Distrital de Archivos{% endblock %}
+{% block description %}Actas de las sesiones del Consejo Distrital de Archivos de Medellín.{% endblock %}
+{% block content %}
+<section class="tp-hero"><div class="container">
+  <nav class="tp-crumb" aria-label="Ruta de navegación"><a href="{{ url_for('transparencia') }}">Transparencia</a> › Actas</nav>
+  <h1>Actas de sesión del Consejo</h1>
+  <p>Actas firmadas por la Presidencia y la Secretaría Técnica, numeradas de forma consecutiva cada año. Se publican después de su firma y en ellas constan las decisiones del Consejo, incluidas las convalidaciones de TRD y TVD.</p>
+</div></section>
+<div class="container tp-wrap">
+  <form class="tp-card tp-filtros mb-3" method="get" role="search" aria-label="Filtrar actas">
+    <div><label for="f-q">Buscar en temas</label><input class="form-control" id="f-q" name="q" value="{{ filtro.q }}" placeholder="Ej.: TRD, transferencias"></div>
+    <div><label for="f-anio">Año</label><select class="form-select" id="f-anio" name="anio"><option value="">Todos</option>{% for a in anios %}<option {% if filtro.anio == a %}selected{% endif %}>{{ a }}</option>{% endfor %}</select></div>
+    <div><label for="f-tipo">Tipo de sesión</label><select class="form-select" id="f-tipo" name="tipo"><option value="">Todas</option>{% for t in tipos %}<option {% if filtro.tipo == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+    <div class="d-flex gap-2"><button class="btn btn-primary flex-fill" type="submit"><i class="bi bi-funnel" aria-hidden="true"></i> Filtrar</button>{% if filtro.q or filtro.anio or filtro.tipo %}<a class="btn btn-outline-secondary" href="{{ url_for('actas_publicas') }}">Limpiar</a>{% endif %}</div>
+  </form>
+  <div class="tp-card p-0">
+    {% if actas %}
+    <div class="table-responsive">
+      <table class="table tp-table mb-0">
+        <caption class="visually-hidden">Actas publicadas del Consejo Distrital de Archivos</caption>
+        <thead><tr><th scope="col">Acta</th><th scope="col">Sesión</th><th scope="col">Temas y decisiones</th><th scope="col">Documento</th></tr></thead>
+        <tbody>
+        {% for a in actas %}
+          <tr>
+            <th scope="row" class="text-nowrap">{{ a.nombre_acta }}<div class="tp-meta fw-normal">Publicada {{ a.fecha_publicacion|hora_col('%d/%m/%Y') }}</div></th>
+            <td class="text-nowrap">{{ a.fecha|fecha_larga }}<div><span class="tp-pill">{{ a.tipo_sesion }}</span>{% if a.modalidad %} <span class="tp-meta">{{ a.modalidad }}</span>{% endif %}</div></td>
+            <td>{{ a.resumen or '—' }}
+              {% if convalidadas.get(a.id) %}<div class="mt-2 tp-meta"><i class="bi bi-patch-check" aria-hidden="true"></i> Convalidó: {% for c in convalidadas[a.id] %}{{ c.instrumento }} de {{ c.entidad }}{{ '; ' if not loop.last }}{% endfor %}</div>{% endif %}</td>
+            <td class="text-nowrap">
+              {% if a.archivo_nombre %}<a class="btn btn-sm btn-outline-primary" href="{{ url_for('documento_publicacion', pub_id=a.id) }}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> PDF<span class="visually-hidden"> del {{ a.nombre_acta }}</span></a><div class="tp-meta">{{ a.archivo_tamano|tamano }}</div>{% endif %}
+              {% if a.enlace %}<a class="btn btn-sm btn-outline-secondary mt-1" href="{{ a.enlace }}" target="_blank" rel="noopener">Ver enlace<span class="visually-hidden"> del {{ a.nombre_acta }}</span></a>{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="tp-vacio"><i class="bi bi-journal" style="font-size:2rem" aria-hidden="true"></i><p class="mb-0 mt-2">{% if filtro.q or filtro.anio or filtro.tipo %}No hay actas que coincidan con el filtro.{% else %}Aún no hay actas publicadas.{% endif %}</p></div>
+    {% endif %}
+  </div>
+  <p class="tp-meta mt-3 mb-0">También puede descargar el índice de actas en <a href="{{ url_for('descargar_dataset', nombre='actas', formato='csv') }}">CSV</a> o <a href="{{ url_for('descargar_dataset', nombre='actas', formato='json') }}">JSON</a>.</p>
+</div>
+{% endblock %}

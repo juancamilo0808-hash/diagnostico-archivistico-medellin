@@ -15,7 +15,7 @@
     --cda-gold: #d6a62c;
     --cda-green: #27845b;
     --cda-text: #243447;
-    --cda-muted: #667789;
+    --cda-muted: #56687a;
     --cda-bg: #f3f6fa;
     --cda-border: #dce4ec;
     --cda-white: #ffffff;
@@ -130,7 +130,8 @@ a:hover { color: var(--cda-blue-dark); }
 /* Botones */
 .btn { border-radius: 9px; font-weight: 700; transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
 .btn:hover { transform: translateY(-1px); }
-.btn-primary { background: var(--cda-blue); border-color: var(--cda-blue); }
+.btn-primary { background: var(--cda-blue); border-color: var(--cda-blue); color: #fff; }
+.btn-primary:hover, .btn-primary:focus, .btn-primary:active { color: #fff; }
 .btn-primary:hover, .btn-primary:focus { background: var(--cda-blue-dark); border-color: var(--cda-blue-dark); }
 .btn-success { background: var(--cda-green); border-color: var(--cda-green); }
 .btn-warning { color: #1e293b; background: var(--cda-gold); border-color: var(--cda-gold); }
@@ -367,7 +368,7 @@ main.container, .page-container { padding-top: 38px; padding-bottom: 55px; }
 
 .cda-footer-subtitle {
     margin-bottom: 28px;
-    color: #667789;
+    color: #56687a;
 }
 
 .cda-contact-item {
@@ -403,7 +404,7 @@ main.container, .page-container { padding-top: 38px; padding-bottom: 55px; }
 
 .cda-contact-item p {
     margin: 0;
-    color: #667789;
+    color: #56687a;
 }
 
 .cda-footer-logo {
@@ -585,3 +586,63 @@ body:not(.home-page) .page-container {
     body:not(.home-page) main.container,
     body:not(.home-page) .page-container { margin: 16px 10px; padding: 18px; }
 }
+
+/* ============================================================
+   ACCESIBILIDAD (WCAG 2.1 AA · Res. MinTIC 1519 de 2020, anexo 1)
+   ============================================================ */
+.cda-skip { position: absolute; left: 1rem; top: -4rem; z-index: 2000; background: #fff; color: var(--cda-blue-dark);
+    padding: .6rem 1rem; border-radius: 8px; font-weight: 700; box-shadow: var(--cda-shadow); }
+.cda-skip:focus { top: .5rem; }
+main:focus { outline: none; }
+:focus-visible { outline: 3px solid #f1c75b !important; outline-offset: 2px; }
+.govco-bar { background: #3366cc; color: #fff; font-size: .85rem; }
+.govco-bar > div:first-child { min-height: 38px; }
+.govco-logo { color: #fff; font-weight: 800; letter-spacing: .04em; text-decoration: none; font-family: 'Montserrat', Arial, sans-serif; }
+.govco-logo:hover, .govco-logo:focus { color: #fff; text-decoration: underline; }
+.a11y-toggle { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,.55); border-radius: 999px; padding: .15rem .75rem; font-weight: 600; font-size: .82rem; }
+.a11y-toggle:hover { background: rgba(255,255,255,.14); }
+.a11y-panel { background: #24499a; padding: .5rem 0; }
+.a11y-panel button, .a11y-panel a { background: #fff; color: #1b2f5c; border: 0; border-radius: 8px; padding: .3rem .75rem; font-weight: 700; font-size: .82rem; text-decoration: none; }
+.a11y-panel button[aria-pressed="true"] { background: #f1c75b; }
+.cda-dropdown { border-radius: 12px; border: 1px solid var(--cda-border); box-shadow: var(--cda-shadow); padding: .4rem; }
+.cda-dropdown .dropdown-item { border-radius: 8px; padding: .5rem .75rem; font-size: .9rem; color: var(--cda-blue-dark); }
+.cda-dropdown .dropdown-item i { color: var(--cda-blue-mid); margin-right: .35rem; }
+.cda-dropdown .dropdown-item:hover, .cda-dropdown .dropdown-item:focus { background: var(--cda-blue-light); }
+.subrayar-enlaces a { text-decoration: underline !important; }
+.alto-contraste body { background: #000 !important; color: #fff !important; }
+.alto-contraste main, .alto-contraste main section, .alto-contraste main div, .alto-contraste main article,
+.alto-contraste main table, .alto-contraste main td, .alto-contraste main th, .alto-contraste main li, .alto-contraste main dl,
+.alto-contraste main details, .alto-contraste main summary, .alto-contraste .cda-footer, .alto-contraste .cda-footer * {
+    background: #000 !important; color: #fff !important; border-color: #fff !important; box-shadow: none !important; }
+.alto-contraste main a, .alto-contraste .cda-footer a { color: #ffef00 !important; background: #000 !important; text-decoration: underline !important; }
+.alto-contraste main a * { color: inherit !important; background: transparent !important; }
+.alto-contraste main .btn, .alto-contraste main input, .alto-contraste main select, .alto-contraste main textarea {
+    background: #000 !important; color: #ffef00 !important; border: 2px solid #ffef00 !important; }
+.alto-contraste main img, .alto-contraste main svg { filter: grayscale(1) contrast(1.2); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
+/* Páginas de transparencia */
+.tp-hero { background: linear-gradient(160deg, #071f38, #0b2d50 60%, #0f3a63); color: #fff; padding: 2.4rem 0 4.6rem; }
+.tp-hero .k { font-size: .75rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--cda-gold); }
+.tp-hero h1 { color: #fff; font-weight: 800; margin: .4rem 0; }
+.tp-hero p { color: rgba(255,255,255,.82); max-width: 48rem; margin: 0; }
+.tp-crumb { font-size: .82rem; margin-bottom: .6rem; }
+.tp-crumb a { color: rgba(255,255,255,.85); }
+.tp-wrap { margin-top: -3rem; padding-bottom: 3rem; }
+.tp-card { background: #fff; border: 1px solid var(--cda-border); border-radius: 18px; padding: 1.3rem; }
+.tp-filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .75rem; align-items: end; }
+.tp-filtros label { font-size: .8rem; font-weight: 700; color: var(--cda-blue-dark); margin-bottom: .25rem; }
+.tp-meta { font-size: .8rem; color: var(--cda-muted); }
+.tp-pill { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .75rem; font-weight: 700; background: var(--cda-blue-light); color: var(--cda-blue); }
+.tp-pill.ok { background: #e6f5ec; color: #14532d; }
+.tp-pill.warn { background: #fff4d6; color: #6b4e00; }
+.tp-pill.bad { background: #fde8e8; color: #8a1c1c; }
+.tp-vacio { text-align: center; padding: 2.5rem 1rem; color: var(--cda-muted); }
+.tp-table thead th { font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--cda-muted); background: #f5f8fb; white-space: nowrap; }
+.tp-table td { font-size: .9rem; vertical-align: top; }
+.tp-legal h2 { font-size: 1.1rem; font-weight: 800; color: var(--cda-blue-dark); margin-top: 1.6rem; }
+.tp-legal p, .tp-legal li { font-size: .95rem; }
+.table-responsive { position: relative; }
+.cda-nav .cda-dropdown .dropdown-item { color: var(--cda-blue-dark) !important; }
+@media (max-width: 1399.98px) { .cda-nav .cda-dropdown .dropdown-item { color: #fff !important; } }
+.tp-table tbody th { font-size: .9rem; color: var(--cda-blue-dark); vertical-align: top; }

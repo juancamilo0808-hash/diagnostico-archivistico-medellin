@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Planes, informes y reglamento | Consejo Distrital de Archivos{% endblock %}
+{% block content %}
+<section class="tp-hero"><div class="container">
+  <nav class="tp-crumb" aria-label="Ruta de navegación"><a href="{{ url_for('transparencia') }}">Transparencia</a> › Planes, informes y reglamento</nav>
+  <h1>Planes, informes y reglamento</h1>
+  <p>Documentos de planeación y seguimiento del Consejo: plan de acción anual, informes semestrales remitidos al Archivo General de la Nación, reglamento interno y actos de creación.</p>
+</div></section>
+<div class="container tp-wrap">
+  {% for clave, docs in grupos.items() %}
+  <section class="tp-card mb-3" aria-labelledby="g-{{ clave }}">
+    <h2 class="h5 fw-bold mb-3" id="g-{{ clave }}"><i class="bi {{ categorias[clave].icono }} me-2 text-primary" aria-hidden="true"></i>{{ categorias[clave].nombre }}</h2>
+    {% if docs %}
+    <ul class="list-unstyled mb-0">
+      {% for d in docs %}
+      <li class="d-flex justify-content-between align-items-start flex-wrap gap-2 py-2 {{ 'border-top' if not loop.first }}">
+        <div><strong>{{ d.titulo }}</strong>{% if d.resumen %}<div class="small">{{ d.resumen }}</div>{% endif %}<div class="tp-meta">{% if d.fecha %}{{ d.fecha|fecha_larga }} · {% endif %}publicado {{ d.fecha_publicacion|hora_col('%d/%m/%Y') }}</div></div>
+        <div class="d-flex gap-2">
+          {% if d.archivo_nombre %}<a class="btn btn-sm btn-outline-primary" href="{{ url_for('documento_publicacion', pub_id=d.id) }}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> PDF · {{ d.archivo_tamano|tamano }}<span class="visually-hidden"> de {{ d.titulo }}</span></a>{% endif %}
+          {% if d.enlace %}<a class="btn btn-sm btn-outline-secondary" href="{{ d.enlace }}" target="_blank" rel="noopener">Enlace<span class="visually-hidden"> de {{ d.titulo }}</span></a>{% endif %}
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="tp-meta mb-0">Sin documentos publicados en esta categoría.</p>{% endif %}
+  </section>
+  {% endfor %}
+</div>
+{% endblock %}

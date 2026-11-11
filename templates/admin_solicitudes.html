@@ -9,7 +9,7 @@
   .as-item:last-child { border-bottom:0; }
   .as-item summary { list-style:none; cursor:pointer; padding:1rem 1.2rem; display:grid; grid-template-columns: 11rem 1fr 12rem 9rem 1rem; gap:1rem; align-items:center; }
   .as-item summary::-webkit-details-marker { display:none; }
-  .as-item summary::after { content:"›"; font-weight:800; color:#667789; transition: transform .2s; }
+  .as-item summary::after { content:"›"; font-weight:800; color:#56687a; transition: transform .2s; }
   .as-item[open] summary::after { transform: rotate(90deg); }
   .as-item[open] summary { background:#f6f9fc; }
   .as-rad { font-family: ui-monospace, Menlo, monospace; font-weight:800; color:#092947; font-size:.88rem; }
@@ -18,7 +18,7 @@
   .as-pill.Radicada { background:#fff4d6; color:#7a5a00; }
   .as-body { padding:0 1.2rem 1.4rem; display:grid; grid-template-columns: 1fr 1fr; gap:1.5rem; }
   .as-body dl { display:grid; grid-template-columns: 9rem 1fr; gap:.3rem .8rem; font-size:.88rem; margin:0; }
-  .as-body dt { color:#667789; font-weight:600; }
+  .as-body dt { color:#56687a; font-weight:600; }
   .as-body dd { margin:0; word-break:break-word; }
   .as-hist { font-size:.82rem; border-left:3px solid #d6a62c; padding-left:.8rem; margin-top:1rem; }
   .as-hist div { margin-bottom:.4rem; }
@@ -71,6 +71,7 @@
           <label class="form-label small fw-bold mb-0" for="n{{ s.id }}">Nota interna</label>
           <textarea class="form-control" id="n{{ s.id }}" name="nota_interna" rows="2" maxlength="4000" placeholder="Solo visible en administración">{{ s.nota_interna or '' }}</textarea>
           <button class="btn btn-primary" type="submit"><i class="bi bi-save"></i> Guardar</button>
+          {% if s.tipo == 'evaluacion' and s.estado in ('Concepto emitido', 'Cerrada') %}<a class="btn btn-outline-success" href="{{ url_for('admin_convalidaciones', radicado=s.radicado) }}"><i class="bi bi-patch-check"></i> Registrar convalidación</a>{% endif %}
         </form>
       </div>
     </details>

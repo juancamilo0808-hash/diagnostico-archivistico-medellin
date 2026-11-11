@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Actas y documentos · Administración{% endblock %}
+{% block content %}
+<style>
+  .ad-hero { background: linear-gradient(125deg,#062d4e,#0b527c 68%,#167d91); color:#fff; border-radius:22px; padding:26px 30px; }
+  .ad-hero .k { letter-spacing:.14em; font-size:.75rem; font-weight:800; opacity:.8; }
+  .ad-card { background:#fff; border:1px solid #e4ebf1; border-radius:16px; }
+  .ad-card .form-label { font-size:.82rem; font-weight:700; margin-bottom:.25rem; }
+  [data-solo] { display:none; }
+  form[data-cat="acta"] [data-solo="acta"], form:not([data-cat="acta"]) [data-solo="doc"] { display:block; }
+</style>
+<div class="container-fluid px-lg-5 py-4">
+  <section class="ad-hero mb-4 d-flex justify-content-between flex-wrap gap-3 align-items-center">
+    <div><div class="k">ADMINISTRACIÓN · TRANSPARENCIA</div><h1 class="h3 fw-bold mb-1">Actas y documentos del Consejo</h1><p class="mb-0 opacity-75">Lo que marque como publicado aparece de inmediato en Transparencia y en los datos abiertos.</p></div>
+    <div class="d-flex gap-2 flex-wrap"><a class="btn btn-light fw-bold" href="{{ url_for('admin') }}"><i class="bi bi-arrow-left"></i> Panel</a><a class="btn btn-light fw-bold" href="{{ url_for('admin_convalidaciones') }}"><i class="bi bi-patch-check"></i> Convalidaciones</a><a class="btn btn-light fw-bold" href="{{ url_for('transparencia') }}" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Ver sitio público</a></div>
+  </section>
+  <div class="row g-4">
+    <div class="col-xl-5">
+      {% set p = pub %}
+      <form class="ad-card p-4" method="post" enctype="multipart/form-data" data-cat="{{ p.categoria if p else 'acta' }}" id="fPub">
+        <h2 class="h5 fw-bold mb-3">{{ 'Editar' if p and p.id else 'Publicar' }} documento</h2>
+        <input type="hidden" name="id" value="{{ p.id if p and p.id else '' }}">
+        <div class="mb-3"><label class="form-label" for="cat">Tipo de documento</label>
+          <select class="form-select" id="cat" name="categoria">{% for k, c in categorias.items() %}<option value="{{ k }}" {% if (p.categoria if p else 'acta') == k %}selected{% endif %}>{{ c.singular }}</option>{% endfor %}</select></div>
+        <div data-solo="doc" class="mb-3"><label class="form-label" for="tit">Título</label><input class="form-control" id="tit" name="titulo" maxlength="250" value="{{ p.titulo if p and p.categoria != 'acta' else '' }}" placeholder="Ej.: Informe semestral al AGN · primer semestre 2026"></div>
+        <div class="row g-2 mb-3">
+          <div class="col-4" data-solo="acta"><label class="form-label" for="num">Número</label><input class="form-control" id="num" name="numero" type="number" min="1" value="{{ p.numero if p and p.numero else '' }}"></div>
+          <div class="col-4"><label class="form-label" for="anio">Año</label><input class="form-control" id="anio" name="anio" type="number" min="2000" max="2100" value="{{ p.anio if p and p.anio else hoy.year }}"></div>
+          <div class="col-4"><label class="form-label" for="fec">Fecha (sesión o documento)</label><input class="form-control" id="fec" name="fecha" type="date" value="{{ p.fecha.isoformat() if p and p.fecha else '' }}"></div>
+        </div>
+        <div class="row g-2 mb-3" data-solo="acta">
+          <div class="col-6"><label class="form-label" for="ts">Tipo de sesión</label><select class="form-select" id="ts" name="tipo_sesion">{% for t in tipos %}<option {% if p and p.tipo_sesion == t %}selected{% endif %}>{{ t }}</option>{% endfor %}</select></div>
+          <div class="col-6"><label class="form-label" for="mod">Modalidad</label><select class="form-select" id="mod" name="modalidad">{% for m in modalidades %}<option {% if p and p.modalidad == m %}selected{% endif %}>{{ m }}</option>{% endfor %}</select></div>
+        </div>
+        <div class="mb-3"><label class="form-label" for="res">Temas y decisiones principales</label><textarea class="form-control" id="res" name="resumen" rows="3" maxlength="4000" placeholder="Ej.: Se convalidó la TRD de … Se aprobó el plan de acción 2027.">{{ p.resumen if p and p.resumen else '' }}</textarea></div>
+        <div class="mb-3"><label class="form-label" for="kw">Palabras clave para la búsqueda</label><input class="form-control" id="kw" name="palabras_clave" maxlength="250" value="{{ p.palabras_clave if p and p.palabras_clave else '' }}" placeholder="TRD, TVD, transferencias"></div>
+        <div class="mb-3"><label class="form-label" for="arch">Documento PDF (máximo 10 MB)</label><input class="form-control" id="arch" name="archivo" type="file" accept="application/pdf,.pdf">
+          {% if p and p.archivo_nombre %}<div class="form-text">Actual: <a href="{{ url_for('documento_publicacion', pub_id=p.id) }}" target="_blank" rel="noopener">{{ p.archivo_nombre }}</a> ({{ p.archivo_tamano|tamano }}). Suba otro solo si desea reemplazarlo.</div>{% endif %}</div>
+        <div class="mb-3"><label class="form-label" for="enl">O enlace al documento (opcional)</label><input class="form-control" id="enl" name="enlace" type="url" value="{{ p.enlace if p and p.enlace else '' }}" placeholder="https://"></div>
+        <div class="form-check mb-3"><input class="form-check-input" type="checkbox" name="publicado" value="1" id="pubc" {% if not p or p.publicado %}checked{% endif %}><label class="form-check-label" for="pubc">Publicar en el sitio</label></div>
+        <div class="d-flex gap-2"><button class="btn btn-primary" type="submit"><i class="bi bi-cloud-upload"></i> Guardar</button>{% if p and p.id %}<a class="btn btn-outline-secondary" href="{{ url_for('admin_publicaciones') }}">Cancelar</a>{% endif %}</div>
+      </form>
+    </div>
+    <div class="col-xl-7">
+      <div class="ad-card p-0">
+        <div class="table-responsive"><table class="table align-middle mb-0">
+          <caption class="visually-hidden">Documentos registrados</caption>
+          <thead><tr><th scope="col">Documento</th><th scope="col">Fecha</th><th scope="col">Estado</th><th scope="col" class="text-end">Acciones</th></tr></thead>
+          <tbody>
+          {% for i in items %}
+            <tr>
+              <td><div class="fw-semibold">{{ i.titulo }}</div><div class="small text-secondary">{{ categorias[i.categoria].singular }}{% if i.archivo_nombre %} · PDF {{ i.archivo_tamano|tamano }}{% endif %}</div></td>
+              <td class="small text-nowrap">{{ i.fecha.strftime('%d/%m/%Y') if i.fecha else '—' }}</td>
+              <td>{% if i.publicado %}<span class="badge text-bg-success">Publicado</span>{% else %}<span class="badge text-bg-secondary">Borrador</span>{% endif %}</td>
+              <td class="text-end text-nowrap"><a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin_publicaciones', editar=i.id) }}">Editar</a>
+                <form class="d-inline" method="post" action="{{ url_for('admin_eliminar_publicacion', pub_id=i.id) }}" onsubmit="return confirm('¿Eliminar este documento?')"><button class="btn btn-sm btn-outline-danger" type="submit">Eliminar</button></form></td>
+            </tr>
+          {% else %}
+            <tr><td colspan="4" class="text-center text-secondary py-4">Aún no hay documentos. Publique la primera acta con el formulario.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  document.getElementById('cat').addEventListener('change', e => { document.getElementById('fPub').dataset.cat = e.target.value; });
+</script>
+{% endblock %}
