@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <meta name="description" content="{% block description %}Micrositio del Consejo Distrital de Archivos de Medellín: diagnóstico territorial archivístico, servicios en línea, actas, convalidaciones y transparencia.{% endblock %}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20261111a11y">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=20261112logo">
     <script>
       /* Preferencias de accesibilidad guardadas en este navegador (tamaño de texto y contraste). */
       (function () { try { var p = JSON.parse(localStorage.getItem('cda-a11y') || '{}');
@@ -31,7 +31,7 @@
       @media (min-width: 1400px) and (max-width: 1699.98px) {
         .cda-nav .nav-link { padding: .55rem .5rem !important; font-size: .82rem; }
         .cda-nav .btn-nav { padding: .5rem .7rem; font-size: .85rem; }
-        .cda-nav .official-alcaldia-logo { width: 130px; height: 58px; }
+        .cda-nav .official-alcaldia-logo { height: 84px; }
         .cda-nav .brand-cda-line { font-size: .72rem; }
       }
       @media (max-width: 1399.98px) {
@@ -78,7 +78,7 @@
 
                 <img
                     class="official-alcaldia-logo"
-                    src="{{ url_for('static', filename='logo_alcaldia_original.png') }}"
+                    src="{{ url_for('static', filename='logo_alcaldia.png') }}"
                     alt="Alcaldía de Medellín — Distrito de Ciencia, Tecnología e Innovación">
 
                 <span class="brand-divider"></span>

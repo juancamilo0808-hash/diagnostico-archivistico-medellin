@@ -54,15 +54,15 @@ a:hover { color: var(--cda-blue-dark); }
     letter-spacing: .02em;
     white-space: normal;
 }
+/* Logo recortado sin márgenes: se dimensiona por la altura para que se vea grande y nítido. */
 .official-alcaldia-logo {
     display: block;
-    width: 180px;
-    height: 80px;
-    object-fit: contain;
-    object-position: center;
+    width: auto;
+    height: 92px;
     background-color: #ffffff;
-    padding: 4px;
-    border-radius: 2px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,.18);
     flex-shrink: 0;
 }
 /* Identidad institucional del encabezado */
@@ -497,7 +497,7 @@ main.container, .page-container { padding-top: 38px; padding-bottom: 55px; }
     .strip-item { padding-right: 12px; padding-left: 12px; }
 }
 @media (max-width: 992px) {
-    .official-alcaldia-logo { max-width: 145px; max-height: 50px; }
+    .official-alcaldia-logo { height: 74px; }
     .hero-home { min-height: auto; padding: 70px 0 65px; background-position: center; }
     .hero-copy { max-width: 100%; padding-right: 0; }
     .hero-side-rail { position: relative; top: auto; right: auto; flex-direction: row; flex-wrap: wrap; max-width: none; margin-top: 28px; }
@@ -515,7 +515,7 @@ main.container, .page-container { padding-top: 38px; padding-bottom: 55px; }
 
 @media (max-width: 768px) {
     .cda-nav .navbar-brand { font-size: .84rem; }
-    .official-alcaldia-logo { max-width: 120px; max-height: 44px; }
+    .official-alcaldia-logo { height: 60px; padding: 4px 8px; }
     .hero-home { padding: 52px 0 55px; background-position: 58% center; }
     .hero-overlay { background: linear-gradient(90deg, rgba(7,31,55,.92), rgba(9,37,62,.7)); }
     .eyebrow { font-size: .66rem; letter-spacing: .08em; line-height: 1.6; }
