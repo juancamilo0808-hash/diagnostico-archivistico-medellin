@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Mi entidad | Consejo Distrital de Archivos{% endblock %}
+{% block content %}
+<section class="tp-hero"><div class="container">
+  <div class="k">Sesión iniciada con {{ entidad.correo }}</div>
+  <h1>{{ entidad.nombre }}</h1>
+  <p>Diagnósticos enviados por la entidad y solicitudes radicadas en servicios en línea.</p>
+</div></section>
+<div class="container tp-wrap">
+  <div class="tp-card mb-3">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+      <h2 class="h5 fw-bold mb-0">Diagnósticos</h2>
+      <a class="btn btn-primary btn-sm" href="{{ url_for('censo') }}"><i class="bi bi-pencil-square" aria-hidden="true"></i> Diligenciar o continuar el diagnóstico</a>
+    </div>
+    {% if diagnosticos %}
+    <div class="table-responsive"><table class="table tp-table mb-0">
+      <caption class="visually-hidden">Diagnósticos de la entidad</caption>
+      <thead><tr><th scope="col">Fecha</th><th scope="col">Nivel de madurez</th><th scope="col">Clasificación</th><th scope="col">Resultado</th></tr></thead>
+      <tbody>{% for c in diagnosticos %}<tr><td>{{ c.fecha.strftime('%d/%m/%Y') }}</td><td>{{ '%.1f'|format(c.ima or 0) }} %</td><td>{{ c.nivel }}</td><td><a href="{{ url_for('resultado', censo_id=c.id) }}">Ver resultado</a></td></tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="tp-meta mb-0">Todavía no hay diagnósticos enviados.</p>{% endif %}
+  </div>
+  <div class="tp-card">
+    <h2 class="h5 fw-bold mb-2">Solicitudes en línea</h2>
+    {% if solicitudes %}
+    <div class="table-responsive"><table class="table tp-table mb-0">
+      <caption class="visually-hidden">Solicitudes de la entidad</caption>
+      <thead><tr><th scope="col">Radicado</th><th scope="col">Tema</th><th scope="col">Estado</th><th scope="col">Fecha</th></tr></thead>
+      <tbody>{% for s in solicitudes %}<tr><td class="text-nowrap">{{ s.radicado }}</td><td>{{ s.tema }}</td><td>{{ s.estado }}</td><td class="text-nowrap">{{ s.creado_en|hora_col('%d/%m/%Y') }}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    {% else %}<p class="tp-meta mb-0">No hay solicitudes radicadas con el nombre de esta entidad.</p>{% endif %}
+  </div>
+  <form method="post" action="{{ url_for('salir_entidad') }}" class="mt-3"><button class="btn btn-outline-secondary btn-sm" type="submit"><i class="bi bi-box-arrow-right" aria-hidden="true"></i> Cerrar sesión</button></form>
+</div>
+{% endblock %}

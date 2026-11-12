@@ -176,6 +176,10 @@
      return el&&el.dataset.dir!==undefined&&el.value.trim()!==el.dataset.dir.trim();}).join(',');
  }
  DIR_CORREGIBLES.forEach(id=>{const el=document.getElementById(id); if(el) el.addEventListener('input',actualizarCorregidos);});
+ function aplicarEntidad(item){name.value=item.nombre;const d=item.datos||{};const map={'Código':'codigo_entidad','Sigla':'sigla_entidad','Grupo / relación con el Distrito':'grupo_relacion','Clasificación preliminar':'clasificacion_preliminar','Ámbito':'ambito','Responsable de gestión documental':'responsable_nombre','Cargo Responsable GD':'responsable_cargo','Correo Responsable GD':'responsable_correo','Teléfono Responsable GD':'telefono_responsable','Sitio web / fuente':'sitio_web','Dirección':'direccion_entidad'};Object.entries(map).forEach(([k,id])=>{const el=document.getElementById(id);if(el&&d[k]){
+  /* Si el directorio trae varios correos, se usa el primero; los saltos de línea se vuelven espacios. */
+  let v=String(d[k]).trim(); v=id==='responsable_correo'?(v.split(/[\s,;]+/).find(s=>s.includes('@'))||v):v.replace(/\s*\n\s*/g,' · ');
+  el.value=v;if(DIR_CORREGIBLES.includes(id)){el.dataset.dir=el.value;}}});box.innerHTML='';actualizarCorregidos()}
  name.addEventListener('input',()=>{
   // Si cambia el nombre después de seleccionar una entidad, limpia los datos
   // vinculados anteriores para evitar asociar por error el diagnóstico equivocado.
@@ -184,10 +188,16 @@
    .forEach(id=>{const el=document.getElementById(id);if(el){el.value='';delete el.dataset.dir;}});
   actualizarCorregidos();
   clearTimeout(timer);const q=name.value.trim();if(q.length<2){box.innerHTML='';return}
-  timer=setTimeout(async()=>{try{const res=await fetch(`/api/buscar-entidades?q=${encodeURIComponent(q)}`);const items=await res.json();box.innerHTML='';items.forEach(item=>{const b=document.createElement('button');b.type='button';b.className='list-group-item list-group-item-action';b.textContent=item.nombre+(item.sigla?' ('+item.sigla+')':'');b.addEventListener('click',()=>{name.value=item.nombre;const d=item.datos||{};const map={'Código':'codigo_entidad','Sigla':'sigla_entidad','Grupo / relación con el Distrito':'grupo_relacion','Clasificación preliminar':'clasificacion_preliminar','Ámbito':'ambito','Responsable de gestión documental':'responsable_nombre','Cargo Responsable GD':'responsable_cargo','Correo Responsable GD':'responsable_correo','Teléfono Responsable GD':'telefono_responsable','Sitio web / fuente':'sitio_web','Dirección':'direccion_entidad'};Object.entries(map).forEach(([k,id])=>{const el=document.getElementById(id);if(el&&d[k]){
-  /* Si el directorio trae varios correos, se usa el primero; los saltos de línea se vuelven espacios. */
-  let v=String(d[k]).trim(); v=id==='responsable_correo'?(v.split(/[\s,;]+/).find(s=>s.includes('@'))||v):v.replace(/\s*\n\s*/g,' · ');
-  el.value=v;if(DIR_CORREGIBLES.includes(id)){el.dataset.dir=el.value;}}});box.innerHTML='';actualizarCorregidos()});box.appendChild(b)})}catch(e){console.error('No se pudo consultar el directorio',e)}},220)});
+  timer=setTimeout(async()=>{try{const res=await fetch(`/api/buscar-entidades?q=${encodeURIComponent(q)}`);const items=await res.json();box.innerHTML='';items.forEach(item=>{const b=document.createElement('button');b.type='button';b.className='list-group-item list-group-item-action';b.textContent=item.nombre+(item.sigla?' ('+item.sigla+')':'');b.addEventListener('click',()=>aplicarEntidad(item));box.appendChild(b)})}catch(e){console.error('No se pudo consultar el directorio',e)}},220)});
+
+ /* Ingreso con código: la entidad viene de la sesión; su nombre no se puede cambiar. */
+ const ENTIDAD_SESION={{ entidad_directorio|tojson if entidad_directorio else 'null' }};
+ if(ENTIDAD_SESION){
+  if(!name.value.trim()) aplicarEntidad({nombre:ENTIDAD_SESION['Entidad'],datos:ENTIDAD_SESION});
+  name.readOnly=true; name.setAttribute('aria-describedby','entidadSesionAyuda');
+  const ayuda=document.createElement('div'); ayuda.id='entidadSesionAyuda'; ayuda.className='form-text';
+  ayuda.textContent='Entidad de la sesión iniciada con su correo. Los demás datos se pueden corregir.'; name.after(ayuda);
+ }
 
  /* ===== 2. Navegación por secciones A–F =====
     Se activa antes que el autoguardado, de modo que un error de almacenamiento
@@ -348,7 +358,8 @@
   let draftId=null;
   function setDraft(id){draftId=id;draftInput.value=id;draftInput.defaultValue=id;sSet(KEY,id);}
   const storedId=sGet(KEY);
-  setDraft(storedId&&VALID.test(storedId)?storedId:newDraftId());
+  const BORRADOR_ENTIDAD={{ borrador_entidad|tojson if borrador_entidad else 'null' }};
+  setDraft(BORRADOR_ENTIDAD||(storedId&&VALID.test(storedId)?storedId:newDraftId()));
 
   function serializeForm(){const data={};new FormData(form).forEach((value,key)=>{if(key==='borrador_id')return;if(Object.prototype.hasOwnProperty.call(data,key)){if(!Array.isArray(data[key]))data[key]=[data[key]];data[key].push(value)}else data[key]=value});return data}
   function restoreForm(data){Object.entries(data||{}).forEach(([name,value])=>{const controls=[...form.querySelectorAll(`[name="${CSS.escape(name)}"]`)];if(!controls.length)return;controls.forEach(el=>{if(el.type==='checkbox'||el.type==='radio'){const vals=Array.isArray(value)?value:[value];el.checked=vals.includes(el.value)}else if(el.type!=='submit'&&el.type!=='reset'){el.value=Array.isArray(value)?value[0]:value}})});refreshConditional();}

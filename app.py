@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, send_file, jsonify, abort
+from flask import Flask, render_template, render_template as flask_render_template, request, redirect, url_for, flash, session, send_file, jsonify, abort
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect as sqlalchemy_inspect
 from sqlalchemy.orm import deferred
@@ -104,6 +104,8 @@ class BorradorDiagnostico(db.Model):
     creado_en = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     actualizado_en = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
     censo_id = db.Column(db.Integer, nullable=True)
+    # Entidad dueña del borrador cuando el diagnóstico exige ingreso con código.
+    entidad_clave = db.Column(db.String(120), nullable=True, index=True)
 
 
 class UbicacionEntidad(db.Model):
@@ -398,6 +400,14 @@ def validar_codigo_borrador(codigo):
     return codigo if re.fullmatch(r'[A-Za-z0-9_-]{20,80}', codigo) else None
 
 
+def _borrador_ajeno(borrador):
+    """True si el borrador pertenece a otra entidad distinta de la que tiene la sesión."""
+    if borrador is None or not borrador.entidad_clave or session.get('admin_authenticated'):
+        return False
+    entidad = session.get('entidad') or {}
+    return entidad.get('clave') != borrador.entidad_clave
+
+
 @app.route('/api/borrador/<codigo>', methods=['GET'])
 def api_obtener_borrador(codigo):
     codigo = validar_codigo_borrador(codigo)
@@ -405,7 +415,7 @@ def api_obtener_borrador(codigo):
         return jsonify({'ok': False, 'mensaje': 'El código de recuperación no es válido.'}), 400
     try:
         borrador = db.session.get(BorradorDiagnostico, codigo)
-        if borrador is None:
+        if borrador is None or _borrador_ajeno(borrador):
             return jsonify({'ok': True, 'existe': False, 'datos': {}})
         if borrador.estado != 'borrador':
             return jsonify({'ok': True, 'existe': True, 'finalizado': True, 'datos': {}})
@@ -439,8 +449,11 @@ def api_guardar_borrador(codigo):
         if len(serializado.encode('utf-8')) > 500_000:
             return jsonify({'ok': False, 'mensaje': 'El borrador supera el tamaño permitido.'}), 413
         borrador = db.session.get(BorradorDiagnostico, codigo)
+        if _borrador_ajeno(borrador):
+            return jsonify({'ok': False, 'mensaje': 'Este borrador pertenece a otra entidad.'}), 403
         if borrador is None:
-            borrador = BorradorDiagnostico(id=codigo, datos_json=serializado, estado='borrador')
+            borrador = BorradorDiagnostico(id=codigo, datos_json=serializado, estado='borrador',
+                                           entidad_clave=(session.get('entidad') or {}).get('clave'))
             db.session.add(borrador)
         elif borrador.estado != 'borrador':
             return jsonify({'ok': False, 'finalizado': True,
@@ -457,8 +470,32 @@ def api_guardar_borrador(codigo):
         return jsonify({'ok': False, 'mensaje': 'No se pudo guardar en la base de datos. Se conservará una copia local si hay espacio disponible.'}), 500
 
 
+def _contexto_diagnostico(entidad):
+    """Con ingreso por código: datos del directorio de la entidad y su borrador en curso."""
+    if not entidad:
+        return {}
+    borrador = (BorradorDiagnostico.query.filter_by(entidad_clave=entidad['clave'], estado='borrador')
+                .order_by(BorradorDiagnostico.actualizado_en.desc()).first())
+    if borrador is None:
+        borrador = BorradorDiagnostico(id=secrets.token_urlsafe(24), datos_json='{}', estado='borrador',
+                                       entidad_clave=entidad['clave'])
+        db.session.add(borrador)
+        db.session.commit()
+    fila = fila_por_clave(entidad['clave']) or {'Entidad': entidad['nombre']}
+    return {'entidad_directorio': {k: fila.get(k, '') for k in CAMPOS_DIRECTORIO_PUBLICOS}, 'borrador_entidad': borrador.id}
+
+
 @app.route('/diagnostico', methods=['GET', 'POST'])
 def censo():
+    entidad = None
+    if acceso_requerido():
+        entidad = entidad_en_sesion()
+        if not entidad:
+            return redirect(url_for('acceso_entidad', next=url_for('censo')))
+
+    def render_template(plantilla, **kw):  # noqa: F811 - añade el contexto de la entidad
+        return flask_render_template(plantilla, **_contexto_diagnostico(entidad), **kw)
+
     if request.method == 'POST':
         obligatorios = ['nombre_entidad', 'nit_entidad', 'naturaleza', 'sector',
                         'responsable_nombre', 'responsable_cargo', 'responsable_correo',
@@ -481,6 +518,11 @@ def censo():
         # exacta en el directorio; nunca conserva un código obsoleto de otra entidad.
         nombre = request.form.get('nombre_entidad', '').strip()
         codigo_enviado = request.form.get('codigo_entidad', '').strip()
+        if entidad:
+            # Con ingreso por código, la entidad la define la sesión y no el formulario.
+            fila_sesion = fila_por_clave(entidad['clave']) or {}
+            nombre = fila_sesion.get('Entidad') or entidad['nombre']
+            codigo_enviado = str(fila_sesion.get('Código', '')).strip()
         filas_directorio = obtener_directorio()
         fila_codigo = next((fila for fila in filas_directorio
                             if str(fila.get('Código', '')).strip() == codigo_enviado), None)
@@ -497,6 +539,7 @@ def censo():
                       for k in request.form.keys() if k.startswith('q') or k.startswith('evidencia_')}
         respuestas.update({
             'codigo_entidad': codigo_entidad,
+            'correo_acceso': entidad['correo'] if entidad else '',
             'sigla_entidad': request.form.get('sigla_entidad', ''),
             'grupo_relacion': request.form.get('grupo_relacion', ''),
             'clasificacion_preliminar': request.form.get('clasificacion_preliminar', ''),
@@ -628,9 +671,12 @@ def calcular_diagnostico_nuevo(form):
 @app.route('/resultado/<int:censo_id>')
 def resultado(censo_id):
     # Solo lo ve la persona que envió el diagnóstico (en su sesión) o el equipo administrador.
-    if not session.get('admin_authenticated') and censo_id not in session.get('mis_diagnosticos', []):
+    registro = Censo.query.get_or_404(censo_id)
+    entidad = entidad_en_sesion()
+    propio = entidad and registro in _diagnosticos_de(entidad)
+    if not session.get('admin_authenticated') and censo_id not in session.get('mis_diagnosticos', []) and not propio:
         abort(404)
-    return render_template('resultado.html', censo=Censo.query.get_or_404(censo_id))
+    return render_template('resultado.html', censo=registro)
 
 @app.route('/normatividad')
 def normatividad(): return render_template('normatividad.html',normatividad=NORMATIVIDAD)
@@ -2336,6 +2382,352 @@ def cabeceras_seguridad(respuesta):
     if request.path.startswith('/admin') or request.path.startswith('/api/') or request.path.startswith('/resultado'):
         respuesta.headers['Cache-Control'] = 'no-store'
     return respuesta
+
+
+# ============================================================
+# ACCESO DE LAS ENTIDADES CON CÓDIGO POR CORREO
+# La entidad escribe su correo institucional y recibe un código de 6 dígitos que
+# vence en 10 minutos. Pueden ingresar los correos del directorio de entidades y
+# los que el administrador autorice. No se guardan contraseñas.
+# ============================================================
+
+import secrets
+import smtplib
+import ssl
+import urllib.request
+from email.message import EmailMessage
+
+CODIGO_VIGENCIA_MIN = 10
+CODIGO_MAX_INTENTOS = 5
+CODIGOS_POR_CORREO_15MIN = 3
+SOLICITUDES_POR_IP_15MIN = 10
+ENTIDAD_INACTIVIDAD_SEG = 2 * 60 * 60
+_SOLICITUDES_IP = {}
+
+
+class AccesoEntidad(db.Model):
+    """Correos autorizados para ingresar en nombre de una entidad."""
+    __tablename__ = 'acceso_entidad'
+    id = db.Column(db.Integer, primary_key=True)
+    correo = db.Column(db.String(200), nullable=False, index=True)
+    entidad_clave = db.Column(db.String(120), nullable=False, index=True)
+    entidad_nombre = db.Column(db.String(250), nullable=False)
+    origen = db.Column(db.String(20), default='manual')  # directorio | manual
+    activo = db.Column(db.Boolean, default=True, nullable=False)
+    ultimo_ingreso = db.Column(db.DateTime)
+    ingresos = db.Column(db.Integer, default=0)
+    creado = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class CodigoAcceso(db.Model):
+    __tablename__ = 'codigo_acceso'
+    id = db.Column(db.Integer, primary_key=True)
+    correo = db.Column(db.String(200), nullable=False, index=True)
+    codigo_hash = db.Column(db.String(64), nullable=False)
+    expira = db.Column(db.DateTime, nullable=False)
+    intentos = db.Column(db.Integer, default=0)
+    usado = db.Column(db.Boolean, default=False)
+    ip = db.Column(db.String(64))
+    creado = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+def _correos_en(texto):
+    return [c.lower() for c in re.findall(r'[\w.+-]+@[\w-]+(?:\.[\w-]+)+', texto or '')]
+
+
+def clave_de_fila(fila):
+    codigo = str(fila.get('Código', '')).strip()
+    return codigo or 'N:' + clave_entidad(fila.get('Entidad', ''))[:110]
+
+
+def fila_por_clave(clave):
+    return next((f for f in obtener_directorio() if clave_de_fila(f) == clave), None)
+
+
+def entidades_para_correo(correo):
+    """Entidades que puede representar un correo: del directorio y autorizaciones manuales."""
+    correo = (correo or '').strip().lower()
+    if not correo:
+        return []
+    bloqueadas = {a.entidad_clave for a in AccesoEntidad.query.filter_by(correo=correo, activo=False).all()}
+    resultado = {}
+    for fila in obtener_directorio():
+        if correo in _correos_en(fila.get('Correo Responsable GD', '')):
+            clave = clave_de_fila(fila)
+            if clave not in bloqueadas:
+                resultado[clave] = fila.get('Entidad', '')
+    for a in AccesoEntidad.query.filter_by(correo=correo, activo=True, origen='manual').all():
+        resultado[a.entidad_clave] = a.entidad_nombre
+    return sorted(resultado.items(), key=lambda kv: kv[1])
+
+
+def correo_configurado():
+    if os.environ.get('BREVO_API_KEY'):
+        return 'Brevo (API)'
+    if os.environ.get('SMTP_HOST'):
+        return 'SMTP ' + os.environ.get('SMTP_HOST')
+    return None
+
+
+def modo_acceso():
+    """Variable ACCESO_ENTIDADES en Render:
+    - «prueba»: se exige el ingreso, pero el código se muestra en pantalla (no se envía correo).
+    - «si»: se exige el ingreso y el código se envía por correo (requiere servicio de correo).
+    - vacía o «no»: el diagnóstico sigue abierto como hasta ahora."""
+    ajuste = os.environ.get('ACCESO_ENTIDADES', '').strip().lower()
+    if ajuste == 'prueba':
+        return 'prueba'
+    if ajuste in ('si', 'sí', '1', 'true'):
+        return 'correo'
+    return None
+
+
+def acceso_requerido():
+    return modo_acceso() is not None
+
+
+def enviar_correo(destino, asunto, texto, html):
+    remitente = os.environ.get('MAIL_FROM', 'consejodarchivo@medellin.gov.co')
+    nombre = os.environ.get('MAIL_FROM_NAME', 'Consejo Distrital de Archivos de Medellín')
+    if os.environ.get('BREVO_API_KEY'):
+        datos = json.dumps({'sender': {'email': remitente, 'name': nombre}, 'to': [{'email': destino}],
+                            'subject': asunto, 'textContent': texto, 'htmlContent': html}).encode()
+        req = urllib.request.Request('https://api.brevo.com/v3/smtp/email', data=datos, method='POST',
+                                     headers={'api-key': os.environ['BREVO_API_KEY'], 'Content-Type': 'application/json',
+                                              'Accept': 'application/json'})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            return 200 <= r.status < 300
+    if os.environ.get('SMTP_HOST'):
+        msg = EmailMessage()
+        msg['From'] = f'{nombre} <{remitente}>'
+        msg['To'] = destino
+        msg['Subject'] = asunto
+        msg.set_content(texto)
+        msg.add_alternative(html, subtype='html')
+        puerto = int(os.environ.get('SMTP_PORT', '587'))
+        contexto = ssl.create_default_context()
+        if puerto == 465:
+            servidor = smtplib.SMTP_SSL(os.environ['SMTP_HOST'], puerto, timeout=15, context=contexto)
+        else:
+            servidor = smtplib.SMTP(os.environ['SMTP_HOST'], puerto, timeout=15)
+            servidor.starttls(context=contexto)
+        with servidor:
+            if os.environ.get('SMTP_USER'):
+                servidor.login(os.environ['SMTP_USER'], os.environ.get('SMTP_PASSWORD', ''))
+            servidor.send_message(msg)
+        return True
+    # Sin servicio de correo (solo pruebas locales): el código queda en el registro.
+    app.logger.warning('Código de acceso para %s (modo de prueba, sin correo configurado): %s', destino, texto)
+    return True
+
+
+def _hash_codigo(correo, codigo):
+    return hmac.new(app.secret_key.encode() if isinstance(app.secret_key, str) else app.secret_key,
+                    f'{correo}:{codigo}'.encode(), hashlib.sha256).hexdigest()
+
+
+def entidad_en_sesion():
+    e = session.get('entidad')
+    if not e:
+        return None
+    if time.time() - e.get('t', 0) > ENTIDAD_INACTIVIDAD_SEG:
+        session.pop('entidad', None)
+        return None
+    e['t'] = time.time()
+    session['entidad'] = e
+    return e
+
+
+@app.context_processor
+def inyectar_entidad():
+    return {'entidad_sesion': session.get('entidad'), 'modo_acceso_entidades': modo_acceso()}
+
+
+def _iniciar_sesion_entidad(correo, clave, nombre):
+    acceso = AccesoEntidad.query.filter_by(correo=correo, entidad_clave=clave).first()
+    if acceso is None:
+        acceso = AccesoEntidad(correo=correo, entidad_clave=clave, entidad_nombre=nombre, origen='directorio')
+        db.session.add(acceso)
+    acceso.ultimo_ingreso = datetime.utcnow()
+    acceso.ingresos = (acceso.ingresos or 0) + 1
+    db.session.commit()
+    session.pop('acceso_pendiente', None)
+    session['entidad'] = {'clave': clave, 'nombre': nombre, 'correo': correo, 't': time.time()}
+    app.logger.info('Ingreso de entidad %s con %s', clave, correo)
+
+
+@app.route('/acceso', methods=['GET', 'POST'])
+def acceso_entidad():
+    siguiente = request.values.get('next') or url_for('censo')
+    if not siguiente.startswith('/') or siguiente.startswith('//'):
+        siguiente = url_for('censo')
+    paso = 'correo'
+    correo = (request.form.get('correo') or session.get('acceso_correo') or '').strip().lower()
+    if request.method == 'POST' and request.form.get('accion') == 'enviar':
+        ip = _ip_cliente()
+        recientes = [t for t in _SOLICITUDES_IP.get(ip, []) if time.time() - t < 900]
+        if len(recientes) >= SOLICITUDES_POR_IP_15MIN:
+            flash('Se hicieron demasiadas solicitudes desde esta conexión. Espere unos minutos.', 'danger')
+            return render_template('acceso.html', paso='correo', correo=correo, siguiente=siguiente), 429
+        _SOLICITUDES_IP[ip] = recientes + [time.time()]
+        if not re.fullmatch(r'[\w.+-]+@[\w-]+(?:\.[\w-]+)+', correo):
+            flash('Escriba un correo electrónico válido.', 'danger')
+            return render_template('acceso.html', paso='correo', correo=correo, siguiente=siguiente)
+        hace15 = datetime.utcnow() - timedelta(minutes=15)
+        if CodigoAcceso.query.filter(CodigoAcceso.correo == correo, CodigoAcceso.creado > hace15).count() >= CODIGOS_POR_CORREO_15MIN:
+            flash('Ya se enviaron varios códigos a este correo. Revise su bandeja o espere 15 minutos.', 'warning')
+        elif entidades_para_correo(correo):
+            codigo = f'{secrets.randbelow(1000000):06d}'
+            db.session.add(CodigoAcceso(correo=correo, codigo_hash=_hash_codigo(correo, codigo), ip=ip,
+                                        expira=datetime.utcnow() + timedelta(minutes=CODIGO_VIGENCIA_MIN)))
+            db.session.commit()
+            texto = (f'Su código de acceso al Diagnóstico Territorial Archivístico es {codigo}.\n\n'
+                     f'Vence en {CODIGO_VIGENCIA_MIN} minutos. Si usted no lo solicitó, ignore este mensaje.\n\n'
+                     'Consejo Distrital de Archivos de Medellín')
+            html = (f'<p>Su código de acceso al <strong>Diagnóstico Territorial Archivístico</strong> es:</p>'
+                    f'<p style="font-size:28px;font-weight:bold;letter-spacing:6px">{codigo}</p>'
+                    f'<p>Vence en {CODIGO_VIGENCIA_MIN} minutos. Si usted no lo solicitó, ignore este mensaje.</p>'
+                    '<p>Consejo Distrital de Archivos de Medellín</p>')
+            if modo_acceso() == 'prueba':
+                flash(f'MODO DE PRUEBA · Su código es {codigo}. En producción este código llega por correo.', 'warning')
+            else:
+              try:
+                enviar_correo(correo, f'Código de acceso: {codigo}', texto, html)
+              except Exception:
+                app.logger.exception('No se pudo enviar el código de acceso')
+                flash('No fue posible enviar el correo en este momento. Intente de nuevo más tarde.', 'danger')
+                return render_template('acceso.html', paso='correo', correo=correo, siguiente=siguiente)
+        else:
+            app.logger.info('Solicitud de código para un correo no autorizado: %s', correo)
+        # La respuesta es la misma exista o no el correo, para no revelar quién está registrado.
+        session['acceso_correo'] = correo
+        flash(f'Si el correo está autorizado para una entidad, en unos segundos recibirá un código de 6 dígitos. Revise también la carpeta de correo no deseado.', 'info')
+        paso = 'codigo'
+    elif request.method == 'POST' and request.form.get('accion') == 'verificar':
+        paso = 'codigo'
+        digitado = re.sub(r'\D', '', request.form.get('codigo', ''))
+        registro = (CodigoAcceso.query.filter(CodigoAcceso.correo == correo, CodigoAcceso.usado.is_(False),
+                                              CodigoAcceso.expira > datetime.utcnow())
+                    .order_by(CodigoAcceso.id.desc()).first())
+        if registro is None:
+            flash('El código venció o no es válido. Solicite uno nuevo.', 'danger')
+            paso = 'correo'
+        elif registro.intentos >= CODIGO_MAX_INTENTOS:
+            registro.usado = True
+            db.session.commit()
+            flash('Se superó el número de intentos. Solicite un código nuevo.', 'danger')
+            paso = 'correo'
+        elif not hmac.compare_digest(registro.codigo_hash, _hash_codigo(correo, digitado)):
+            registro.intentos += 1
+            db.session.commit()
+            flash(f'El código no es correcto. Le quedan {CODIGO_MAX_INTENTOS - registro.intentos} intentos.', 'danger')
+        else:
+            registro.usado = True
+            db.session.commit()
+            entidades = entidades_para_correo(correo)
+            if len(entidades) == 1:
+                _iniciar_sesion_entidad(correo, *entidades[0])
+                flash(f'Ingresó como {entidades[0][1]}.', 'success')
+                return redirect(siguiente)
+            if not entidades:
+                flash('Este correo ya no está autorizado para ninguna entidad.', 'danger')
+                paso = 'correo'
+            else:
+                session['acceso_pendiente'] = {'correo': correo, 'claves': [c for c, _ in entidades], 't': time.time()}
+                return render_template('acceso.html', paso='entidad', entidades=entidades, siguiente=siguiente)
+    elif request.method == 'POST' and request.form.get('accion') == 'elegir':
+        pendiente = session.get('acceso_pendiente') or {}
+        clave = request.form.get('entidad', '')
+        if pendiente and time.time() - pendiente.get('t', 0) < 600 and clave in pendiente.get('claves', []):
+            nombre = dict(entidades_para_correo(pendiente['correo'])).get(clave)
+            if nombre:
+                _iniciar_sesion_entidad(pendiente['correo'], clave, nombre)
+                flash(f'Ingresó como {nombre}.', 'success')
+                return redirect(siguiente)
+        flash('La selección venció. Solicite un código nuevo.', 'danger')
+    elif request.args.get('nuevo'):
+        session.pop('acceso_correo', None)
+        correo = ''
+    return render_template('acceso.html', paso=paso, correo=correo, siguiente=siguiente)
+
+
+@app.route('/acceso/salir', methods=['POST'])
+def salir_entidad():
+    session.pop('entidad', None)
+    session.pop('acceso_correo', None)
+    flash('Cerró la sesión de su entidad.', 'success')
+    return redirect(url_for('index'))
+
+
+def _diagnosticos_de(entidad):
+    fila = fila_por_clave(entidad['clave'])
+    codigo = str(fila.get('Código', '')).strip() if fila else ''
+    nombre_clave = clave_entidad(entidad['nombre'])
+    return [c for c in Censo.query.order_by(Censo.fecha.desc()).all()
+            if (codigo and c.codigo_entidad == codigo) or clave_entidad((c.nombre_entidad or '').split('|')[0]) == nombre_clave]
+
+
+@app.route('/mi-entidad')
+def mi_entidad():
+    entidad = entidad_en_sesion()
+    if not entidad:
+        return redirect(url_for('acceso_entidad', next=request.path))
+    solicitudes = [s for s in SolicitudSistema.query.order_by(SolicitudSistema.id.desc()).all()
+                   if clave_entidad(s.entidad or '') == clave_entidad(entidad['nombre'])]
+    return render_template('mi_entidad.html', entidad=entidad, diagnosticos=_diagnosticos_de(entidad),
+                           solicitudes=solicitudes)
+
+
+@app.route('/admin/accesos', methods=['GET', 'POST'])
+@admin_required
+def admin_accesos():
+    if request.method == 'POST':
+        accion = request.form.get('accion')
+        if accion == 'autorizar':
+            correo = request.form.get('correo', '').strip().lower()
+            fila = fila_por_clave(request.form.get('entidad', ''))
+            if not fila or not re.fullmatch(r'[\w.+-]+@[\w-]+(?:\.[\w-]+)+', correo):
+                flash('Seleccione la entidad y escriba un correo válido.', 'danger')
+            else:
+                clave = clave_de_fila(fila)
+                a = AccesoEntidad.query.filter_by(correo=correo, entidad_clave=clave).first() or \
+                    AccesoEntidad(correo=correo, entidad_clave=clave, entidad_nombre=fila.get('Entidad', ''))
+                a.origen, a.activo = 'manual', True
+                db.session.add(a)
+                db.session.commit()
+                flash(f'{correo} quedó autorizado para {a.entidad_nombre}.', 'success')
+        elif accion in ('bloquear', 'activar'):
+            correo = request.form.get('correo', '').strip().lower()
+            clave = request.form.get('entidad', '')
+            fila = fila_por_clave(clave)
+            a = AccesoEntidad.query.filter_by(correo=correo, entidad_clave=clave).first()
+            if a is None and fila:
+                a = AccesoEntidad(correo=correo, entidad_clave=clave, entidad_nombre=fila.get('Entidad', ''), origen='directorio')
+                db.session.add(a)
+            if a:
+                a.activo = accion == 'activar'
+                db.session.commit()
+                flash(f'Acceso de {correo} {"activado" if a.activo else "bloqueado"}.', 'success')
+        elif accion == 'prueba':
+            correo = request.form.get('correo', '').strip()
+            try:
+                enviar_correo(correo, 'Prueba de correo del micrositio', 'El servicio de correo del micrositio funciona.',
+                              '<p>El servicio de correo del micrositio funciona.</p>')
+                flash(f'Correo de prueba enviado a {correo}.', 'success')
+            except Exception as error:
+                app.logger.exception('Falló el correo de prueba')
+                flash(f'No se pudo enviar el correo de prueba: {error}', 'danger')
+        return redirect(url_for('admin_accesos'))
+    registros = {(a.correo, a.entidad_clave): a for a in AccesoEntidad.query.all()}
+    filas = []
+    for fila in obtener_directorio():
+        clave = clave_de_fila(fila)
+        correos = [(c, 'directorio') for c in dict.fromkeys(_correos_en(fila.get('Correo Responsable GD', '')))]
+        correos += [(a.correo, 'manual') for a in registros.values() if a.entidad_clave == clave and a.origen == 'manual']
+        filas.append({'clave': clave, 'nombre': fila.get('Entidad', ''), 'sigla': fila.get('Sigla', ''),
+                      'correos': [{'correo': c, 'origen': o, 'registro': registros.get((c, clave))} for c, o in correos]})
+    filas.sort(key=lambda f: (bool(f['correos']), f['nombre']))
+    return render_template('admin_accesos.html', filas=filas, servicio=correo_configurado(), modo=modo_acceso())
 
 
 def _sql_default(columna, dialecto):

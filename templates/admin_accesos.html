@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Accesos de entidades · Administración{% endblock %}
+{% block content %}
+<style>
+  .ad-hero { background: linear-gradient(125deg,#062d4e,#0b527c 68%,#167d91); color:#fff; border-radius:22px; padding:26px 30px; }
+  .ad-hero .k { letter-spacing:.14em; font-size:.75rem; font-weight:800; opacity:.8; }
+  .ad-card { background:#fff; border:1px solid #e4ebf1; border-radius:16px; }
+  .ad-card .form-label { font-size:.82rem; font-weight:700; margin-bottom:.25rem; }
+  .acc-row td { vertical-align: top; font-size:.9rem; }
+  .acc-mail { display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; padding:.15rem 0; }
+</style>
+<div class="container-fluid px-lg-5 py-4">
+  <section class="ad-hero mb-4 d-flex justify-content-between flex-wrap gap-3 align-items-center">
+    <div><div class="k">ADMINISTRACIÓN · SEGURIDAD</div><h1 class="h3 fw-bold mb-1">Accesos de entidades</h1><p class="mb-0 opacity-75">Correos que pueden ingresar al diagnóstico con código de un solo uso.</p></div>
+    <a class="btn btn-light fw-bold" href="{{ url_for('admin') }}"><i class="bi bi-arrow-left"></i> Panel</a>
+  </section>
+  <div class="row g-4">
+    <div class="col-xl-4">
+      <div class="ad-card p-4 mb-4">
+        <h2 class="h6 fw-bold">Estado</h2>
+        <ul class="small mb-0">
+          <li>Ingreso obligatorio al diagnóstico: <strong>{% if modo == 'prueba' %}sí, en modo de prueba (código en pantalla){% elif modo == 'correo' %}sí, con código por correo{% else %}no (el diagnóstico está abierto){% endif %}</strong></li>
+          <li>Servicio de correo: <strong>{{ servicio or 'no configurado' }}</strong></li>
+        </ul>
+        <p class="small text-secondary mt-2 mb-0">Se controla con la variable <code>ACCESO_ENTIDADES</code> en Render: <code>prueba</code>, <code>si</code> o vacía.</p>
+      </div>
+      <form class="ad-card p-4 mb-4" method="post">
+        <h2 class="h6 fw-bold mb-3">Autorizar un correo</h2>
+        <input type="hidden" name="accion" value="autorizar">
+        <div class="mb-3"><label class="form-label" for="ent">Entidad</label>
+          <select class="form-select" id="ent" name="entidad" required><option value="">Seleccione…</option>{% for f in filas|sort(attribute='nombre') %}<option value="{{ f.clave }}">{{ f.nombre }}</option>{% endfor %}</select></div>
+        <div class="mb-3"><label class="form-label" for="cor">Correo</label><input class="form-control" id="cor" name="correo" type="email" required placeholder="nombre@entidad.gov.co"></div>
+        <button class="btn btn-primary" type="submit"><i class="bi bi-person-check"></i> Autorizar</button>
+        <p class="small text-secondary mt-2 mb-0">Úselo para entidades sin correo en el directorio, para personas adicionales o para sus pruebas.</p>
+      </form>
+      <form class="ad-card p-4" method="post">
+        <h2 class="h6 fw-bold mb-3">Probar el envío de correo</h2>
+        <input type="hidden" name="accion" value="prueba">
+        <label class="form-label" for="pc">Enviar a</label><input class="form-control mb-3" id="pc" name="correo" type="email" required>
+        <button class="btn btn-outline-primary" type="submit" {{ 'disabled' if not servicio }}><i class="bi bi-envelope-check"></i> Enviar prueba</button>
+      </form>
+    </div>
+    <div class="col-xl-8">
+      <div class="ad-card p-0"><div class="table-responsive"><table class="table mb-0">
+        <caption class="visually-hidden">Correos autorizados por entidad</caption>
+        <thead><tr><th scope="col">Entidad</th><th scope="col">Correos autorizados</th></tr></thead>
+        <tbody>
+        {% for f in filas %}
+          <tr class="acc-row"><td class="fw-semibold">{{ f.nombre }}{% if f.sigla %} <span class="text-secondary fw-normal">({{ f.sigla }})</span>{% endif %}</td>
+            <td>{% for c in f.correos %}{% set r = c.registro %}
+              <div class="acc-mail"><span>{{ c.correo }}</span>
+                <span class="badge {{ 'text-bg-light border' if c.origen == 'directorio' else 'text-bg-info' }}">{{ 'Directorio' if c.origen == 'directorio' else 'Autorizado' }}</span>
+                {% if r and not r.activo %}<span class="badge text-bg-danger">Bloqueado</span>{% endif %}
+                {% if r and r.ultimo_ingreso %}<span class="small text-secondary">último ingreso {{ r.ultimo_ingreso|hora_col('%d/%m/%Y %I:%M %p') }}</span>{% endif %}
+                <form method="post" class="d-inline"><input type="hidden" name="correo" value="{{ c.correo }}"><input type="hidden" name="entidad" value="{{ f.clave }}">
+                  {% if r and not r.activo %}<button class="btn btn-sm btn-link p-0" name="accion" value="activar">Activar</button>{% else %}<button class="btn btn-sm btn-link text-danger p-0" name="accion" value="bloquear">Bloquear</button>{% endif %}</form>
+              </div>
+            {% else %}<span class="badge text-bg-warning">Sin correo: autorice uno para que la entidad pueda ingresar</span>{% endfor %}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table></div></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

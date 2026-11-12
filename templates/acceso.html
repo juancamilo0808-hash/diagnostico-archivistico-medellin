@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Ingreso de entidades | Consejo Distrital de Archivos{% endblock %}
+{% block content %}
+<section class="tp-hero"><div class="container">
+  <div class="k">Diagnóstico Territorial Archivístico</div>
+  <h1>Ingreso de la entidad</h1>
+  <p>Para diligenciar el diagnóstico, ingrese con el correo institucional autorizado para su entidad. Le enviaremos un código de un solo uso; no necesita contraseña.</p>
+</div></section>
+<div class="container tp-wrap">
+  <div class="row justify-content-center"><div class="col-lg-6 col-md-8">
+    <div class="tp-card p-4">
+      {% if modo_acceso_entidades == 'prueba' %}<div class="alert alert-warning small"><strong>Modo de prueba.</strong> El código se muestra en pantalla en lugar de enviarse por correo.</div>{% endif %}
+      {% if paso == 'codigo' %}
+        <h2 class="h5 fw-bold mb-1">Escriba el código</h2>
+        <p class="small text-secondary mb-3">Enviado a <strong>{{ correo }}</strong>. Vence en 10 minutos.</p>
+        <form method="post" autocomplete="off">
+          <input type="hidden" name="accion" value="verificar"><input type="hidden" name="next" value="{{ siguiente }}">
+          <input type="hidden" name="correo" value="{{ correo }}">
+          <label class="form-label fw-semibold" for="codigo">Código de 6 dígitos</label>
+          <input class="form-control form-control-lg text-center fw-bold" style="letter-spacing:.5em" id="codigo" name="codigo" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required autofocus autocomplete="one-time-code">
+          <button class="btn btn-primary w-100 mt-3" type="submit"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Ingresar</button>
+        </form>
+        <form method="post" class="mt-2 text-center">
+          <input type="hidden" name="accion" value="enviar"><input type="hidden" name="next" value="{{ siguiente }}"><input type="hidden" name="correo" value="{{ correo }}">
+          <button class="btn btn-link btn-sm" type="submit">Enviar un código nuevo</button> ·
+          <a class="btn btn-link btn-sm" href="{{ url_for('acceso_entidad', nuevo=1, next=siguiente) }}">Usar otro correo</a>
+        </form>
+      {% elif paso == 'entidad' %}
+        <h2 class="h5 fw-bold mb-1">Seleccione la entidad</h2>
+        <p class="small text-secondary mb-3">Su correo está autorizado para varias entidades. Elija en nombre de cuál va a diligenciar.</p>
+        <form method="post">
+          <input type="hidden" name="accion" value="elegir"><input type="hidden" name="next" value="{{ siguiente }}">
+          <fieldset><legend class="visually-hidden">Entidades</legend>
+          {% for clave, nombre in entidades %}<div class="form-check mb-2"><input class="form-check-input" type="radio" name="entidad" id="e{{ loop.index }}" value="{{ clave }}" required {{ 'checked' if loop.first }}><label class="form-check-label" for="e{{ loop.index }}">{{ nombre }}</label></div>{% endfor %}
+          </fieldset>
+          <button class="btn btn-primary w-100 mt-2" type="submit">Continuar</button>
+        </form>
+      {% else %}
+        <h2 class="h5 fw-bold mb-3">Correo institucional</h2>
+        <form method="post">
+          <input type="hidden" name="accion" value="enviar"><input type="hidden" name="next" value="{{ siguiente }}">
+          <label class="form-label fw-semibold" for="correo">Correo electrónico</label>
+          <input class="form-control form-control-lg" type="email" id="correo" name="correo" value="{{ correo }}" required autofocus autocomplete="email" placeholder="nombre@entidad.gov.co">
+          <button class="btn btn-primary w-100 mt-3" type="submit"><i class="bi bi-envelope" aria-hidden="true"></i> Enviarme el código</button>
+        </form>
+        <p class="small text-secondary mt-3 mb-0">¿Su correo no está autorizado? Escriba a <a href="mailto:consejodarchivo@medellin.gov.co">consejodarchivo@medellin.gov.co</a> indicando el nombre de la entidad.</p>
+      {% endif %}
+    </div>
+  </div></div>
+</div>
+{% endblock %}

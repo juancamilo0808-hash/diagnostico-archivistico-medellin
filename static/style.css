@@ -644,3 +644,5 @@ main:focus { outline: none; }
 .cda-nav .cda-dropdown .dropdown-item { color: var(--cda-blue-dark) !important; }
 @media (max-width: 1399.98px) { .cda-nav .cda-dropdown .dropdown-item { color: #fff !important; } }
 .tp-table tbody th { font-size: .9rem; color: var(--cda-blue-dark); vertical-align: top; }
+.govco-entidad { color:#fff; font-weight:600; font-size:.82rem; text-decoration:none; }
+.govco-entidad:hover, .govco-entidad:focus { color:#fff; text-decoration:underline; }

@@ -53,9 +53,15 @@
     <div class="govco-bar">
         <div class="container-fluid cda-nav-inner d-flex justify-content-between align-items-center">
             <a href="https://www.gov.co/" target="_blank" rel="noopener" class="govco-logo" aria-label="Portal Único del Estado colombiano GOV.CO (abre en una pestaña nueva)">GOV.CO</a>
+            <div class="d-flex align-items-center gap-2">
+            {% if entidad_sesion %}
+            <a class="govco-entidad" href="{{ url_for('mi_entidad') }}" title="Sesión de {{ entidad_sesion.correo }}"><i class="bi bi-building-check" aria-hidden="true"></i> <span class="d-none d-md-inline">{{ entidad_sesion.nombre|truncate(42, True, '…') }}</span><span class="d-md-none">Mi entidad</span></a>
+            <form method="post" action="{{ url_for('salir_entidad') }}" class="m-0"><button type="submit" class="a11y-toggle">Salir</button></form>
+            {% endif %}
             <button type="button" class="a11y-toggle" aria-expanded="false" aria-controls="a11yPanel">
                 <i class="bi bi-universal-access-circle" aria-hidden="true"></i> Accesibilidad
             </button>
+            </div>
         </div>
         <div class="a11y-panel" id="a11yPanel" hidden>
             <div class="container-fluid cda-nav-inner d-flex flex-wrap gap-2 align-items-center justify-content-end" role="group" aria-label="Opciones de accesibilidad">
