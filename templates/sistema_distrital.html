@@ -166,7 +166,7 @@
       <div class="col-lg-5">
         <span class="sda-eyebrow">Sistema Distrital de Archivos · Medellín</span>
         <h1>El sistema que conecta los archivos de <em>Medellín</em></h1>
-        <p class="lead">Reúne a la instancia rectora, al Consejo Distrital de Archivos y a las entidades del Distrito en torno a una misma política archivística, para proteger el patrimonio documental, garantizar el acceso a la información pública y fortalecer la transparencia de la gestión.</p>
+        <p class="lead">Reúne al Archivo General del Distrito, al Consejo Distrital de Archivos y a las entidades del Distrito en torno a una misma política archivística, para proteger el patrimonio documental, garantizar el acceso a la información pública y fortalecer la transparencia de la gestión.</p>
         <div class="sda-cta">
           <a class="sda-btn gold" href="{{ url_for('servicios_en_linea', servicio='asistencia') }}"><i class="bi bi-headset"></i> Solicitar asistencia</a>
           <a class="sda-btn ghost" href="{{ url_for('servicios_en_linea', servicio='evaluacion') }}"><i class="bi bi-file-earmark-check"></i> Radicar TRD / TVD</a>
@@ -175,7 +175,7 @@
       </div>
       <div class="col-lg-7">
         <div class="eco-wrap">
-          <svg class="eco" id="eco" viewBox="0 0 640 640" role="group" aria-label="Diagrama del Sistema Distrital de Archivos: instancia rectora en el centro, Consejo Distrital de Archivos como órgano asesor, cuatro funciones y las entidades del Distrito alrededor">
+          <svg class="eco" id="eco" viewBox="0 0 640 640" role="group" aria-label="Diagrama del Sistema Distrital de Archivos: instancia coordinadora en el centro, Consejo Distrital de Archivos como órgano asesor, cuatro funciones y las entidades del Distrito alrededor">
             <defs>
               <radialGradient id="gCore" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#2b6cb0"/><stop offset="1" stop-color="#0b2d50"/></radialGradient>
               <linearGradient id="gGold" x1="0" x2="1"><stop offset="0" stop-color="#f1c75b"/><stop offset="1" stop-color="#d6a62c"/></linearGradient>
@@ -213,7 +213,7 @@
               {% endfor %}
             </g>
 
-            <!-- núcleo: instancia rectora -->
+            <!-- núcleo: instancia coordinadora -->
             <circle class="pulse" cx="320" cy="320" r="78" fill="none" stroke="#d6a62c" stroke-width="2"/>
             <g class="node" data-f="core" tabindex="0" role="button">
               <circle class="halo" cx="320" cy="320" r="100" fill="#d6a62c"/>
@@ -277,24 +277,28 @@
   <!-- ================= NIVELES ================= -->
   <section class="sda-sec" id="como-funciona">
     <div class="sda-kicker">Cómo funciona</div>
-    <h2>Tres niveles y una instancia asesora</h2>
-    <p class="intro">El Sistema Distrital de Archivos articula a todas las entidades del Distrito para planear, ejecutar y coordinar la función archivística, proteger el patrimonio documental de la ciudad y ponerlo al servicio de la ciudadanía.</p>
+    <h2>Cómo se organiza el Sistema</h2>
+    <p class="intro">El Decreto 1080 de 2015, que compila el Decreto 2578 de 2012, organiza el sistema de archivos en instancias de coordinación, de asesoría y de ejecución. En el Distrito se articulan así:</p>
     <div class="org">
-      <div class="tiers" aria-label="Línea jerárquica del Sistema">
-        <div class="tier"><div class="ico"><i class="bi bi-bank2" aria-hidden="true"></i></div><div><div class="lvl">Nivel 1 · Rector</div><h3>Instancia rectora</h3><p>Fija la política archivística del Distrito, articula a los integrantes del Sistema y produce los instrumentos de normalización.</p><div class="who"><span>Política archivística</span><span>Coordinación</span><span>Normalización</span></div></div></div>
-        <div class="tier"><div class="ico"><i class="bi bi-diagram-3-fill" aria-hidden="true"></i></div><div><div class="lvl">Nivel 2 · Articulador</div><h3>Instancias articuladoras</h3><p>Coordinan la gestión documental en su ámbito y llevan los lineamientos del Sistema a cada dependencia.</p><div class="who"><span>Cabezas de sector</span><span>Dependencias de archivo</span><span>Comités de gestión y desempeño</span></div></div></div>
-        <div class="tier"><div class="ico"><i class="bi bi-archive-fill" aria-hidden="true"></i></div><div><div class="lvl">Nivel 3 · Ejecutor</div><h3>Instancias ejecutoras</h3><p>Aplican las políticas y normas archivísticas en el día a día: producen, organizan, conservan y dan acceso a los documentos.</p><div class="who"><span>Archivos de gestión</span><span>Archivos centrales</span><span>Particulares con funciones públicas</span><span>Archivos privados de interés público</span></div></div></div>
+      <div class="tiers" aria-label="Instancias de coordinación y ejecución">
+        <div class="tier"><div class="ico"><i class="bi bi-bank2" aria-hidden="true"></i></div><div><div class="lvl">Coordinación nacional</div><h3>Archivo General de la Nación</h3><p>Coordina el Sistema Nacional de Archivos y fija la política archivística del país, a la que se acogen el Distrito y sus entidades.</p><div class="who"><span>Política archivística nacional</span><span>Acuerdos y normas técnicas</span><span>Registro Único de Series Documentales</span></div></div></div>
+        <div class="tier"><div class="ico"><i class="bi bi-buildings-fill" aria-hidden="true"></i></div><div><div class="lvl">Coordinación distrital</div><h3>Archivo General del Distrito</h3><p>Coordina y desarrolla la política archivística en las entidades del Distrito, según los lineamientos del Archivo General de la Nación, y recibe las transferencias de documentos de conservación permanente. Mientras no exista, esta función la cumple el archivo central de la Alcaldía.</p><div class="who"><span>Coordinación de la política</span><span>Lineamientos para las entidades</span><span>Transferencias secundarias</span></div></div></div>
+        <div class="tier"><div class="ico"><i class="bi bi-archive-fill" aria-hidden="true"></i></div><div><div class="lvl">Ejecución</div><h3>Archivos de las entidades</h3><p>Aplican las políticas y normas archivísticas en el día a día: producen, organizan, conservan y dan acceso a los documentos.</p><div class="who"><span>Entidades públicas del Distrito</span><span>Privados con funciones públicas</span><span>Archivos privados de interés público</span></div></div></div>
       </div>
-      <aside class="asesor" aria-label="Instancia asesora">
+      <aside class="asesor" aria-label="Instancias asesoras">
         <div class="ico"><i class="bi bi-people-fill" aria-hidden="true"></i></div>
-        <div class="lvl">Instancia asesora</div>
+        <div class="lvl">Instancias asesoras</div>
         <h3>Consejo Distrital de Archivos</h3>
-        <p>Acompaña a todo el Sistema sin hacer parte de su línea jerárquica. Asesora a la Administración Distrital y a sus entidades en materia archivística.</p>
+        <p>Asesora al Archivo General del Distrito en la política archivística y articula y promueve la función archivística en la ciudad. No hace parte de la línea de coordinación: acompaña a todas las instancias.</p>
         <ul>
           <li>Evalúa y convalida las Tablas de Retención y de Valoración Documental.</li>
-          <li>Emite conceptos técnicos.</li>
-          <li>Hace seguimiento a la política archivística del Distrito.</li>
+          <li>Hace seguimiento al cumplimiento de la política y de las normas.</li>
+          <li>Rinde informes semestrales al Archivo General de la Nación.</li>
         </ul>
+        <p class="mt-3 mb-0"><a href="#consejo" class="fw-semibold">Ver todas las funciones del Consejo <i class="bi bi-arrow-down" aria-hidden="true"></i></a></p>
+        <hr class="my-3">
+        <h3 class="h6 fw-bold mb-1">Comités Institucionales de Gestión y Desempeño</h3>
+        <p class="mb-0">En cada entidad asesoran la aplicación de la política archivística y aprueban sus instrumentos antes de enviarlos al Consejo.</p>
       </aside>
     </div>
   </section>
@@ -330,14 +334,18 @@
     <h2>Consejo Distrital de Archivos</h2>
     <div class="council">
       <div class="council-dark">
-        <h3>Orienta la política archivística de la ciudad</h3>
-        <p>Instancia asesora del Sistema, integrada por representantes de la administración distrital, la academia, el gremio archivístico y los archivos privados.</p>
+        <h3>Funciones del Consejo</h3>
+        <p>Instancia asesora del Sistema, integrada por representantes de la administración distrital, la academia, el gremio archivístico y los archivos privados. Sus funciones, según el Decreto 1080 de 2015, son:</p>
         <ul>
-          <li><i class="bi bi-check2-circle"></i><span>Revisa, evalúa y emite concepto sobre las Tablas de Retención y de Valoración Documental.</span></li>
-          <li><i class="bi bi-check2-circle"></i><span>Asesora en la aplicación de la política y las normas archivísticas del Distrito.</span></li>
-          <li><i class="bi bi-check2-circle"></i><span>Hace seguimiento al cumplimiento de la normatividad e informa al Archivo General de la Nación.</span></li>
-          <li><i class="bi bi-check2-circle"></i><span>Evalúa solicitudes de declaratoria de bienes de interés cultural de carácter documental archivístico.</span></li>
-          <li><i class="bi bi-check2-circle"></i><span>Apoya los programas y proyectos del Sistema Distrital de Archivos.</span></li>
+          <li><i class="bi bi-check2-circle"></i><span>Asesorar al Archivo General del Distrito en la aplicación de la política archivística.</span></li>
+          <li><i class="bi bi-check2-circle"></i><span>Hacer seguimiento al cumplimiento de las políticas y normas archivísticas.</span></li>
+          <li><i class="bi bi-check2-circle"></i><span>Programar y coordinar acciones acordes con las políticas, planes y programas del Archivo General de la Nación.</span></li>
+          <li><i class="bi bi-check2-circle"></i><span>Evaluar las Tablas de Retención y de Valoración Documental de las entidades públicas y privadas con funciones públicas, pedir ajustes y emitir los conceptos de convalidación.</span></li>
+          <li><i class="bi bi-check2-circle"></i><span>Presentar cada semestre informes de su gestión al Archivo General de la Nación.</span></li>
+          <li><i class="bi bi-check2-circle"></i><span>Evaluar las solicitudes de declaratoria de archivos y documentos como bienes de interés cultural y presentarlas al Archivo General de la Nación.</span></li>
+          <li><i class="bi bi-check2-circle"></i><span>Evaluar y aprobar los planes especiales de manejo y protección de los archivos declarados bienes de interés cultural.</span></li>
+          <li><i class="bi bi-check2-circle"></i><span>Apoyar los programas y proyectos de organización, conservación y servicios de los archivos de su jurisdicción.</span></li>
+          <li><i class="bi bi-check2-circle"></i><span>Informar al Archivo General de la Nación las irregularidades en el cumplimiento de la legislación archivística y lo que atente contra el patrimonio documental.</span></li>
         </ul>
       </div>
       <div class="flow">
@@ -368,7 +376,7 @@
   const svg = document.getElementById('eco');
   const card = document.getElementById('ecoCard');
   const INFO = {
-    core: {k:'Núcleo', c:'#f1c75b', t:'Instancia rectora', d:'Coordina la política archivística del Distrito y articula a todos los integrantes del Sistema.', a:'#como-funciona', l:'Cómo funciona el Sistema'},
+    core: {k:'Núcleo', c:'#f1c75b', t:'Instancia coordinadora', d:'El Archivo General del Distrito coordina la política archivística en las entidades, según los lineamientos del Archivo General de la Nación.', a:'#como-funciona', l:'Cómo funciona el Sistema'},
     cda:  {k:'Órgano asesor', c:'#f1c75b', t:'Consejo Distrital de Archivos', d:'Evalúa TRD y TVD, emite conceptos técnicos y orienta la política archivística de la ciudad.', a:'#consejo', l:'Conocer el Consejo'},
     asis: {k:'Función 1', c:'#6fb0f0', t:'Asistencia técnica', d:'Acompañamiento especializado a las entidades: mesas técnicas, orientación y respuesta a consultas.', a:'{{ url_for('servicios_en_linea', servicio='asistencia') }}', l:'Solicitar asistencia'},
     norm: {k:'Función 2', c:'#5fd39a', t:'Normalización', d:'Guías, lineamientos e instrumentos que unifican la gestión documental del Distrito.', a:'{{ url_for("normatividad") }}', l:'Ver normatividad'},
