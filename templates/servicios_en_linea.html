@@ -65,6 +65,11 @@
     .svc-tab { padding:.8rem 1rem; }
     .svc-pane { padding:1.3rem; }
   }
+  .track-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .track-tit { font-size: .8rem; font-weight: 800; color: var(--cda-blue-dark); margin-bottom: .35rem; }
+  .track-tit span { display: inline-block; margin-left: .25rem; padding: 0 .4rem; border-radius: 6px; background: #fff; color: var(--cda-muted); font-size: .68rem; font-weight: 700; }
+  .track-list { list-style: none; padding: 0; margin: 0; }
+  @media (max-width: 575.98px) { .track-cols { grid-template-columns: 1fr; } }
 </style>
 <script>document.documentElement.classList.add('sda-js');</script>
 
@@ -148,18 +153,22 @@
             <h3>Consulte el estado de su trámite</h3>
             <p class="sda-note mt-1">Ingrese el radicado y el correo con el que hizo la solicitud.</p>
             <form method="post" action="{{ url_for('sistema_distrital_tramite') }}" class="d-grid gap-3 mt-3">
-              <div class="sda-field"><label class="form-label" for="c-rad">Número de radicado</label><input class="form-control form-control-lg" id="c-rad" name="radicado" placeholder="CDA-AT-890905211-2026-0001" required></div>
+              <div class="sda-field"><label class="form-label" for="c-rad">Número de radicado</label><input class="form-control form-control-lg" id="c-rad" name="radicado" placeholder="Ej.: CDA-EV-890905211-2026-0001" required></div>
               <div class="sda-field"><label class="form-label" for="c-cor">Correo registrado</label><input class="form-control form-control-lg" id="c-cor" name="correo" type="email" required></div>
               <button class="btn btn-primary btn-lg" type="submit"><i class="bi bi-search"></i> Consultar</button>
             </form>
           </div>
-          <div class="track-art" aria-hidden="true">
-            <div class="sda-note mb-2">Así verá su trámite</div>
-            <div class="row-s done"><span class="dot"></span>Recibida</div>
-            <div class="row-s done"><span class="dot"></span>Revisión preliminar</div>
-            <div class="row-s now"><span class="dot"></span>Mesa técnica · en curso</div>
-            <div class="row-s"><span class="dot"></span>Sesión del Consejo</div>
-            <div class="row-s"><span class="dot"></span>Concepto emitido</div>
+          <div class="track-art">
+            <div class="sda-note mb-2">Etapas por las que pasa su trámite</div>
+            <div class="track-cols">
+              {% for clave in ['asistencia', 'evaluacion'] %}{% set cfg = tipos[clave] %}
+              <div>
+                <div class="track-tit">{{ 'Asistencia técnica' if clave == 'asistencia' else 'Evaluación de TRD / TVD' }} <span>CDA-{{ cfg.prefijo }}</span></div>
+                <ol class="track-list">{% for e in cfg.estados %}<li class="row-s"><span class="dot" aria-hidden="true"></span>{{ e }}</li>{% endfor %}</ol>
+              </div>
+              {% endfor %}
+            </div>
+            <p class="sda-note mt-2 mb-0">Al consultar verá la etapa actual, la fecha de cada cambio y las observaciones del equipo del Consejo.</p>
           </div>
         </div>
       </div>
