@@ -1433,13 +1433,13 @@ SDA_TIPOS = {
                   'Organización de archivos', 'Conservación y depósitos', 'Documento electrónico y SGDEA',
                   'Preservación digital', 'Transferencias documentales', 'Capacitación', 'Otro'],
         'modalidades': ['Virtual', 'Presencial', 'Mesa técnica'],
-        'estados': ['Radicada', 'Asignada', 'En atención', 'Atendida', 'Cerrada'],
+        'estados': ['Recibida', 'Asignada', 'En atención', 'Atendida', 'Cerrada'],
     },
     'evaluacion': {
         'prefijo': 'EV', 'nombre': 'Evaluación de instrumentos',
         'temas': ['TRD – presentación por primera vez', 'TRD – actualización', 'TVD'],
         'modalidades': [],
-        'estados': ['Radicada', 'Revisión preliminar', 'Mesa técnica', 'Requiere ajustes',
+        'estados': ['Recibida', 'Revisión preliminar', 'Mesa técnica', 'Requiere ajustes',
                     'Para sesión del Consejo', 'Concepto emitido', 'Cerrada'],
     },
 }
@@ -1542,11 +1542,11 @@ def sistema_distrital_solicitud():
                              contacto_cargo=v['contacto_cargo'], correo=v['correo'].lower(), telefono=v['telefono'],
                              tema=v['tema'], modalidad=v['modalidad'] or None,
                              enlace_documentos=v['enlace_documentos'] or None,
-                             descripcion=v['descripcion'], estado='Radicada')
+                             descripcion=v['descripcion'], estado='Recibida')
         db.session.add(s)
         db.session.flush()
         s.radicado = generar_radicado(cfg['prefijo'], v['nit'])
-        db.session.add(SolicitudEvento(solicitud_id=s.id, estado='Radicada',
+        db.session.add(SolicitudEvento(solicitud_id=s.id, estado='Recibida',
                                        observacion='Solicitud recibida por el Consejo Distrital de Archivos.'))
         db.session.commit()
     except Exception:
