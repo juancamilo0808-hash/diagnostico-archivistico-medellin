@@ -45,7 +45,12 @@
         <form method="post">
           <input type="hidden" name="accion" value="elegir"><input type="hidden" name="next" value="{{ siguiente }}">
           <fieldset><legend class="visually-hidden">Entidades</legend>
+          {% if entidades|length > 8 %}
+          <label class="form-label fw-semibold" for="entidadSel">Entidad o dependencia</label>
+          <select class="form-select" id="entidadSel" name="entidad" required><option value="">Seleccione…</option>{% for clave, nombre in entidades|sort(attribute=1) %}<option value="{{ clave }}">{{ nombre }}</option>{% endfor %}</select>
+          {% else %}
           {% for clave, nombre in entidades %}<div class="form-check mb-2"><input class="form-check-input" type="radio" name="entidad" id="e{{ loop.index }}" value="{{ clave }}" required {{ 'checked' if loop.first }}><label class="form-check-label" for="e{{ loop.index }}">{{ nombre }}</label></div>{% endfor %}
+          {% endif %}
           </fieldset>
           <button class="btn btn-primary w-100 mt-2" type="submit">Continuar</button>
         </form>
