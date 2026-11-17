@@ -1570,7 +1570,7 @@ def sistema_distrital_tramite():
         if candidata and (radicado in _sda_radicados_sesion() or candidata.correo == correo):
             solicitud = candidata
         else:
-            error = 'No encontramos un trámite con ese radicado y correo. Verifique los datos.'
+            error = 'No encontramos una solicitud con ese número y correo. Verifique los datos.'
     eventos = []
     if solicitud:
         eventos = SolicitudEvento.query.filter_by(solicitud_id=solicitud.id).order_by(SolicitudEvento.fecha.asc()).all()

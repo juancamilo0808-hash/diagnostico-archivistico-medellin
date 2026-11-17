@@ -55,11 +55,11 @@
     {% set cfg = tipos[solicitud.tipo] %}
     {% set idx = cfg.estados.index(solicitud.estado) if solicitud.estado in cfg.estados else 0 %}
     {% if nuevo %}
-    <div class="tr-ok"><i class="bi bi-check-circle-fill"></i><div><strong>Solicitud registrada correctamente.</strong><br><span class="small">Guarde este número de radicado. Para consultarlo más tarde necesitará también el correo registrado ({{ solicitud.correo }}).</span></div></div>
+    <div class="tr-ok"><i class="bi bi-check-circle-fill"></i><div><strong>Solicitud registrada correctamente.</strong><br><span class="small">Guarde este número de solicitud. Para consultarlo más tarde necesitará también el correo registrado ({{ solicitud.correo }}).</span></div></div>
     {% endif %}
     <div class="d-flex justify-content-between flex-wrap gap-2 align-items-start">
       <div><div class="small text-secondary fw-bold text-uppercase">{{ cfg.nombre }}</div><div class="tr-rad" id="radicado">{{ solicitud.radicado }}</div></div>
-      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="navigator.clipboard && navigator.clipboard.writeText(document.getElementById('radicado').textContent.trim()).then(()=>{this.textContent='Copiado'})"><i class="bi bi-clipboard"></i> Copiar radicado</button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="navigator.clipboard && navigator.clipboard.writeText(document.getElementById('radicado').textContent.trim()).then(()=>{this.textContent='Copiado'})"><i class="bi bi-clipboard"></i> Copiar número</button>
     </div>
     <div class="tr-meta">
       <div><small>Entidad</small><strong>{{ solicitud.entidad }}</strong></div>
@@ -84,18 +84,18 @@
     </div>
     <div class="mt-4 d-flex gap-2 flex-wrap">
       <a class="btn btn-primary" href="{{ url_for('servicios_en_linea') }}"><i class="bi bi-arrow-left"></i> Volver a servicios</a>
-      <a class="btn btn-outline-secondary" href="{{ url_for('sistema_distrital_tramite') }}">Consultar otro radicado</a>
+      <a class="btn btn-outline-secondary" href="{{ url_for('sistema_distrital_tramite') }}">Consultar otra solicitud</a>
     </div>
   {% else %}
     <h2 class="h4 fw-bold">Ingrese los datos de su solicitud</h2>
-    <p class="text-secondary">Use el número de radicado que recibió y el correo con el que hizo la solicitud.</p>
+    <p class="text-secondary">Use el número de solicitud que recibió y el correo con el que hizo la solicitud.</p>
     {% if error %}<div class="alert alert-danger">{{ error }}</div>{% endif %}
     <form method="post" class="tr-form d-grid gap-3">
-      <div><label class="form-label fw-semibold" for="radicado">Número de radicado</label><input class="form-control form-control-lg" id="radicado" name="radicado" value="{{ radicado }}" placeholder="CDA-AT-890905211-2026-0001" required></div>
+      <div><label class="form-label fw-semibold" for="radicado">Número de solicitud</label><input class="form-control form-control-lg" id="radicado" name="radicado" value="{{ radicado }}" placeholder="CDA-AT-890905211-2026-0001" required></div>
       <div><label class="form-label fw-semibold" for="correo">Correo registrado</label><input class="form-control form-control-lg" id="correo" name="correo" type="email" required></div>
       <button class="btn btn-primary btn-lg" type="submit"><i class="bi bi-search"></i> Consultar</button>
     </form>
-    <p class="mt-3 mb-0 small"><a href="{{ url_for('servicios_en_linea') }}">¿Aún no tiene radicado? Haga su solicitud aquí.</a></p>
+    <p class="mt-3 mb-0 small"><a href="{{ url_for('servicios_en_linea') }}">¿Aún no tiene número de solicitud? Haga su solicitud aquí.</a></p>
   {% endif %}
   </div>
 </div>

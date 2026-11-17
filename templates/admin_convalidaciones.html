@@ -22,7 +22,7 @@
         <div class="mb-3"><label class="form-label" for="ent">Entidad</label><input class="form-control" id="ent" name="entidad" required maxlength="250" value="{{ c.entidad if c else '' }}"></div>
         <div class="row g-2 mb-3">
           <div class="col-6"><label class="form-label" for="nit">NIT</label><input class="form-control" id="nit" name="nit" required maxlength="30" value="{{ c.nit if c else '' }}" placeholder="890905211-1"></div>
-          <div class="col-6"><label class="form-label" for="rad">Radicado de la solicitud</label><input class="form-control" id="rad" name="radicado" maxlength="40" value="{{ c.radicado if c and c.radicado else '' }}" placeholder="CDA-EV-…"></div>
+          <div class="col-6"><label class="form-label" for="rad">Número de la solicitud</label><input class="form-control" id="rad" name="radicado" maxlength="40" value="{{ c.radicado if c and c.radicado else '' }}" placeholder="CDA-EV-…"></div>
         </div>
         <div class="row g-2 mb-3">
           <div class="col-4"><label class="form-label" for="ins">Instrumento</label><select class="form-select" id="ins" name="instrumento">{% for k in instrumentos %}<option {% if c and c.instrumento == k %}selected{% endif %}>{{ k }}</option>{% endfor %}</select></div>

@@ -25,7 +25,7 @@
     {% if solicitudes %}
     <div class="table-responsive"><table class="table tp-table mb-0">
       <caption class="visually-hidden">Solicitudes de la entidad</caption>
-      <thead><tr><th scope="col">Radicado</th><th scope="col">Tema</th><th scope="col">Estado</th><th scope="col">Fecha</th></tr></thead>
+      <thead><tr><th scope="col">N.º de solicitud</th><th scope="col">Tema</th><th scope="col">Estado</th><th scope="col">Fecha</th></tr></thead>
       <tbody>{% for s in solicitudes %}<tr><td class="text-nowrap">{{ s.radicado }}</td><td>{{ s.tema }}</td><td>{{ s.estado }}</td><td class="text-nowrap">{{ s.creado_en|hora_col('%d/%m/%Y') }}</td></tr>{% endfor %}</tbody>
     </table></div>
     {% else %}<p class="tp-meta mb-0">No hay solicitudes registradas con el nombre de esta entidad.</p>{% endif %}
