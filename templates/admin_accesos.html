@@ -43,7 +43,7 @@
       {% else %}
       <div class="ad-card p-4"><h2 class="h6 fw-bold">Cómo ingresan las entidades</h2>
         <p class="small mb-2">Usuario: el NIT sin dígito de verificación. Clave inicial: los últimos 4 dígitos del NIT.</p>
-        <p class="small mb-2">Cada entidad puede definir una clave propia desde «Mi entidad». Tras 5 intentos fallidos el ingreso se bloquea 15 minutos.</p>
+        <p class="small mb-2">Tras 5 intentos fallidos el ingreso se bloquea 15 minutos; puede quitar el bloqueo desde esta tabla.</p>
         <p class="small mb-0">Las entidades sin NIT registrado aparecen primero: escriba su NIT para que puedan ingresar.</p></div>
       {% endif %}
     </div>
@@ -60,10 +60,10 @@
               <input class="form-control form-control-sm {{ 'border-warning' if not f.nit }}" id="nit-{{ loop.index }}" name="nit" value="{{ f.nit }}" placeholder="Sin NIT" maxlength="30">
               <button class="btn btn-sm btn-outline-primary" type="submit">Guardar</button></form></td>
             <td class="small">{% if not f.nit %}<span class="badge text-bg-warning">No puede ingresar</span>
-              {% else %}{% if a and a.clave_hash %}<span class="badge text-bg-success">Clave propia</span>{% else %}<span class="badge text-bg-light border">Clave inicial</span>{% endif %}
+              {% else %}<span class="badge text-bg-light border">Clave: {{ (f.nit.split('-')[0]|replace('.', '')|replace(' ', ''))[-4:] }}</span>
               {% if a and a.bloqueado_hasta and a.bloqueado_hasta > ahora %}<span class="badge text-bg-danger">Bloqueada</span>{% endif %}
               {% if a and a.ultimo_ingreso %}<div class="text-secondary">Último ingreso {{ a.ultimo_ingreso|hora_col('%d/%m/%Y %I:%M %p') }}</div>{% endif %}
-              {% if a and (a.clave_hash or a.bloqueado_hasta) %}<form method="post" class="mt-1" onsubmit="return confirm('¿Restablecer la clave de {{ f.nombre|e }} a los últimos 4 dígitos del NIT?')"><input type="hidden" name="accion" value="restablecer"><input type="hidden" name="entidad" value="{{ f.clave }}"><button class="btn btn-sm btn-link p-0" type="submit">Restablecer clave</button></form>{% endif %}{% endif %}</td></tr>
+              {% if a and a.bloqueado_hasta and a.bloqueado_hasta > ahora %}<form method="post" class="mt-1"><input type="hidden" name="accion" value="restablecer"><input type="hidden" name="entidad" value="{{ f.clave }}"><button class="btn btn-sm btn-link p-0" type="submit">Quitar bloqueo</button></form>{% endif %}{% endif %}</td></tr>
         {% endfor %}
         </tbody>
         {% else %}

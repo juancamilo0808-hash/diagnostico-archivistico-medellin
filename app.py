@@ -2439,8 +2439,7 @@ class AccesoEntidad(db.Model):
 
 
 class EntidadAcceso(db.Model):
-    """NIT y clave de ingreso de cada entidad del directorio.
-    Mientras la entidad no defina una clave propia, su clave son los últimos 4 dígitos del NIT."""
+    """NIT e ingresos de cada entidad del directorio. La clave son los últimos 4 dígitos del NIT."""
     __tablename__ = 'entidad_acceso'
     entidad_clave = db.Column(db.String(120), primary_key=True)
     nit = db.Column(db.String(30))
@@ -2473,10 +2472,7 @@ def _ingreso_por_nit(usuario, clave):
         if acc and acc.bloqueado_hasta and acc.bloqueado_hasta > datetime.utcnow():
             bloqueada = True
             continue
-        if acc and acc.clave_hash:
-            correcta = hmac.compare_digest(acc.clave_hash, _hash_clave(clave, acc.clave_sal or ''))
-        else:
-            correcta = hmac.compare_digest(clave.strip(), base[-4:])
+        correcta = hmac.compare_digest(clave.strip(), base[-4:])
         if correcta:
             validas.append((clave_ent, nombre))
         else:
@@ -2508,7 +2504,7 @@ def _registrar_ingreso_nit(clave_ent, nombre, usuario):
     db.session.commit()
     session.pop('acceso_pendiente', None)
     session['entidad'] = {'clave': clave_ent, 'nombre': nombre, 'correo': '', 'usuario': nit_base(usuario),
-                          'clave_inicial': not acc.clave_hash, 't': time.time()}
+                          't': time.time()}
     app.logger.info('Ingreso por NIT de la entidad %s', clave_ent)
 
 
@@ -2565,7 +2561,7 @@ def correo_configurado():
 def modo_acceso():
     """Variable ACCESO_ENTIDADES en Render:
     - vacía o «nit» (predeterminado): usuario = NIT de la entidad y clave = últimos 4 dígitos
-      del NIT, o la clave propia que la entidad haya definido.
+      del NIT.
     - «correo»: código de un solo uso enviado por correo (requiere servicio de correo).
     - «prueba»: como «correo», pero el código se muestra en pantalla.
     - «no»: el diagnóstico queda abierto, sin ingreso."""
@@ -2782,27 +2778,6 @@ def _acceso_por_nit(siguiente):
     return render_template('acceso.html', paso='nit', usuario=usuario, siguiente=siguiente)
 
 
-@app.route('/mi-entidad/clave', methods=['POST'])
-def cambiar_clave_entidad():
-    entidad = entidad_en_sesion()
-    if not entidad or not entidad.get('usuario'):
-        abort(404)
-    nueva, confirma = request.form.get('nueva', ''), request.form.get('confirma', '')
-    if len(nueva) < 8 or nueva != confirma:
-        flash('La clave nueva debe tener al menos 8 caracteres y coincidir en los dos campos.', 'danger')
-    else:
-        acc = db.session.get(EntidadAcceso, entidad['clave']) or EntidadAcceso(entidad_clave=entidad['clave'])
-        db.session.add(acc)
-        acc.clave_sal = secrets.token_hex(16)
-        acc.clave_hash = _hash_clave(nueva, acc.clave_sal)
-        acc.actualizado = datetime.utcnow()
-        db.session.commit()
-        entidad['clave_inicial'] = False
-        session['entidad'] = entidad
-        flash('La clave de la entidad quedó actualizada. Desde ahora ingrese con su NIT y esta clave.', 'success')
-    return redirect(url_for('mi_entidad'))
-
-
 @app.route('/acceso/salir', methods=['POST'])
 def salir_entidad():
     session.pop('entidad', None)
@@ -2869,10 +2844,7 @@ def admin_accesos():
                 flash('Ingrese un NIT válido, por ejemplo 890905211-1.', 'danger')
             else:
                 acc = db.session.get(EntidadAcceso, clave_ent) or EntidadAcceso(entidad_clave=clave_ent)
-                cambio = nit_base(acc.nit) != nit_base(nit)
                 acc.nit = nit or None
-                if cambio:
-                    acc.clave_hash = acc.clave_sal = None  # al cambiar el NIT vuelve la clave inicial
                 acc.actualizado = datetime.utcnow()
                 db.session.add(acc)
                 db.session.commit()
@@ -2880,10 +2852,9 @@ def admin_accesos():
         elif accion == 'restablecer':
             acc = db.session.get(EntidadAcceso, request.form.get('entidad', ''))
             if acc:
-                acc.clave_hash = acc.clave_sal = None
                 acc.intentos_fallidos, acc.bloqueado_hasta = 0, None
                 db.session.commit()
-                flash('La clave volvió a ser los últimos 4 dígitos del NIT y se quitó el bloqueo.', 'success')
+                flash('Se quitó el bloqueo de ingreso.', 'success')
         elif accion == 'prueba':
             correo = request.form.get('correo', '').strip()
             try:

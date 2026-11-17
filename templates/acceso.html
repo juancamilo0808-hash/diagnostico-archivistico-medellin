@@ -19,8 +19,7 @@
             <input class="form-control form-control-lg" id="usuario" name="usuario" value="{{ usuario }}" inputmode="numeric" required autofocus autocomplete="username" placeholder="890905211" aria-describedby="usuarioAyuda">
             <div class="form-text" id="usuarioAyuda">Sin dígito de verificación, sin puntos ni guiones.</div></div>
           <div class="mb-1"><label class="form-label fw-semibold" for="clave">Clave</label>
-            <input class="form-control form-control-lg" id="clave" name="clave" type="password" required autocomplete="current-password" aria-describedby="claveAyuda">
-            <div class="form-text" id="claveAyuda">Si es su primer ingreso, la clave son los últimos 4 dígitos del NIT. Si la entidad ya definió una clave propia, use esa.</div></div>
+            <input class="form-control form-control-lg" id="clave" name="clave" type="password" required autocomplete="current-password"></div>
           <button class="btn btn-primary w-100 mt-3" type="submit"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Ingresar</button>
         </form>
         <p class="small text-secondary mt-3 mb-0">¿Su entidad no puede ingresar o no aparece? Escriba a <a href="mailto:consejodarchivo@medellin.gov.co">consejodarchivo@medellin.gov.co</a> indicando el nombre y el NIT de la entidad.</p>
@@ -46,8 +45,27 @@
           <input type="hidden" name="accion" value="elegir"><input type="hidden" name="next" value="{{ siguiente }}">
           <fieldset><legend class="visually-hidden">Entidades</legend>
           {% if entidades|length > 8 %}
+          <label class="form-label fw-semibold" for="filtroDep">Buscar dependencia</label>
+          <input class="form-control mb-2" id="filtroDep" type="search" placeholder="Escriba parte del nombre, por ejemplo «Secretaría de Salud»" autocomplete="off">
           <label class="form-label fw-semibold" for="entidadSel">Entidad o dependencia</label>
-          <select class="form-select" id="entidadSel" name="entidad" required><option value="">Seleccione…</option>{% for clave, nombre in entidades|sort(attribute=1) %}<option value="{{ clave }}">{{ nombre }}</option>{% endfor %}</select>
+          <select class="form-select" id="entidadSel" name="entidad" size="10" required>{% for clave, nombre in entidades|sort(attribute=1) %}<option value="{{ clave }}">{{ nombre }}</option>{% endfor %}</select>
+          <div class="form-text" id="conteoDep" aria-live="polite">{{ entidades|length }} dependencias</div>
+          <script>
+            (function () {
+              var f = document.getElementById('filtroDep'), s = document.getElementById('entidadSel'), n = document.getElementById('conteoDep');
+              function norm(t) { return t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+              f.addEventListener('input', function () {
+                var q = norm(f.value.trim()), visibles = 0, primera = null;
+                Array.prototype.forEach.call(s.options, function (o) {
+                  var ver = !q || norm(o.text).indexOf(q) !== -1; o.hidden = !ver;
+                  if (ver) { visibles++; if (!primera) primera = o; }
+                });
+                if (s.selectedOptions[0] && s.selectedOptions[0].hidden) s.value = '';
+                if (visibles === 1 && primera) s.value = primera.value;
+                n.textContent = visibles + (visibles === 1 ? ' dependencia' : ' dependencias');
+              });
+            })();
+          </script>
           {% else %}
           {% for clave, nombre in entidades %}<div class="form-check mb-2"><input class="form-check-input" type="radio" name="entidad" id="e{{ loop.index }}" value="{{ clave }}" required {{ 'checked' if loop.first }}><label class="form-check-label" for="e{{ loop.index }}">{{ nombre }}</label></div>{% endfor %}
           {% endif %}
