@@ -242,7 +242,20 @@ def calcular(form):
     return total,aplicables,ima,nivel,q6
 
 @app.route('/')
-def index(): return render_template('index.html')
+def index():
+    # Cifras públicas de la portada: solo totales, nunca resultados de una entidad.
+    try:
+        diagnosticadas = db.session.query(db.func.count(db.distinct(db.func.coalesce(Censo.codigo_entidad, Censo.nombre_entidad)))).scalar() or 0
+        cifras = {
+            'entidades': len(obtener_directorio()),
+            'diagnosticos': diagnosticadas,
+            'convalidaciones': _convalidaciones_publicadas().count(),
+            'actas': _actas_publicadas().count(),
+        }
+    except Exception:
+        db.session.rollback()
+        cifras = None
+    return render_template('index.html', cifras=cifras)
 
 
 

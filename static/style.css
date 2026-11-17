@@ -646,3 +646,27 @@ main:focus { outline: none; }
 .tp-table tbody th { font-size: .9rem; color: var(--cda-blue-dark); vertical-align: top; }
 .govco-entidad { color:#fff; font-weight:600; font-size:.82rem; text-decoration:none; }
 .govco-entidad:hover, .govco-entidad:focus { color:#fff; text-decoration:underline; }
+
+/* Portada: accesos funcionales */
+a.rail-item { text-decoration: none; transition: background .15s, transform .15s; }
+a.rail-item:hover, a.rail-item:focus-visible { color: #fff; background: rgba(8,35,59,.82); transform: translateX(-3px); }
+.rail-item small { display: block; margin-top: 2px; color: #f2d276; font-size: .64rem; font-weight: 600; }
+.hero-features { padding-left: 0; }
+a.feature-card, button.feature-card { width: 100%; text-align: left; text-decoration: none; color: inherit; cursor: pointer; font: inherit; }
+.feature-link { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; color: var(--cda-blue); font-size: .78rem; font-weight: 800; }
+.feature-card.gold .feature-link { color: #8a6510; }
+.feature-card.green .feature-link { color: var(--cda-green); }
+.feature-card:hover .feature-link i { transform: translateX(3px); }
+.feature-link i { transition: transform .15s; }
+a.strip-item { color: inherit; text-decoration: none; transition: background .15s; }
+a.strip-item:hover, a.strip-item:focus-visible { background: var(--cda-blue-light); }
+.strip-num { margin-right: 3px; color: var(--cda-blue); font-family: 'Montserrat',sans-serif; font-size: 1.25rem; font-weight: 800; }
+.mad-box { padding: 14px; text-align: center; background: var(--cda-blue-light); border-radius: 12px; }
+.mad-box b { display: block; color: var(--cda-blue-dark); font-family: 'Montserrat',sans-serif; font-size: 1.5rem; }
+.mad-box span { color: var(--cda-muted); font-size: .85rem; }
+.mad-dims { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; list-style: none; }
+.mad-dims li { padding: 5px 12px; background: #f1f4f7; border: 1px solid var(--cda-border); border-radius: 999px; font-size: .85rem; }
+.mad-semaforo { display: grid; gap: 8px; }
+.mad-semaforo div { display: flex; align-items: center; gap: 8px; font-size: .9rem; }
+.mad-semaforo span { width: 14px; height: 14px; border-radius: 50%; }
+.mad-semaforo .bajo span { background: #dc3545; } .mad-semaforo .medio span { background: #e0a800; } .mad-semaforo .alto span { background: #198754; }
