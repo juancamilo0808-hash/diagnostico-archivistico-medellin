@@ -270,7 +270,7 @@ def clave_entidad(texto):
     return ' '.join(texto.split())
 
 
-def obtener_directorio():
+def _leer_directorio_csv():
     """Lee el directorio CSV ubicado junto a app.py."""
     ruta = BASE_DIR / 'directorio_entidades.csv'
 
@@ -305,6 +305,22 @@ def obtener_directorio():
             "No fue posible leer el directorio de entidades."
         )
         return []
+
+
+def obtener_directorio():
+    """Directorio del CSV con el NIT que el administrador registre en la base de datos."""
+    filas = _leer_directorio_csv()
+    try:
+        nits = {e.entidad_clave: e.nit for e in EntidadAcceso.query.filter(EntidadAcceso.nit.isnot(None)).all()}
+    except Exception:
+        db.session.rollback()
+        nits = {}
+    for fila in filas:
+        fila.setdefault('NIT', '')
+        nit = nits.get(clave_de_fila(fila))
+        if nit:
+            fila['NIT'] = nit
+    return filas
 
 
 def buscar_entidades_directorio(termino):
@@ -354,7 +370,7 @@ def buscar_entidades_directorio(termino):
     return resultados
 
 
-CAMPOS_DIRECTORIO_PUBLICOS = {'Código', 'Entidad', 'Sigla', 'Grupo / relación con el Distrito',
+CAMPOS_DIRECTORIO_PUBLICOS = {'Código', 'Entidad', 'Sigla', 'NIT', 'Grupo / relación con el Distrito',
                                'Clasificación preliminar', 'Ámbito', 'Responsable de gestión documental',
                                'Cargo Responsable GD', 'Correo Responsable GD', 'Teléfono Responsable GD',
                                'Sitio web / fuente', 'Dirección'}
@@ -523,6 +539,9 @@ def censo():
             fila_sesion = fila_por_clave(entidad['clave']) or {}
             nombre = fila_sesion.get('Entidad') or entidad['nombre']
             codigo_enviado = str(fila_sesion.get('Código', '')).strip()
+        nit_entidad = request.form.get('nit_entidad', '').strip()
+        if entidad and (fila_por_clave(entidad['clave']) or {}).get('NIT'):
+            nit_entidad = fila_por_clave(entidad['clave'])['NIT']
         filas_directorio = obtener_directorio()
         fila_codigo = next((fila for fila in filas_directorio
                             if str(fila.get('Código', '')).strip() == codigo_enviado), None)
@@ -547,7 +566,7 @@ def censo():
             'telefono_responsable': request.form.get('telefono_responsable', ''),
             'sitio_web': request.form.get('sitio_web', ''),
             'direccion_entidad': request.form.get('direccion_entidad', ''),
-            'nit_entidad': request.form.get('nit_entidad', ''),
+            'nit_entidad': nit_entidad,
             'correcciones_directorio': ', '.join(CAMPOS_CORREGIBLES[c] for c in request.form.get('campos_corregidos', '').split(',')
                                                  if c in CAMPOS_CORREGIBLES),
             'responsable_nombre': request.form.get('responsable_nombre', ''),
@@ -557,7 +576,7 @@ def censo():
             'sector': request.form.get('sector', ''),
         })
         total, aplicables, ima, nivel = calcular_diagnostico_nuevo(request.form)
-        nombre_y_nit = f"{nombre} | NIT: {request.form.get('nit_entidad', '').strip()}"
+        nombre_y_nit = f"{nombre} | NIT: {nit_entidad}"
         responsable = ' | '.join([request.form.get('responsable_nombre','').strip(),
                                   request.form.get('responsable_cargo','').strip(), correo])
         # Se rellenan las columnas antiguas con valores compatibles y el formulario nuevo
@@ -2419,6 +2438,80 @@ class AccesoEntidad(db.Model):
     creado = db.Column(db.DateTime, default=datetime.utcnow)
 
 
+class EntidadAcceso(db.Model):
+    """NIT y clave de ingreso de cada entidad del directorio.
+    Mientras la entidad no defina una clave propia, su clave son los últimos 4 dígitos del NIT."""
+    __tablename__ = 'entidad_acceso'
+    entidad_clave = db.Column(db.String(120), primary_key=True)
+    nit = db.Column(db.String(30))
+    clave_hash = db.Column(db.String(64))
+    clave_sal = db.Column(db.String(32))
+    intentos_fallidos = db.Column(db.Integer, default=0)
+    bloqueado_hasta = db.Column(db.DateTime)
+    ultimo_ingreso = db.Column(db.DateTime)
+    ingresos = db.Column(db.Integer, default=0)
+    actualizado = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+def _hash_clave(clave, sal):
+    return hashlib.pbkdf2_hmac('sha256', clave.encode(), sal.encode(), 200_000).hex()
+
+
+INTENTOS_NIT_MAX = 5
+BLOQUEO_NIT_MIN = 15
+
+
+def _ingreso_por_nit(usuario, clave):
+    """Devuelve (lista de (clave_entidad, nombre), mensaje_error)."""
+    base = nit_base(usuario)
+    if not 6 <= len(base) <= 10:
+        return [], 'Escriba el NIT sin dígito de verificación, por ejemplo 890905211.'
+    candidatas = [(clave_de_fila(f), f.get('Entidad', '')) for f in obtener_directorio() if nit_base(f.get('NIT')) == base]
+    validas, bloqueada = [], False
+    for clave_ent, nombre in candidatas:
+        acc = db.session.get(EntidadAcceso, clave_ent)
+        if acc and acc.bloqueado_hasta and acc.bloqueado_hasta > datetime.utcnow():
+            bloqueada = True
+            continue
+        if acc and acc.clave_hash:
+            correcta = hmac.compare_digest(acc.clave_hash, _hash_clave(clave, acc.clave_sal or ''))
+        else:
+            correcta = hmac.compare_digest(clave.strip(), base[-4:])
+        if correcta:
+            validas.append((clave_ent, nombre))
+        else:
+            if acc is None:
+                acc = EntidadAcceso(entidad_clave=clave_ent)
+                db.session.add(acc)
+            acc.intentos_fallidos = (acc.intentos_fallidos or 0) + 1
+            if acc.intentos_fallidos >= INTENTOS_NIT_MAX:
+                acc.bloqueado_hasta = datetime.utcnow() + timedelta(minutes=BLOQUEO_NIT_MIN)
+                acc.intentos_fallidos = 0
+                app.logger.warning('Ingreso por NIT bloqueado para %s', clave_ent)
+    db.session.commit()
+    if validas:
+        return validas, None
+    if bloqueada:
+        return [], f'Se superaron los intentos permitidos. Espere {BLOQUEO_NIT_MIN} minutos e intente de nuevo.'
+    return [], 'El NIT o la clave no son correctos.'
+
+
+def _registrar_ingreso_nit(clave_ent, nombre, usuario):
+    acc = db.session.get(EntidadAcceso, clave_ent)
+    if acc is None:
+        acc = EntidadAcceso(entidad_clave=clave_ent)
+        db.session.add(acc)
+    acc.intentos_fallidos = 0
+    acc.bloqueado_hasta = None
+    acc.ultimo_ingreso = datetime.utcnow()
+    acc.ingresos = (acc.ingresos or 0) + 1
+    db.session.commit()
+    session.pop('acceso_pendiente', None)
+    session['entidad'] = {'clave': clave_ent, 'nombre': nombre, 'correo': '', 'usuario': nit_base(usuario),
+                          'clave_inicial': not acc.clave_hash, 't': time.time()}
+    app.logger.info('Ingreso por NIT de la entidad %s', clave_ent)
+
+
 class CodigoAcceso(db.Model):
     __tablename__ = 'codigo_acceso'
     id = db.Column(db.Integer, primary_key=True)
@@ -2471,15 +2564,19 @@ def correo_configurado():
 
 def modo_acceso():
     """Variable ACCESO_ENTIDADES en Render:
-    - «prueba»: se exige el ingreso, pero el código se muestra en pantalla (no se envía correo).
-    - «si»: se exige el ingreso y el código se envía por correo (requiere servicio de correo).
-    - vacía o «no»: el diagnóstico sigue abierto como hasta ahora."""
+    - vacía o «nit» (predeterminado): usuario = NIT de la entidad y clave = últimos 4 dígitos
+      del NIT, o la clave propia que la entidad haya definido.
+    - «correo»: código de un solo uso enviado por correo (requiere servicio de correo).
+    - «prueba»: como «correo», pero el código se muestra en pantalla.
+    - «no»: el diagnóstico queda abierto, sin ingreso."""
     ajuste = os.environ.get('ACCESO_ENTIDADES', '').strip().lower()
+    if ajuste in ('no', '0', 'false'):
+        return None
     if ajuste == 'prueba':
         return 'prueba'
-    if ajuste in ('si', 'sí', '1', 'true'):
+    if ajuste in ('correo', 'si', 'sí'):
         return 'correo'
-    return None
+    return 'nit'
 
 
 def acceso_requerido():
@@ -2561,6 +2658,8 @@ def acceso_entidad():
     siguiente = request.values.get('next') or url_for('censo')
     if not siguiente.startswith('/') or siguiente.startswith('//'):
         siguiente = url_for('censo')
+    if modo_acceso() == 'nit':
+        return _acceso_por_nit(siguiente)
     paso = 'correo'
     correo = (request.form.get('correo') or session.get('acceso_correo') or '').strip().lower()
     if request.method == 'POST' and request.form.get('accion') == 'enviar':
@@ -2651,6 +2750,59 @@ def acceso_entidad():
     return render_template('acceso.html', paso=paso, correo=correo, siguiente=siguiente)
 
 
+def _acceso_por_nit(siguiente):
+    usuario = request.form.get('usuario', '').strip()
+    if request.method == 'POST' and request.form.get('accion') == 'elegir':
+        pendiente = session.get('acceso_pendiente') or {}
+        clave_ent = request.form.get('entidad', '')
+        if pendiente and time.time() - pendiente.get('t', 0) < 600 and clave_ent in dict(pendiente.get('opciones', [])):
+            nombre = dict(pendiente['opciones'])[clave_ent]
+            _registrar_ingreso_nit(clave_ent, nombre, pendiente['usuario'])
+            flash(f'Ingresó como {nombre}.', 'success')
+            return redirect(siguiente)
+        flash('La selección venció. Ingrese de nuevo.', 'danger')
+    elif request.method == 'POST':
+        ip = _ip_cliente()
+        recientes = [t for t in _SOLICITUDES_IP.get(ip, []) if time.time() - t < 900]
+        if len(recientes) >= 20:
+            flash('Demasiados intentos desde esta conexión. Espere 15 minutos.', 'danger')
+            return render_template('acceso.html', paso='nit', usuario=usuario, siguiente=siguiente), 429
+        _SOLICITUDES_IP[ip] = recientes + [time.time()]
+        validas, error = _ingreso_por_nit(usuario, request.form.get('clave', ''))
+        if error:
+            flash(error, 'danger')
+        elif len(validas) == 1:
+            _registrar_ingreso_nit(validas[0][0], validas[0][1], usuario)
+            _SOLICITUDES_IP.pop(ip, None)
+            flash(f'Ingresó como {validas[0][1]}.', 'success')
+            return redirect(siguiente)
+        else:
+            session['acceso_pendiente'] = {'usuario': nit_base(usuario), 'opciones': validas, 't': time.time()}
+            return render_template('acceso.html', paso='entidad', entidades=validas, siguiente=siguiente)
+    return render_template('acceso.html', paso='nit', usuario=usuario, siguiente=siguiente)
+
+
+@app.route('/mi-entidad/clave', methods=['POST'])
+def cambiar_clave_entidad():
+    entidad = entidad_en_sesion()
+    if not entidad or not entidad.get('usuario'):
+        abort(404)
+    nueva, confirma = request.form.get('nueva', ''), request.form.get('confirma', '')
+    if len(nueva) < 8 or nueva != confirma:
+        flash('La clave nueva debe tener al menos 8 caracteres y coincidir en los dos campos.', 'danger')
+    else:
+        acc = db.session.get(EntidadAcceso, entidad['clave']) or EntidadAcceso(entidad_clave=entidad['clave'])
+        db.session.add(acc)
+        acc.clave_sal = secrets.token_hex(16)
+        acc.clave_hash = _hash_clave(nueva, acc.clave_sal)
+        acc.actualizado = datetime.utcnow()
+        db.session.commit()
+        entidad['clave_inicial'] = False
+        session['entidad'] = entidad
+        flash('La clave de la entidad quedó actualizada. Desde ahora ingrese con su NIT y esta clave.', 'success')
+    return redirect(url_for('mi_entidad'))
+
+
 @app.route('/acceso/salir', methods=['POST'])
 def salir_entidad():
     session.pop('entidad', None)
@@ -2708,6 +2860,30 @@ def admin_accesos():
                 a.activo = accion == 'activar'
                 db.session.commit()
                 flash(f'Acceso de {correo} {"activado" if a.activo else "bloqueado"}.', 'success')
+        elif accion == 'nit':
+            clave_ent = request.form.get('entidad', '')
+            if fila_por_clave(clave_ent) is None:
+                abort(404)
+            nit = request.form.get('nit', '').strip()[:30]
+            if nit and not 6 <= len(nit_base(nit)) <= 10:
+                flash('Ingrese un NIT válido, por ejemplo 890905211-1.', 'danger')
+            else:
+                acc = db.session.get(EntidadAcceso, clave_ent) or EntidadAcceso(entidad_clave=clave_ent)
+                cambio = nit_base(acc.nit) != nit_base(nit)
+                acc.nit = nit or None
+                if cambio:
+                    acc.clave_hash = acc.clave_sal = None  # al cambiar el NIT vuelve la clave inicial
+                acc.actualizado = datetime.utcnow()
+                db.session.add(acc)
+                db.session.commit()
+                flash('NIT guardado.' if nit else 'NIT eliminado.', 'success')
+        elif accion == 'restablecer':
+            acc = db.session.get(EntidadAcceso, request.form.get('entidad', ''))
+            if acc:
+                acc.clave_hash = acc.clave_sal = None
+                acc.intentos_fallidos, acc.bloqueado_hasta = 0, None
+                db.session.commit()
+                flash('La clave volvió a ser los últimos 4 dígitos del NIT y se quitó el bloqueo.', 'success')
         elif accion == 'prueba':
             correo = request.form.get('correo', '').strip()
             try:
@@ -2724,10 +2900,12 @@ def admin_accesos():
         clave = clave_de_fila(fila)
         correos = [(c, 'directorio') for c in dict.fromkeys(_correos_en(fila.get('Correo Responsable GD', '')))]
         correos += [(a.correo, 'manual') for a in registros.values() if a.entidad_clave == clave and a.origen == 'manual']
+        acc = db.session.get(EntidadAcceso, clave)
         filas.append({'clave': clave, 'nombre': fila.get('Entidad', ''), 'sigla': fila.get('Sigla', ''),
+                      'nit': fila.get('NIT', ''), 'acceso': acc,
                       'correos': [{'correo': c, 'origen': o, 'registro': registros.get((c, clave))} for c, o in correos]})
-    filas.sort(key=lambda f: (bool(f['correos']), f['nombre']))
-    return render_template('admin_accesos.html', filas=filas, servicio=correo_configurado(), modo=modo_acceso())
+    filas.sort(key=lambda f: (bool(f['nit']) if modo_acceso() == 'nit' else bool(f['correos']), f['nombre']))
+    return render_template('admin_accesos.html', filas=filas, servicio=correo_configurado(), modo=modo_acceso(), ahora=datetime.utcnow())
 
 
 def _sql_default(columna, dialecto):

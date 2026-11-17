@@ -4,13 +4,27 @@
 <section class="tp-hero"><div class="container">
   <div class="k">Diagnóstico Territorial Archivístico</div>
   <h1>Ingreso de la entidad</h1>
-  <p>Para diligenciar el diagnóstico, ingrese con el correo institucional autorizado para su entidad. Le enviaremos un código de un solo uso; no necesita contraseña.</p>
+  {% if modo_acceso_entidades == 'nit' %}<p>Para diligenciar el diagnóstico, ingrese con el NIT de su entidad. Así el avance queda guardado a nombre de la entidad y puede retomarlo desde cualquier equipo.</p>
+  {% else %}<p>Para diligenciar el diagnóstico, ingrese con el correo institucional autorizado para su entidad. Le enviaremos un código de un solo uso; no necesita contraseña.</p>{% endif %}
 </div></section>
 <div class="container tp-wrap">
   <div class="row justify-content-center"><div class="col-lg-6 col-md-8">
     <div class="tp-card p-4">
       {% if modo_acceso_entidades == 'prueba' %}<div class="alert alert-warning small"><strong>Modo de prueba.</strong> El código se muestra en pantalla en lugar de enviarse por correo.</div>{% endif %}
-      {% if paso == 'codigo' %}
+      {% if paso == 'nit' %}
+        <h2 class="h5 fw-bold mb-3">Datos de ingreso</h2>
+        <form method="post" autocomplete="off">
+          <input type="hidden" name="accion" value="ingresar"><input type="hidden" name="next" value="{{ siguiente }}">
+          <div class="mb-3"><label class="form-label fw-semibold" for="usuario">Usuario: NIT de la entidad</label>
+            <input class="form-control form-control-lg" id="usuario" name="usuario" value="{{ usuario }}" inputmode="numeric" required autofocus autocomplete="username" placeholder="890905211" aria-describedby="usuarioAyuda">
+            <div class="form-text" id="usuarioAyuda">Sin dígito de verificación, sin puntos ni guiones.</div></div>
+          <div class="mb-1"><label class="form-label fw-semibold" for="clave">Clave</label>
+            <input class="form-control form-control-lg" id="clave" name="clave" type="password" required autocomplete="current-password" aria-describedby="claveAyuda">
+            <div class="form-text" id="claveAyuda">Si es su primer ingreso, la clave son los últimos 4 dígitos del NIT. Si la entidad ya definió una clave propia, use esa.</div></div>
+          <button class="btn btn-primary w-100 mt-3" type="submit"><i class="bi bi-box-arrow-in-right" aria-hidden="true"></i> Ingresar</button>
+        </form>
+        <p class="small text-secondary mt-3 mb-0">¿Su entidad no puede ingresar o no aparece? Escriba a <a href="mailto:consejodarchivo@medellin.gov.co">consejodarchivo@medellin.gov.co</a> indicando el nombre y el NIT de la entidad.</p>
+      {% elif paso == 'codigo' %}
         <h2 class="h5 fw-bold mb-1">Escriba el código</h2>
         <p class="small text-secondary mb-3">Enviado a <strong>{{ correo }}</strong>. Vence en 10 minutos.</p>
         <form method="post" autocomplete="off">
@@ -27,7 +41,7 @@
         </form>
       {% elif paso == 'entidad' %}
         <h2 class="h5 fw-bold mb-1">Seleccione la entidad</h2>
-        <p class="small text-secondary mb-3">Su correo está autorizado para varias entidades. Elija en nombre de cuál va a diligenciar.</p>
+        <p class="small text-secondary mb-3">{% if modo_acceso_entidades == 'nit' %}Varias entidades del directorio comparten este NIT.{% else %}Su correo está autorizado para varias entidades.{% endif %} Elija en nombre de cuál va a diligenciar.</p>
         <form method="post">
           <input type="hidden" name="accion" value="elegir"><input type="hidden" name="next" value="{{ siguiente }}">
           <fieldset><legend class="visually-hidden">Entidades</legend>

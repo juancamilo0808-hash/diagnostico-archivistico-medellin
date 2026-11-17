@@ -11,7 +11,7 @@
 </style>
 <div class="container-fluid px-lg-5 py-4">
   <section class="ad-hero mb-4 d-flex justify-content-between flex-wrap gap-3 align-items-center">
-    <div><div class="k">ADMINISTRACIÓN · SEGURIDAD</div><h1 class="h3 fw-bold mb-1">Accesos de entidades</h1><p class="mb-0 opacity-75">Correos que pueden ingresar al diagnóstico con código de un solo uso.</p></div>
+    <div><div class="k">ADMINISTRACIÓN · SEGURIDAD</div><h1 class="h3 fw-bold mb-1">Accesos de entidades</h1><p class="mb-0 opacity-75">{% if modo == 'nit' %}NIT con el que cada entidad ingresa al diagnóstico.{% else %}Correos que pueden ingresar al diagnóstico con código de un solo uso.{% endif %}</p></div>
     <a class="btn btn-light fw-bold" href="{{ url_for('admin') }}"><i class="bi bi-arrow-left"></i> Panel</a>
   </section>
   <div class="row g-4">
@@ -19,11 +19,12 @@
       <div class="ad-card p-4 mb-4">
         <h2 class="h6 fw-bold">Estado</h2>
         <ul class="small mb-0">
-          <li>Ingreso obligatorio al diagnóstico: <strong>{% if modo == 'prueba' %}sí, en modo de prueba (código en pantalla){% elif modo == 'correo' %}sí, con código por correo{% else %}no (el diagnóstico está abierto){% endif %}</strong></li>
-          <li>Servicio de correo: <strong>{{ servicio or 'no configurado' }}</strong></li>
+          <li>Ingreso al diagnóstico: <strong>{% if modo == 'nit' %}usuario NIT y clave (inicial: últimos 4 dígitos del NIT){% elif modo == 'prueba' %}código por correo, en modo de prueba (código en pantalla){% elif modo == 'correo' %}código de un solo uso por correo{% else %}no se exige (el diagnóstico está abierto){% endif %}</strong></li>
+          {% if modo != 'nit' %}<li>Servicio de correo: <strong>{{ servicio or 'no configurado' }}</strong></li>{% endif %}
         </ul>
-        <p class="small text-secondary mt-2 mb-0">Se controla con la variable <code>ACCESO_ENTIDADES</code> en Render: <code>prueba</code>, <code>si</code> o vacía.</p>
+        <p class="small text-secondary mt-2 mb-0">Se controla con la variable <code>ACCESO_ENTIDADES</code> en Render: vacía o <code>nit</code>, <code>correo</code>, <code>prueba</code> o <code>no</code>.</p>
       </div>
+      {% if modo != 'nit' %}
       <form class="ad-card p-4 mb-4" method="post">
         <h2 class="h6 fw-bold mb-3">Autorizar un correo</h2>
         <input type="hidden" name="accion" value="autorizar">
@@ -39,10 +40,33 @@
         <label class="form-label" for="pc">Enviar a</label><input class="form-control mb-3" id="pc" name="correo" type="email" required>
         <button class="btn btn-outline-primary" type="submit" {{ 'disabled' if not servicio }}><i class="bi bi-envelope-check"></i> Enviar prueba</button>
       </form>
+      {% else %}
+      <div class="ad-card p-4"><h2 class="h6 fw-bold">Cómo ingresan las entidades</h2>
+        <p class="small mb-2">Usuario: el NIT sin dígito de verificación. Clave inicial: los últimos 4 dígitos del NIT.</p>
+        <p class="small mb-2">Cada entidad puede definir una clave propia desde «Mi entidad». Tras 5 intentos fallidos el ingreso se bloquea 15 minutos.</p>
+        <p class="small mb-0">Las entidades sin NIT registrado aparecen primero: escriba su NIT para que puedan ingresar.</p></div>
+      {% endif %}
     </div>
     <div class="col-xl-8">
       <div class="ad-card p-0"><div class="table-responsive"><table class="table mb-0">
         <caption class="visually-hidden">Correos autorizados por entidad</caption>
+        {% if modo == 'nit' %}
+        <thead><tr><th scope="col">Entidad</th><th scope="col">NIT</th><th scope="col">Clave e ingresos</th></tr></thead>
+        <tbody>
+        {% for f in filas %}{% set a = f.acceso %}
+          <tr class="acc-row"><td class="fw-semibold">{{ f.nombre }}{% if f.sigla %} <span class="text-secondary fw-normal">({{ f.sigla }})</span>{% endif %}</td>
+            <td style="min-width:15rem"><form method="post" class="d-flex gap-2"><input type="hidden" name="accion" value="nit"><input type="hidden" name="entidad" value="{{ f.clave }}">
+              <label class="visually-hidden" for="nit-{{ loop.index }}">NIT de {{ f.nombre }}</label>
+              <input class="form-control form-control-sm {{ 'border-warning' if not f.nit }}" id="nit-{{ loop.index }}" name="nit" value="{{ f.nit }}" placeholder="Sin NIT" maxlength="30">
+              <button class="btn btn-sm btn-outline-primary" type="submit">Guardar</button></form></td>
+            <td class="small">{% if not f.nit %}<span class="badge text-bg-warning">No puede ingresar</span>
+              {% else %}{% if a and a.clave_hash %}<span class="badge text-bg-success">Clave propia</span>{% else %}<span class="badge text-bg-light border">Clave inicial</span>{% endif %}
+              {% if a and a.bloqueado_hasta and a.bloqueado_hasta > ahora %}<span class="badge text-bg-danger">Bloqueada</span>{% endif %}
+              {% if a and a.ultimo_ingreso %}<div class="text-secondary">Último ingreso {{ a.ultimo_ingreso|hora_col('%d/%m/%Y %I:%M %p') }}</div>{% endif %}
+              {% if a and (a.clave_hash or a.bloqueado_hasta) %}<form method="post" class="mt-1" onsubmit="return confirm('¿Restablecer la clave de {{ f.nombre|e }} a los últimos 4 dígitos del NIT?')"><input type="hidden" name="accion" value="restablecer"><input type="hidden" name="entidad" value="{{ f.clave }}"><button class="btn btn-sm btn-link p-0" type="submit">Restablecer clave</button></form>{% endif %}{% endif %}</td></tr>
+        {% endfor %}
+        </tbody>
+        {% else %}
         <thead><tr><th scope="col">Entidad</th><th scope="col">Correos autorizados</th></tr></thead>
         <tbody>
         {% for f in filas %}
@@ -58,6 +82,7 @@
             {% else %}<span class="badge text-bg-warning">Sin correo: autorice uno para que la entidad pueda ingresar</span>{% endfor %}</td></tr>
         {% endfor %}
         </tbody>
+        {% endif %}
       </table></div></div>
     </div>
   </div>

@@ -176,14 +176,14 @@
      return el&&el.dataset.dir!==undefined&&el.value.trim()!==el.dataset.dir.trim();}).join(',');
  }
  DIR_CORREGIBLES.forEach(id=>{const el=document.getElementById(id); if(el) el.addEventListener('input',actualizarCorregidos);});
- function aplicarEntidad(item){name.value=item.nombre;const d=item.datos||{};const map={'Código':'codigo_entidad','Sigla':'sigla_entidad','Grupo / relación con el Distrito':'grupo_relacion','Clasificación preliminar':'clasificacion_preliminar','Ámbito':'ambito','Responsable de gestión documental':'responsable_nombre','Cargo Responsable GD':'responsable_cargo','Correo Responsable GD':'responsable_correo','Teléfono Responsable GD':'telefono_responsable','Sitio web / fuente':'sitio_web','Dirección':'direccion_entidad'};Object.entries(map).forEach(([k,id])=>{const el=document.getElementById(id);if(el&&d[k]){
+ function aplicarEntidad(item){name.value=item.nombre;const d=item.datos||{};const map={'Código':'codigo_entidad','Sigla':'sigla_entidad','NIT':'nit_entidad','Grupo / relación con el Distrito':'grupo_relacion','Clasificación preliminar':'clasificacion_preliminar','Ámbito':'ambito','Responsable de gestión documental':'responsable_nombre','Cargo Responsable GD':'responsable_cargo','Correo Responsable GD':'responsable_correo','Teléfono Responsable GD':'telefono_responsable','Sitio web / fuente':'sitio_web','Dirección':'direccion_entidad'};Object.entries(map).forEach(([k,id])=>{const el=document.getElementById(id);if(el&&d[k]){
   /* Si el directorio trae varios correos, se usa el primero; los saltos de línea se vuelven espacios. */
   let v=String(d[k]).trim(); v=id==='responsable_correo'?(v.split(/[\s,;]+/).find(s=>s.includes('@'))||v):v.replace(/\s*\n\s*/g,' · ');
   el.value=v;if(DIR_CORREGIBLES.includes(id)){el.dataset.dir=el.value;}}});box.innerHTML='';actualizarCorregidos()}
  name.addEventListener('input',()=>{
   // Si cambia el nombre después de seleccionar una entidad, limpia los datos
   // vinculados anteriores para evitar asociar por error el diagnóstico equivocado.
-  ['codigo_entidad','sigla_entidad','grupo_relacion','clasificacion_preliminar','ambito',
+  ['codigo_entidad','sigla_entidad','nit_entidad','grupo_relacion','clasificacion_preliminar','ambito',
    'responsable_nombre','responsable_cargo','responsable_correo','telefono_responsable','sitio_web','direccion_entidad']
    .forEach(id=>{const el=document.getElementById(id);if(el){el.value='';delete el.dataset.dir;}});
   actualizarCorregidos();
@@ -195,8 +195,9 @@
  if(ENTIDAD_SESION){
   if(!name.value.trim()) aplicarEntidad({nombre:ENTIDAD_SESION['Entidad'],datos:ENTIDAD_SESION});
   name.readOnly=true; name.setAttribute('aria-describedby','entidadSesionAyuda');
+  const nitCampo=document.getElementById('nit_entidad'); if(nitCampo&&ENTIDAD_SESION['NIT']){nitCampo.value=ENTIDAD_SESION['NIT'];nitCampo.readOnly=true;}
   const ayuda=document.createElement('div'); ayuda.id='entidadSesionAyuda'; ayuda.className='form-text';
-  ayuda.textContent='Entidad de la sesión iniciada con su correo. Los demás datos se pueden corregir.'; name.after(ayuda);
+  ayuda.textContent='Entidad y NIT de la sesión iniciada. Los demás datos se pueden corregir.'; name.after(ayuda);
  }
 
  /* ===== 2. Navegación por secciones A–F =====
