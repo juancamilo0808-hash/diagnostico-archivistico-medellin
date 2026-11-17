@@ -55,7 +55,7 @@
     {% set cfg = tipos[solicitud.tipo] %}
     {% set idx = cfg.estados.index(solicitud.estado) if solicitud.estado in cfg.estados else 0 %}
     {% if nuevo %}
-    <div class="tr-ok"><i class="bi bi-check-circle-fill"></i><div><strong>Solicitud radicada correctamente.</strong><br><span class="small">Guarde este número de radicado. Para consultarlo más tarde necesitará también el correo registrado ({{ solicitud.correo }}).</span></div></div>
+    <div class="tr-ok"><i class="bi bi-check-circle-fill"></i><div><strong>Solicitud registrada correctamente.</strong><br><span class="small">Guarde este número de radicado. Para consultarlo más tarde necesitará también el correo registrado ({{ solicitud.correo }}).</span></div></div>
     {% endif %}
     <div class="d-flex justify-content-between flex-wrap gap-2 align-items-start">
       <div><div class="small text-secondary fw-bold text-uppercase">{{ cfg.nombre }}</div><div class="tr-rad" id="radicado">{{ solicitud.radicado }}</div></div>
@@ -64,7 +64,7 @@
     <div class="tr-meta">
       <div><small>Entidad</small><strong>{{ solicitud.entidad }}</strong></div>
       <div><small>{{ 'Tema' if solicitud.tipo == 'asistencia' else 'Instrumento' }}</small><strong>{{ solicitud.tema }}</strong></div>
-      <div><small>Radicada</small><strong>{{ solicitud.creado_en|hora_col('%d/%m/%Y') }}</strong></div>
+      <div><small>Recibida</small><strong>{{ solicitud.creado_en|hora_col('%d/%m/%Y') }}</strong></div>
       <div><small>Estado actual</small><strong>{{ solicitud.estado }}</strong></div>
     </div>
     <div class="stage" role="list" aria-label="Etapas del trámite">

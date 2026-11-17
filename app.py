@@ -1526,7 +1526,7 @@ def sistema_distrital_solicitud():
     if v['nit'] and not 6 <= len(nit_base(v['nit'])) <= 10:
         errores['nit'] = 'Ingrese un NIT válido, por ejemplo 890905211-1.'
     if not f.get('autoriza_datos'):
-        errores['autoriza_datos'] = 'Debe autorizar el tratamiento de datos para radicar.'
+        errores['autoriza_datos'] = 'Debe autorizar el tratamiento de datos para enviar la solicitud.'
     limites = {'entidad': 300, 'nit': 40, 'contacto_nombre': 200, 'contacto_cargo': 200, 'correo': 200,
                'telefono': 60, 'enlace_documentos': 600, 'descripcion': 4000}
     for campo, maximo in limites.items():
@@ -1552,7 +1552,7 @@ def sistema_distrital_solicitud():
     except Exception:
         db.session.rollback()
         app.logger.exception('No fue posible radicar la solicitud del Sistema Distrital')
-        errores['general'] = 'No fue posible radicar la solicitud en este momento. Intente de nuevo.'
+        errores['general'] = 'No fue posible registrar la solicitud en este momento. Intente de nuevo.'
         return render_template('servicios_en_linea.html', tipos=SDA_TIPOS,
                                valores=v, errores=errores, tipo_activo=tipo), 500
     session['sda_radicados'] = (_sda_radicados_sesion() + [s.radicado])[-20:]

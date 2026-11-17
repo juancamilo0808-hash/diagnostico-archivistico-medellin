@@ -71,20 +71,20 @@
 <section class="sv-hero">
   <div class="container">
     <span class="sda-eyebrow">Sistema Distrital de Archivos · Servicios en línea</span>
-    <h1>Haga su trámite sin salir de la herramienta</h1>
-    <p>Solicite asistencia técnica, radique sus Tablas de Retención o Valoración Documental para evaluación y consulte el avance cuando quiera.</p>
-    <div class="sv-steps"><span><b>1</b> Radique la solicitud</span><span><b>2</b> Reciba su número de radicado</span><span><b>3</b> Consulte etapas y observaciones</span></div>
+    <h1>Servicios en línea del Consejo Distrital de Archivos</h1>
+    <p>Solicite asistencia técnica o la evaluación y convalidación de sus Tablas de Retención Documental (TRD) y Tablas de Valoración Documental (TVD), y consulte el avance de su solicitud.</p>
+    <div class="sv-steps"><span><b>1</b> Registre la solicitud</span><span><b>2</b> Reciba su número de radicado</span><span><b>3</b> Consulte etapas y observaciones</span></div>
   </div>
 </section>
 
 <div class="container sv-wrap">
   <!-- ================= FORMULARIOS ================= -->
   <section id="servicios">
-    {% if errores.get('general') %}<div class="alert alert-danger mt-3">{{ errores.general }}</div>{% elif errores %}<div class="alert alert-danger mt-3">Revise los campos marcados para completar la radicación.</div>{% endif %}
+    {% if errores.get('general') %}<div class="alert alert-danger mt-3">{{ errores.general }}</div>{% elif errores %}<div class="alert alert-danger mt-3">Revise los campos marcados para completar la solicitud.</div>{% endif %}
     <div class="svc svc-top">
       <div class="svc-tabs" role="tablist" aria-label="Servicios en línea">
         <button type="button" class="svc-tab" role="tab" id="t-asistencia" aria-controls="s-asistencia" data-svc="asistencia"><i class="bi bi-headset"></i><span>Asistencia técnica<small>Solicitar acompañamiento</small></span></button>
-        <button type="button" class="svc-tab" role="tab" id="t-evaluacion" aria-controls="s-evaluacion" data-svc="evaluacion"><i class="bi bi-file-earmark-check"></i><span>Evaluación TRD / TVD<small>Radicar un instrumento</small></span></button>
+        <button type="button" class="svc-tab" role="tab" id="t-evaluacion" aria-controls="s-evaluacion" data-svc="evaluacion"><i class="bi bi-file-earmark-check"></i><span>Evaluación de TRD / TVD<small>Solicitar convalidación</small></span></button>
         <button type="button" class="svc-tab" role="tab" id="t-consulta" aria-controls="s-consulta" data-svc="consulta"><i class="bi bi-search"></i><span>Consultar trámite<small>Con su radicado</small></span></button>
       </div>
 
@@ -92,8 +92,8 @@
       <div class="svc-pane" role="tabpanel" id="s-{{ prefijo }}" aria-labelledby="t-{{ prefijo }}">
         <div class="pane-head">
           <div>
-            <h3>{{ 'Solicitud de asistencia técnica' if prefijo == 'asistencia' else 'Radicación de TRD o TVD para evaluación' }}</h3>
-            <p>{{ 'Cuéntenos qué necesita su entidad; se asignará un profesional y podrá seguir la atención con su radicado.' if prefijo == 'asistencia' else 'Comparta el enlace a la carpeta (Drive, OneDrive o similar) con el instrumento, la memoria descriptiva y los anexos. El equipo evaluador revisará la documentación antes de la mesa técnica.' }}</p>
+            <h3>{{ 'Solicitud de asistencia técnica' if prefijo == 'asistencia' else 'Solicitud de evaluación y convalidación de TRD o TVD' }}</h3>
+            <p>{{ 'Cuéntenos qué necesita su entidad; se asignará un profesional y podrá seguir la atención con su radicado.' if prefijo == 'asistencia' else 'Comparta el enlace a la carpeta (Drive, OneDrive o similar) con el instrumento, la memoria descriptiva y los anexos. El equipo evaluador revisará la documentación antes de la mesa técnica. La presentación oficial de las tablas se hace mediante oficio por el canal de correspondencia de la Alcaldía de Medellín; este registro permite hacer seguimiento a la evaluación.' }}</p>
           </div>
           <span class="svc-badge"><i class="bi bi-hash"></i> Radicado CDA-{{ cfg.prefijo }}</span>
         </div>
@@ -127,7 +127,7 @@
             {% else %}
             {{ campo(prefijo, 'enlace_documentos', 'Enlace a la carpeta de documentos', tipo='url', ph='https://', ayuda='Verifique que el enlace permita el acceso de lectura.') }}
             {% endif %}
-            <div class="full">{{ campo(prefijo, 'descripcion', 'Describa la necesidad' if prefijo == 'asistencia' else 'Observaciones de la radicación', tipo='textarea', ph=('Qué necesita, qué ha avanzado la entidad y qué espera del acompañamiento.' if prefijo == 'asistencia' else 'Versión del instrumento, fecha de aprobación interna, dependencias que cubre, etc.')) }}</div>
+            <div class="full">{{ campo(prefijo, 'descripcion', 'Describa la necesidad' if prefijo == 'asistencia' else 'Observaciones de la solicitud', tipo='textarea', ph=('Qué necesita, qué ha avanzado la entidad y qué espera del acompañamiento.' if prefijo == 'asistencia' else 'Versión del instrumento, fecha de aprobación interna, dependencias que cubre, etc.')) }}</div>
             {% if prefijo == 'asistencia' %}<div class="full">{{ campo(prefijo, 'enlace_documentos', 'Enlace a documentos de soporte', tipo='url', requerido=false, ph='https://', ayuda='Opcional.') }}</div>{% endif %}
           </div>
           <div class="svc-foot">
@@ -136,7 +136,7 @@
               <label class="form-check-label sda-legal" for="{{ prefijo }}-datos">Autorizo el tratamiento de los datos de contacto para gestionar esta solicitud (Ley 1581 de 2012). <span class="req">*</span></label>
               {% if errores.get('autoriza_datos') and tipo_activo == prefijo %}<div class="invalid-feedback d-block">{{ errores.autoriza_datos }}</div>{% endif %}
             </div>
-            <button type="submit" class="btn btn-primary btn-lg px-4"><i class="bi bi-send"></i> Radicar solicitud</button>
+            <button type="submit" class="btn btn-primary btn-lg px-4"><i class="bi bi-send"></i> Enviar solicitud</button>
           </div>
         </form>
       </div>
@@ -155,7 +155,7 @@
           </div>
           <div class="track-art" aria-hidden="true">
             <div class="sda-note mb-2">Así verá su trámite</div>
-            <div class="row-s done"><span class="dot"></span>Radicada</div>
+            <div class="row-s done"><span class="dot"></span>Recibida</div>
             <div class="row-s done"><span class="dot"></span>Revisión preliminar</div>
             <div class="row-s now"><span class="dot"></span>Mesa técnica · en curso</div>
             <div class="row-s"><span class="dot"></span>Sesión del Consejo</div>
@@ -203,9 +203,9 @@
     const bad = [...f.querySelectorAll('input,select,textarea')].filter(x => x.willValidate && !x.checkValidity());
     f.querySelectorAll('.is-invalid').forEach(x => x.classList.remove('is-invalid'));
     if (bad.length) { e.preventDefault(); bad.forEach(x => x.classList.add('is-invalid')); bad[0].focus(); bad[0].reportValidity(); return; }
-    const b = f.querySelector('button[type=submit]'); b.disabled = true; b.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Radicando…';
+    const b = f.querySelector('button[type=submit]'); b.disabled = true; b.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enviando…';
   }));
-  window.addEventListener('pageshow', e => { if (e.persisted) document.querySelectorAll('.sda-form button[type=submit]').forEach(b => { b.disabled = false; b.innerHTML = '<i class="bi bi-send"></i> Radicar solicitud'; }); });
+  window.addEventListener('pageshow', e => { if (e.persisted) document.querySelectorAll('.sda-form button[type=submit]').forEach(b => { b.disabled = false; b.innerHTML = '<i class="bi bi-send"></i> Enviar solicitud'; }); });
 })();
 </script>
 {% endblock %}

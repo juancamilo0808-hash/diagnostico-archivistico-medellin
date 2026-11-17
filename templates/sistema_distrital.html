@@ -169,7 +169,7 @@
         <p class="lead">Reúne al Archivo General del Distrito, al Consejo Distrital de Archivos y a las entidades del Distrito en torno a una misma política archivística, para proteger el patrimonio documental, garantizar el acceso a la información pública y fortalecer la transparencia de la gestión.</p>
         <div class="sda-cta">
           <a class="sda-btn gold" href="{{ url_for('servicios_en_linea', servicio='asistencia') }}"><i class="bi bi-headset"></i> Solicitar asistencia</a>
-          <a class="sda-btn ghost" href="{{ url_for('servicios_en_linea', servicio='evaluacion') }}"><i class="bi bi-file-earmark-check"></i> Radicar TRD / TVD</a>
+          <a class="sda-btn ghost" href="{{ url_for('servicios_en_linea', servicio='evaluacion') }}"><i class="bi bi-file-earmark-check"></i> Solicitar evaluación de TRD / TVD</a>
           <a class="sda-btn ghost" href="{{ url_for('servicios_en_linea', servicio='consulta') }}"><i class="bi bi-search"></i> Consultar trámite</a>
         </div>
       </div>
@@ -323,8 +323,8 @@
         <a class="go" href="{{ url_for('censo') }}">Realizar el diagnóstico <i class="bi bi-arrow-right"></i></a></article>
       <article class="fx-card c4" id="f-eval"><div class="fx-top"><div class="fx-ico"><i class="bi bi-patch-check"></i></div><div><div class="tag">TRD y TVD</div><h3>Evaluación</h3></div></div>
         <p>Revisión y evaluación de las Tablas de Retención y de Valoración Documental, previa al concepto del Consejo Distrital de Archivos.</p>
-        <ul class="fx-get"><li>Radicación en línea con enlace a los documentos</li><li>Etapas visibles: revisión, mesa técnica, ajustes, sesión</li><li>Consulta del estado y las observaciones</li></ul>
-        <a class="go" href="{{ url_for('servicios_en_linea', servicio='evaluacion') }}">Radicar TRD o TVD <i class="bi bi-arrow-right"></i></a></article>
+        <ul class="fx-get"><li>Solicitud en línea con enlace a los documentos</li><li>Etapas visibles: revisión, mesa técnica, ajustes, sesión</li><li>Consulta del estado y las observaciones</li></ul>
+        <a class="go" href="{{ url_for('servicios_en_linea', servicio='evaluacion') }}">Solicitar evaluación <i class="bi bi-arrow-right"></i></a></article>
     </div>
   </section>
 
@@ -352,7 +352,7 @@
         <h3>El recorrido de una TRD o TVD</h3>
         <p class="sda-note mb-0">Cada etapa queda registrada y la entidad la ve al consultar su radicado.</p>
         <div class="steps">
-          <div class="st"><div class="n">1</div><div><strong>Radicación</strong><span>La entidad envía la solicitud con el enlace a la carpeta de documentos.</span></div></div>
+          <div class="st"><div class="n">1</div><div><strong>Solicitud</strong><span>La entidad presenta el oficio por correspondencia y registra aquí la solicitud con el enlace a la carpeta de documentos.</span></div></div>
           <div class="st"><div class="n">2</div><div><strong>Revisión preliminar</strong><span>Se verifica que la documentación esté completa.</span></div></div>
           <div class="st"><div class="n">3</div><div><strong>Mesa técnica</strong><span>Equipo evaluador y entidad revisan el instrumento.</span></div></div>
           <div class="st"><div class="n">4</div><div><strong>Ajustes</strong><span>La entidad atiende las observaciones, si las hay.</span></div></div>
