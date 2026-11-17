@@ -138,7 +138,7 @@
           <div class="svc-foot">
             <div class="form-check">
               <input class="form-check-input{% if errores.get('autoriza_datos') and tipo_activo == prefijo %} is-invalid{% endif %}" type="checkbox" name="autoriza_datos" value="1" id="{{ prefijo }}-datos" required>
-              <label class="form-check-label sda-legal" for="{{ prefijo }}-datos">Autorizo el tratamiento de los datos de contacto para gestionar esta solicitud (Ley 1581 de 2012). <span class="req">*</span></label>
+              <label class="form-check-label sda-legal" for="{{ prefijo }}-datos">Autorizo el tratamiento de los datos de contacto registrados en este formulario para gestionar esta solicitud, conforme a la <a href="{{ url_for('politica_datos') }}" target="_blank" rel="noopener">política de tratamiento de datos personales</a> (Ley 1581 de 2012). <span class="req">*</span></label>
               {% if errores.get('autoriza_datos') and tipo_activo == prefijo %}<div class="invalid-feedback d-block">{{ errores.autoriza_datos }}</div>{% endif %}
             </div>
             <button type="submit" class="btn btn-primary btn-lg px-4"><i class="bi bi-send"></i> Enviar solicitud</button>
