@@ -980,24 +980,33 @@ def admin():
     }
     ranking=[{'nombre':x.nombre_entidad,'ima':round(x.ima or 0,2),'nivel':semaforo(x.ima or 0)['label'],'semaforo':semaforo(x.ima or 0)['label']} for x in sorted(registros,key=lambda r:r.ima or 0,reverse=True)]
 
-    # Promedio de respuestas puntuables de cada instrumento archivístico (pregunta 6).
+    # Avance promedio por dimensión, calculado con las respuestas del formulario vigente.
+    # Si no hay respuestas nuevas, se usa el promedio de instrumentos (pregunta 6) de
+    # los censos anteriores para no perder esos registros.
+    sumas={clave:[0.0,0] for clave,_ in SDA_COMPONENTES}
     instrumentos_totales={nombre:[0.0,0] for nombre in INSTRUMENTOS}
     for x in registros:
-        try: respuestas=json.loads(x.q6_json or '{}')
+        try: respuestas=json.loads(x.respuestas_json or '{}')
         except (TypeError,ValueError): respuestas={}
-        if not isinstance(respuestas, dict):
-            respuestas = {}
-        for nombre,valor in respuestas.items():
-            if nombre not in instrumentos_totales: continue
-            if valor in ('0','0.5','1'):
-                instrumentos_totales[nombre][0]+=float(valor)
-                instrumentos_totales[nombre][1]+=1
+        if isinstance(respuestas, dict) and respuestas:
+            for clave,valor in puntajes_componentes(respuestas).items():
+                if valor is not None and clave in sumas:
+                    sumas[clave][0]+=valor; sumas[clave][1]+=1
+        try: antiguas=json.loads(x.q6_json or '{}')
+        except (TypeError,ValueError): antiguas={}
+        if isinstance(antiguas, dict):
+            for nombre,valor in antiguas.items():
+                if nombre in instrumentos_totales and valor in ('0','0.5','1'):
+                    instrumentos_totales[nombre][0]+=float(valor); instrumentos_totales[nombre][1]+=1
     instrumentos_labels=[]; instrumentos_valores=[]
-    for nombre,(suma,cantidad) in instrumentos_totales.items():
+    for clave,nombre in SDA_COMPONENTES:
+        suma,cantidad=sumas[clave]
         if cantidad:
-            instrumentos_labels.append(nombre)
-            instrumentos_valores.append(round(suma/cantidad*100,2))
-
+            instrumentos_labels.append(nombre); instrumentos_valores.append(round(suma/cantidad*100,2))
+    if not instrumentos_labels:
+        for nombre,(suma,cantidad) in instrumentos_totales.items():
+            if cantidad:
+                instrumentos_labels.append(nombre); instrumentos_valores.append(round(suma/cantidad*100,2))
     return render_template('admin.html',registros=registros,promedio=promedio,niveles=niveles,
         sectores=sectores,semaforos=semaforos,ranking=ranking,instrumentos_labels=instrumentos_labels,
         instrumentos_valores=instrumentos_valores,semaforo_fn=semaforo)
