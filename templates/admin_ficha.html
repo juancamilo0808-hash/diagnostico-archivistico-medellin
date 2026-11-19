@@ -38,6 +38,7 @@
   .rk-badge { display:inline-block; padding:.2rem .6rem; border-radius:999px; font-size:.74rem; font-weight:800; white-space:nowrap; }
   .rk-Alto { background:#fdecea; color:#b42318; } .rk-Medio { background:#fff4d6; color:#7a5a00; } .rk-Bajo { background:#eef2f6; color:#475569; }
   .rk-det { color:#617487; font-size:.82rem; display:block; margin-top:.15rem; }
+  .rk-norma { color:#56687a; font-size:.78rem; display:block; margin-top:.3rem; font-style:italic; }
   .dim { scroll-margin-top:90px; }
   .dim-head { display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; margin-bottom:.8rem; }
   .dim-head h2 { margin:0; }
@@ -135,11 +136,11 @@
     <div class="col-12">
       <section class="fx-card">
         <h2>Riesgos encontrados</h2>
-        <p class="fx-sub">Derivados de las respuestas de la entidad, ordenados de mayor a menor prioridad.</p>
+        <p class="fx-sub">Derivados de las respuestas de la entidad, ordenados de mayor a menor prioridad. Cada recomendación indica la norma en la que se apoya.</p>
         {% if riesgos %}
         <div class="table-responsive"><table class="table rk-table mb-0">
-          <thead><tr><th style="width:6rem">Prioridad</th><th style="width:16rem">Dimensión</th><th>Riesgo</th><th style="width:34%">Recomendación</th></tr></thead>
-          <tbody>{% for x in riesgos %}<tr><td><span class="rk-badge rk-{{ x.nivel }}">{{ x.nivel }}</span></td><td class="text-nowrap">{{ nombres_dim[x.dimension] }}</td><td><strong>{{ x.titulo }}</strong>{% if x.detalle %}<span class="rk-det">{{ x.detalle }}</span>{% endif %}</td><td>{{ x.recomendacion }}</td></tr>{% endfor %}</tbody>
+          <thead><tr><th style="width:6rem">Prioridad</th><th style="width:16rem">Dimensión</th><th>Riesgo</th><th style="width:38%">Recomendación y soporte normativo</th></tr></thead>
+          <tbody>{% for x in riesgos %}<tr><td><span class="rk-badge rk-{{ x.nivel }}">{{ x.nivel }}</span></td><td class="text-nowrap">{{ nombres_dim[x.dimension] }}</td><td><strong>{{ x.titulo }}</strong>{% if x.detalle %}<span class="rk-det">{{ x.detalle }}</span>{% endif %}</td><td>{{ x.recomendacion }}{% if x.norma %}<span class="rk-norma"><i class="bi bi-journal-text" aria-hidden="true"></i> {{ x.norma }}</span>{% endif %}</td></tr>{% endfor %}</tbody>
         </table></div>
         {% else %}<p class="mb-0 text-secondary">No se identificaron riesgos con las reglas actuales.</p>{% endif %}
       </section>
@@ -172,7 +173,7 @@
     {% endif %}
     {% if d.riesgos %}
     <div class="dim-risks">
-      {% for x in d.riesgos %}<div style="border-color: {{ color_nivel[x.nivel] }}"><span class="rk-badge rk-{{ x.nivel }} me-2">{{ x.nivel }}</span><strong>{{ x.titulo }}</strong>{% if x.detalle %}<span class="rk-det">{{ x.detalle }}</span>{% endif %}<span class="rk-det"><i class="bi bi-arrow-return-right"></i> {{ x.recomendacion }}</span></div>{% endfor %}
+      {% for x in d.riesgos %}<div style="border-color: {{ color_nivel[x.nivel] }}"><span class="rk-badge rk-{{ x.nivel }} me-2">{{ x.nivel }}</span><strong>{{ x.titulo }}</strong>{% if x.detalle %}<span class="rk-det">{{ x.detalle }}</span>{% endif %}<span class="rk-det"><i class="bi bi-arrow-return-right"></i> {{ x.recomendacion }}</span>{% if x.norma %}<span class="rk-norma"><i class="bi bi-journal-text" aria-hidden="true"></i> {{ x.norma }}</span>{% endif %}</div>{% endfor %}
     </div>
     {% endif %}
   </section>
@@ -181,7 +182,7 @@
   {% if transversales %}
   <section class="fx-card mb-3">
     <h2>Evidencias</h2>
-    {% for x in transversales %}<p class="mb-1"><span class="rk-badge rk-{{ x.nivel }} me-2">{{ x.nivel }}</span><strong>{{ x.titulo }}</strong>. {{ x.detalle }}. {{ x.recomendacion }}</p>{% endfor %}
+    {% for x in transversales %}<p class="mb-1"><span class="rk-badge rk-{{ x.nivel }} me-2">{{ x.nivel }}</span><strong>{{ x.titulo }}</strong>. {{ x.detalle }}. {{ x.recomendacion }}{% if x.norma %} <span class="rk-norma d-inline">({{ x.norma }})</span>{% endif %}</p>{% endfor %}
   </section>
   {% endif %}
 

@@ -1683,6 +1683,32 @@ FICHA_ETIQUETAS = {
 
 FICHA_ORDEN_RIESGO = {'Alto': 0, 'Medio': 1, 'Bajo': 2}
 
+# Soporte normativo de cada recomendación de la ficha. Se asigna por palabras del
+# título del riesgo, en este orden (gana la primera coincidencia). Para cambiar la
+# norma de un riesgo basta con editar esta lista.
+NORMAS_RIESGO = [
+    (('sin evidencia',), 'Criterio de verificación del Consejo: toda respuesta favorable debe tener soporte.'),
+    (('convalidación',), 'Decreto 1080 de 2015 (funciones de los consejos territoriales de archivos); Acuerdo 001 de 2024 del AGN.'),
+    (('PGD', 'Programa de Gestión Documental'), 'Ley 594 de 2000, art. 21; Decreto 1080 de 2015 (Programa de Gestión Documental).'),
+    (('olítica',), 'Decreto 1080 de 2015 (Política de Gestión Documental); Modelo Integrado de Planeación y Gestión (MIPG).'),
+    (('personas asignadas',), 'Ley 594 de 2000; Ley 1409 de 2010 (ejercicio de la profesión de archivística).'),
+    (('una sola persona',), 'Ley 594 de 2000 (responsabilidad de la entidad sobre sus archivos); criterio técnico de continuidad.'),
+    (('depósitos',), 'Ley 594 de 2000 (instalaciones y conservación de archivos); Acuerdo 001 de 2024 del AGN (Sistema Integrado de Conservación).'),
+    (('procedimientos documentados',), 'Decreto 1080 de 2015 (procesos de la gestión documental).'),
+    (('TRD', 'Tablas de Retención'), 'Ley 594 de 2000, art. 24; Acuerdo 001 de 2024 del AGN.'),
+    (('Plan de Preservación',), 'Acuerdo 001 de 2024 del AGN (Sistema Integrado de Conservación y preservación digital).'),
+    (('SGDEA', 'sistema documental'), 'Decreto 1080 de 2015 (documento electrónico de archivo); Acuerdo 001 de 2024 del AGN.'),
+    (('seguridad', 'copias', 'controles de acceso', 'trazabilidad'), 'Acuerdo 001 de 2024 del AGN (preservación digital); Modelo de Seguridad y Privacidad de la Información de MinTIC.'),
+    (('capacita',), 'Decreto 1083 de 2015 (Plan Institucional de Capacitación).'),
+]
+
+
+def norma_de_riesgo(titulo):
+    for palabras, norma in NORMAS_RIESGO:
+        if any(p.lower() in titulo.lower() for p in palabras):
+            return norma
+    return ''
+
 
 def _ficha_valor(r, campo):
     valor = r.get(campo, '')
@@ -1697,7 +1723,8 @@ def evaluar_riesgos(r):
 
     def add(dim, nivel, titulo, recomendacion, detalle=''):
         riesgos.append({'dimension': dim, 'nivel': nivel, 'titulo': titulo,
-                        'detalle': detalle, 'recomendacion': recomendacion})
+                        'detalle': detalle, 'recomendacion': recomendacion,
+                        'norma': norma_de_riesgo(titulo)})
 
     g = lambda c: _ficha_valor(r, c) if not isinstance(_ficha_valor(r, c), list) else ', '.join(_ficha_valor(r, c))
 
