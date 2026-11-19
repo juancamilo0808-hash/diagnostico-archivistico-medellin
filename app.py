@@ -2071,14 +2071,6 @@ def informe_consejo():
     riesgos = sorted(frecuencia.values(), key=lambda f: (-f['n'], -f['altos'], f['titulo']))[:10]
 
     prioritarias = sorted([x for x in ultimos if _clasificar(x.ima or 0) == 'Bajo'], key=lambda x: x.ima or 0)
-    por_sector = {}
-    for x in ultimos:
-        s_ = por_sector.setdefault(x.sector or 'Sin sector', [0, 0.0])
-        s_[0] += 1
-        s_[1] += x.ima or 0
-    sectores = sorted(({'sector': k, 'n': v[0], 'promedio': round(v[1] / v[0], 1)} for k, v in por_sector.items()),
-                      key=lambda s_: s_['promedio'])
-
     solicitudes = SolicitudSistema.query.all()
     if desde:
         solicitudes = [x for x in solicitudes if x.creado_en and x.creado_en.date() >= desde]
@@ -2095,7 +2087,7 @@ def informe_consejo():
                            directorio=directorio, diagnosticadas=len(ultimos), evaluadas=evaluadas,
                            total_diagnosticos=len(registros), promedio=promedio, semaforo=semaforo,
                            dimensiones=dimensiones, riesgos=riesgos, prioritarias=prioritarias,
-                           sectores=sectores, tramites=tramites, nombre_de=_sda_nombre, clasificar=_clasificar,
+                           tramites=tramites, nombre_de=_sda_nombre, clasificar=_clasificar,
                            nombres_dim={c: n for c, n in SDA_COMPONENTES},
                            convalidaciones=_convalidaciones_publicadas().count(), actas=_actas_publicadas().count())
 

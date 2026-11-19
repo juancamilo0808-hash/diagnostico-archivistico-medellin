@@ -97,18 +97,12 @@
     <h2>4. Entidades que requieren atención prioritaria</h2>
     {% if prioritarias %}
     <div class="table-responsive"><table class="table mb-0">
-      <thead><tr><th scope="col">Entidad</th><th scope="col">Sector</th><th scope="col">Fecha del diagnóstico</th><th scope="col" class="text-end">Nivel de madurez</th></tr></thead>
-      <tbody>{% for x in prioritarias %}<tr><td>{{ nombre_de(x) }}</td><td>{{ x.sector or 'Sin sector' }}</td><td>{{ x.fecha.strftime('%d/%m/%Y') }}</td><td class="text-end fw-bold" style="color:#b42318">{{ '%.1f'|format(x.ima or 0) }} %</td></tr>{% endfor %}</tbody>
+      <thead><tr><th scope="col">Entidad</th><th scope="col">Fecha del diagnóstico</th><th scope="col" class="text-end">Nivel de madurez</th></tr></thead>
+      <tbody>{% for x in prioritarias %}<tr><td>{{ nombre_de(x) }}</td><td>{{ x.fecha.strftime('%d/%m/%Y') }}</td><td class="text-end fw-bold" style="color:#b42318">{{ '%.1f'|format(x.ima or 0) }} %</td></tr>{% endfor %}</tbody>
     </table></div>
     {% else %}<p class="mb-0">Ninguna entidad está en nivel bajo.</p>{% endif %}
 
-    <h2>5. Resultado por sector</h2>
-    <div class="table-responsive"><table class="table mb-0">
-      <thead><tr><th scope="col">Sector</th><th scope="col" class="text-end">Entidades</th><th scope="col" class="text-end">Nivel de madurez promedio</th><th scope="col">Clasificación</th></tr></thead>
-      <tbody>{% for s in sectores %}<tr><td>{{ s.sector }}</td><td class="text-end">{{ s.n }}</td><td class="text-end fw-bold" style="color: {{ tinta(s.promedio) }}">{{ s.promedio }} %</td><td>{{ clasificar(s.promedio) }}</td></tr>{% endfor %}</tbody>
-    </table></div>
-
-    <h2>6. Servicios en línea y transparencia</h2>
+    <h2>5. Servicios en línea y transparencia</h2>
     <div class="row g-3">
       {% for t in tramites %}
       <div class="col-md-6"><div class="inf-kpi h-100"><b>{{ t.total }}</b><span>solicitudes de {{ t.nombre[0]|lower ~ t.nombre[1:] }}</span>
