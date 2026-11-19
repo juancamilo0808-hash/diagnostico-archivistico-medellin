@@ -704,11 +704,12 @@ def calcular_diagnostico_nuevo(form):
 def resultado(censo_id):
     # Solo lo ve la persona que envió el diagnóstico (en su sesión) o el equipo administrador.
     registro = Censo.query.get_or_404(censo_id)
-    entidad = entidad_en_sesion()
-    propio = entidad and registro in _diagnosticos_de(entidad)
-    if not session.get('admin_authenticated') and censo_id not in session.get('mis_diagnosticos', []) and not propio:
+    if not _puede_ver_censo(registro):
         abort(404)
-    return render_template('resultado.html', censo=registro)
+    respuestas, actual, _ = _puntajes_de(registro)
+    riesgos = evaluar_riesgos(respuestas) if actual else []
+    conteo = {n: sum(1 for x in riesgos if x['nivel'] == n) for n in ('Alto', 'Medio', 'Bajo')}
+    return render_template('resultado.html', censo=registro, conteo=conteo, formulario_actual=actual)
 
 @app.route('/normatividad')
 def normatividad(): return render_template('normatividad.html',normatividad=NORMATIVIDAD)
@@ -982,9 +983,9 @@ def admin():
 
     def semaforo(ima):
         # Clasificación simplificada en tres niveles: Bajo, Medio y Alto.
-        if ima <= 33.33: return {'label':'Bajo','color':'#dc3545','class':'low'}
-        if ima <= 66.66: return {'label':'Medio','color':'#e0a800','class':'medium'}
-        return {'label':'Alto','color':'#198754','class':'high'}
+        if ima <= 33.33: return {'label':'Bajo','color':'#dc3545','class':'low','texto':'#b42318'}
+        if ima <= 66.66: return {'label':'Medio','color':'#e0a800','class':'medium','texto':'#7a5a00'}
+        return {'label':'Alto','color':'#198754','class':'high','texto':'#14532d'}
 
     semaforos={
         'Bajo':sum(1 for x in registros if (x.ima or 0) <= 33.33),
@@ -1020,9 +1021,26 @@ def admin():
         for nombre,(suma,cantidad) in instrumentos_totales.items():
             if cantidad:
                 instrumentos_labels.append(nombre); instrumentos_valores.append(round(suma/cantidad*100,2))
+    # Evolución: entidades con dos o más diagnósticos, primer resultado frente al último.
+    por_entidad = {}
+    for x in sorted(registros, key=lambda r: (r.fecha or datetime.min, r.id)):
+        por_entidad.setdefault(_ficha_clave(x), []).append(x)
+    evolucion = []
+    for lista in por_entidad.values():
+        if len(lista) > 1:
+            primero, ultimo = lista[0], lista[-1]
+            evolucion.append({'nombre': _sda_nombre(ultimo), 'id': ultimo.id, 'n': len(lista),
+                              'inicial': primero.ima or 0, 'actual': ultimo.ima or 0,
+                              'cambio': round((ultimo.ima or 0) - (primero.ima or 0), 1)})
+    evolucion.sort(key=lambda e: -e['cambio'])
+    resumen_evolucion = {'mejoraron': sum(1 for e in evolucion if e['cambio'] > 0),
+                         'iguales': sum(1 for e in evolucion if e['cambio'] == 0),
+                         'bajaron': sum(1 for e in evolucion if e['cambio'] < 0),
+                         'promedio': round(sum(e['cambio'] for e in evolucion) / len(evolucion), 1) if evolucion else 0}
     return render_template('admin.html',registros=registros,promedio=promedio,niveles=niveles,
         sectores=sectores,semaforos=semaforos,ranking=ranking,instrumentos_labels=instrumentos_labels,
-        instrumentos_valores=instrumentos_valores,semaforo_fn=semaforo)
+        instrumentos_valores=instrumentos_valores,semaforo_fn=semaforo,evolucion=evolucion,
+        resumen_evolucion=resumen_evolucion)
 
 
 @app.route('/admin/eliminar-diagnostico/<int:censo_id>', methods=['POST'])
@@ -1893,23 +1911,40 @@ def _ficha_clave(registro):
     return (registro.codigo_entidad or '').strip() or clave_entidad(_sda_nombre(registro))
 
 
-@app.route('/admin/diagnostico/<int:censo_id>')
-@admin_required
-def ficha_diagnostico(censo_id):
-    censo = db.session.get(Censo, censo_id) or abort(404)
+def _puntajes_de(censo):
+    """Respuestas y puntaje por componente de un diagnóstico guardado."""
     try:
         respuestas = json.loads(censo.respuestas_json or '{}')
     except (TypeError, ValueError):
         respuestas = {}
     if not isinstance(respuestas, dict):
         respuestas = {}
-    formulario_actual = bool(respuestas.get('q1_politica'))
-    componentes = puntajes_componentes(respuestas) if formulario_actual else {}
+    actual = bool(respuestas.get('q1_politica'))
+    return respuestas, actual, (puntajes_componentes(respuestas) if actual else {})
+
+
+def _contexto_ficha(censo):
+    """Datos de la ficha que comparten la vista del Consejo y la de la entidad."""
+    respuestas, formulario_actual, componentes = _puntajes_de(censo)
     riesgos = evaluar_riesgos(respuestas) if formulario_actual else []
+
+    todos = Censo.query.order_by(Censo.fecha.desc(), Censo.id.desc()).all()
+    clave = _ficha_clave(censo)
+    historial = [x for x in todos if _ficha_clave(x) == clave]
+    # Diagnóstico anterior con el formulario vigente, para comparar dimensión por dimensión.
+    anterior, componentes_previos = None, {}
+    posicion = next((n for n, x in enumerate(historial) if x.id == censo.id), None)
+    if posicion is not None:
+        for x in historial[posicion + 1:]:
+            _, actual_x, comp_x = _puntajes_de(x)
+            if actual_x:
+                anterior, componentes_previos = x, comp_x
+                break
 
     dimensiones = []
     for d in FICHA_DIMENSIONES:
         puntaje = componentes.get(d['componente']) if d['componente'] else None
+        previo = componentes_previos.get(d['componente']) if d['componente'] else None
         preguntas = []
         for titulo, campos in d['preguntas']:
             principal = _ficha_valor(respuestas, campos[0])
@@ -1931,23 +1966,145 @@ def ficha_diagnostico(censo_id):
         elif d['clave'] == 'tecnologico':
             sel = set(_sda_lista(respuestas.get('q8_protecciones')))
             extra = {'tipo': 'checklist', 'titulo': 'Mecanismos', 'elementos': [(p, p in sel) for p in FICHA_PROTECCIONES]}
-        dimensiones.append({**d, 'puntaje': None if puntaje is None else round(puntaje * 100, 1),
+        pct = None if puntaje is None else round(puntaje * 100, 1)
+        pct_prev = None if previo is None else round(previo * 100, 1)
+        dimensiones.append({**d, 'puntaje': pct, 'anterior': pct_prev,
+                            'cambio': None if pct is None or pct_prev is None else round(pct - pct_prev, 1),
                             'preguntas': preguntas, 'extra': extra,
                             'riesgos': [x for x in riesgos if x['dimension'] == d['clave']]})
 
     conteo = {n: sum(1 for x in riesgos if x['nivel'] == n) for n in ('Alto', 'Medio', 'Bajo')}
     nombres_dim = {d['clave']: f"{d['letra']}. {d['nombre']}" for d in FICHA_DIMENSIONES}
     nombres_dim['transversal'] = 'Transversal'
+    return dict(censo=censo, nombre=_sda_nombre(censo), respuestas=respuestas,
+                formulario_actual=formulario_actual, dimensiones=dimensiones, riesgos=riesgos,
+                conteo=conteo, nombres_dim=nombres_dim, historial=historial, nombre_de=_sda_nombre,
+                anterior=anterior,
+                transversales=[x for x in riesgos if x['dimension'] == 'transversal'])
 
-    todos = Censo.query.order_by(Censo.fecha.desc(), Censo.id.desc()).all()
-    clave = _ficha_clave(censo)
-    historial = [x for x in todos if _ficha_clave(x) == clave]
-    opciones = sorted(todos, key=lambda x: (_sda_nombre(x).lower(), -x.id))
-    return render_template('admin_ficha.html', censo=censo, nombre=_sda_nombre(censo), respuestas=respuestas,
-                           formulario_actual=formulario_actual, dimensiones=dimensiones, riesgos=riesgos,
-                           conteo=conteo, nombres_dim=nombres_dim, historial=historial, opciones=opciones,
-                           nombre_de=_sda_nombre,
-                           transversales=[x for x in riesgos if x['dimension'] == 'transversal'])
+
+def _puede_ver_censo(censo):
+    """El Consejo, quien envió el diagnóstico en esta sesión o la entidad dueña."""
+    if session.get('admin_authenticated') or censo.id in session.get('mis_diagnosticos', []):
+        return True
+    entidad = entidad_en_sesion()
+    return bool(entidad and censo in _diagnosticos_de(entidad))
+
+
+@app.route('/admin/diagnostico/<int:censo_id>')
+@admin_required
+def ficha_diagnostico(censo_id):
+    censo = db.session.get(Censo, censo_id) or abort(404)
+    contexto = _contexto_ficha(censo)
+    opciones = sorted(Censo.query.all(), key=lambda x: (_sda_nombre(x).lower(), -x.id))
+    return render_template('admin_ficha.html', vista='admin', opciones=opciones, **contexto)
+
+
+@app.route('/mi-diagnostico/<int:censo_id>')
+def ficha_entidad(censo_id):
+    censo = db.session.get(Censo, censo_id) or abort(404)
+    if not _puede_ver_censo(censo):
+        if acceso_requerido() and not entidad_en_sesion():
+            return redirect(url_for('acceso_entidad', next=request.path))
+        abort(404)
+    return render_template('admin_ficha.html', vista='entidad', opciones=[], **_contexto_ficha(censo))
+
+
+# ============================================================
+# INFORME CONSOLIDADO PARA LAS SESIONES DEL CONSEJO
+# Reúne en una página imprimible las cifras del diagnóstico, los riesgos más
+# frecuentes y el estado de los servicios. Se guarda en PDF desde el navegador.
+# ============================================================
+
+def _clasificar(ima):
+    return 'Bajo' if ima <= 33.33 else ('Medio' if ima <= 66.66 else 'Alto')
+
+
+@app.route('/admin/informe')
+@admin_required
+def informe_consejo():
+    desde = _fecha_param(request.args.get('desde'))
+    hasta = _fecha_param(request.args.get('hasta'))
+    consulta = Censo.query
+    if desde:
+        consulta = consulta.filter(Censo.fecha >= datetime.combine(desde, datetime.min.time()))
+    if hasta:
+        consulta = consulta.filter(Censo.fecha < datetime.combine(hasta + timedelta(days=1), datetime.min.time()))
+    registros = consulta.order_by(Censo.fecha.desc(), Censo.id.desc()).all()
+
+    # Para las cifras se usa el diagnóstico más reciente de cada entidad.
+    ultimos, vistos = [], set()
+    for x in registros:
+        clave = _ficha_clave(x)
+        if clave not in vistos:
+            vistos.add(clave)
+            ultimos.append(x)
+
+    directorio = len(obtener_directorio())
+    promedio = round(sum(x.ima or 0 for x in ultimos) / len(ultimos), 1) if ultimos else 0
+    semaforo = {n: sum(1 for x in ultimos if _clasificar(x.ima or 0) == n) for n in ('Bajo', 'Medio', 'Alto')}
+
+    sumas = {clave: [0.0, 0] for clave, _ in SDA_COMPONENTES}
+    frecuencia = {}
+    evaluadas = 0
+    for x in ultimos:
+        respuestas, actual, componentes = _puntajes_de(x)
+        if not actual:
+            continue
+        evaluadas += 1
+        for clave, valor in componentes.items():
+            if valor is not None and clave in sumas:
+                sumas[clave][0] += valor
+                sumas[clave][1] += 1
+        for r in evaluar_riesgos(respuestas):
+            if r['dimension'] == 'transversal':
+                continue
+            # "3 de 8 procesos sin procedimientos..." se agrupa sin el número.
+            titulo = re.sub(r'^\d+ de \d+ ', '', r['titulo'])
+            titulo = titulo[0].upper() + titulo[1:]
+            f = frecuencia.setdefault(titulo, {'titulo': titulo, 'n': 0, 'altos': 0, 'dimension': r['dimension'],
+                                               'recomendacion': r['recomendacion'], 'norma': r.get('norma', '')})
+            f['n'] += 1
+            f['altos'] += r['nivel'] == 'Alto'
+    dimensiones = [{'nombre': nombre, 'valor': round(sumas[c][0] / sumas[c][1] * 100, 1) if sumas[c][1] else None}
+                   for c, nombre in SDA_COMPONENTES]
+    riesgos = sorted(frecuencia.values(), key=lambda f: (-f['n'], -f['altos'], f['titulo']))[:10]
+
+    prioritarias = sorted([x for x in ultimos if _clasificar(x.ima or 0) == 'Bajo'], key=lambda x: x.ima or 0)
+    por_sector = {}
+    for x in ultimos:
+        s_ = por_sector.setdefault(x.sector or 'Sin sector', [0, 0.0])
+        s_[0] += 1
+        s_[1] += x.ima or 0
+    sectores = sorted(({'sector': k, 'n': v[0], 'promedio': round(v[1] / v[0], 1)} for k, v in por_sector.items()),
+                      key=lambda s_: s_['promedio'])
+
+    solicitudes = SolicitudSistema.query.all()
+    if desde:
+        solicitudes = [x for x in solicitudes if x.creado_en and x.creado_en.date() >= desde]
+    if hasta:
+        solicitudes = [x for x in solicitudes if x.creado_en and x.creado_en.date() <= hasta]
+    tramites = []
+    for tipo, cfg in SDA_TIPOS.items():
+        del_tipo = [x for x in solicitudes if x.tipo == tipo]
+        tramites.append({'nombre': 'Asistencia técnica' if tipo == 'asistencia' else 'Evaluación de TRD y TVD',
+                         'total': len(del_tipo),
+                         'estados': [(e, sum(1 for x in del_tipo if x.estado == e)) for e in cfg['estados']]})
+
+    return render_template('informe_consejo.html', desde=desde, hasta=hasta, generado=datetime.now(),
+                           directorio=directorio, diagnosticadas=len(ultimos), evaluadas=evaluadas,
+                           total_diagnosticos=len(registros), promedio=promedio, semaforo=semaforo,
+                           dimensiones=dimensiones, riesgos=riesgos, prioritarias=prioritarias,
+                           sectores=sectores, tramites=tramites, nombre_de=_sda_nombre, clasificar=_clasificar,
+                           nombres_dim={c: n for c, n in SDA_COMPONENTES},
+                           convalidaciones=_convalidaciones_publicadas().count(), actas=_actas_publicadas().count())
+
+
+def _fecha_param(valor):
+    try:
+        return datetime.strptime((valor or '').strip(), '%Y-%m-%d').date()
+    except ValueError:
+        return None
 
 
 # ============================================================

@@ -5,36 +5,31 @@
 <div class="container py-5">
   <div class="result-card">
     <p class="eyebrow">RESULTADO DEL DIAGNÓSTICO</p>
-    <h1>{{ censo.nombre_entidad }}</h1>
+    <h1>{{ censo.nombre_entidad.split('|')[0].strip() }}</h1>
     <p class="mb-1">Nivel de madurez</p>
-    <div class="ima-number">{{ '%.2f'|format(censo.ima) }}%</div>
-    {% if censo.ima <= 33.33 %}
+    <div class="ima-number">{{ '%.1f'|format(censo.ima or 0) }}%</div>
+    {% if (censo.ima or 0) <= 33.33 %}
       <h2>Clasificación: Bajo</h2>
-    {% elif censo.ima <= 66.66 %}
+    {% elif (censo.ima or 0) <= 66.66 %}
       <h2>Clasificación: Medio</h2>
     {% else %}
       <h2>Clasificación: Alto</h2>
     {% endif %}
-    <p>Resultado calculado automáticamente.</p>
+    <p>Resultado calculado automáticamente con las respuestas de la entidad.</p>
 
+    {% if formulario_actual %}
     <div class="row g-3 mt-4">
-      <div class="col-md-6">
-        <div class="metric">
-          <strong>{{ censo.puntaje_obtenido }}</strong>
-          <span>Puntaje obtenido</span>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="metric">
-          <strong>{{ censo.variables_aplicables }}</strong>
-          <span>Variables aplicables</span>
-        </div>
-      </div>
+      <div class="col-4"><div class="metric"><strong style="color:#b42318">{{ conteo.Alto }}</strong><span>Riesgos altos</span></div></div>
+      <div class="col-4"><div class="metric"><strong style="color:#9a6700">{{ conteo.Medio }}</strong><span>Riesgos medios</span></div></div>
+      <div class="col-4"><div class="metric"><strong style="color:#475569">{{ conteo.Bajo }}</strong><span>Riesgos bajos</span></div></div>
     </div>
+    <p class="mt-3 mb-0">En la ficha completa encontrará el perfil por dimensión, cada riesgo con su recomendación y la norma en la que se apoya. Puede imprimirla o guardarla en PDF.</p>
+    {% endif %}
 
-    <div class="mt-4">
-      <a href="{{ url_for('censo') }}" class="btn btn-primary">Nuevo diagnóstico</a>
-      <a href="{{ url_for('admin') }}" class="btn btn-outline-primary">Ver panel</a>
+    <div class="mt-4 d-flex flex-wrap gap-2 justify-content-center">
+      {% if formulario_actual %}<a href="{{ url_for('ficha_entidad', censo_id=censo.id) }}" class="btn btn-primary"><i class="bi bi-clipboard2-pulse me-1" aria-hidden="true"></i>Ver ficha con riesgos y recomendaciones</a>{% endif %}
+      {% if session.get('entidad') %}<a href="{{ url_for('mi_entidad') }}" class="btn btn-outline-primary">Ir a Mi entidad</a>{% endif %}
+      {% if session.get('admin_authenticated') %}<a href="{{ url_for('admin') }}" class="btn btn-outline-primary">Ver panel</a>{% endif %}
     </div>
   </div>
 </div>

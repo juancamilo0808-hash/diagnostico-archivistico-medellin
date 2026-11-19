@@ -3,6 +3,7 @@
 {% block content %}
 {% set color_nivel = {'Alto':'#b42318','Medio':'#9a6700','Bajo':'#475569'} %}
 {% macro semaforo(p) -%}{% if p is none %}#94a3b8{% elif p <= 33.33 %}#dc3545{% elif p <= 66.66 %}#e0a800{% else %}#198754{% endif %}{%- endmacro %}
+{% macro tinta(p) -%}{% if p is none %}#56687a{% elif p <= 33.33 %}#b42318{% elif p <= 66.66 %}#7a5a00{% else %}#14532d{% endif %}{%- endmacro %}
 {% macro etiqueta(p) -%}{% if p is none %}Sin respuestas puntuables{% elif p <= 33.33 %}Bajo{% elif p <= 66.66 %}Medio{% else %}Alto{% endif %}{%- endmacro %}
 {% macro valor(v) -%}
   {%- if v is string -%}{{ v if v else '' }}{%- else -%}{{ v|join(', ') }}{%- endif -%}
@@ -47,7 +48,7 @@
   .q:first-of-type { border-top:0; }
   .q-t { font-weight:700; color:#123852; font-size:.92rem; }
   .q-v { font-size:.95rem; margin-top:.15rem; }
-  .q-v.empty { color:#94a3b8; font-style:italic; }
+  .q-v.empty { color:#5f6f80; font-style:italic; }
   .q-d { display:grid; grid-template-columns:minmax(140px,30%) 1fr; gap:.15rem .9rem; font-size:.86rem; margin-top:.45rem; }
   .q-d dt { color:#617487; font-weight:600; }
   .q-d dd { margin:0; white-space:pre-line; word-break:break-word; }
@@ -57,6 +58,8 @@
   .dim-risks { margin-top:.6rem; display:grid; gap:.5rem; }
   .dim-risks div { border-left:4px solid; border-radius:8px; padding:.55rem .8rem; background:#fafbfc; font-size:.86rem; }
   .hist-table td, .hist-table th { font-size:.86rem; }
+  .dim-delta { font-weight:800; color:#617487; } .dim-delta.up { color:#14532d; } .dim-delta.down { color:#b42318; }
+  .cmp-note { color:#123852; background:#eef5fb; border-radius:10px; padding:.55rem .8rem; }
   @media (max-width: 767.98px) {
     .dim-row { grid-template-columns:1fr 4rem; }
     .dim-row .dim-bar { grid-column:1 / -1; grid-row:2; }
@@ -66,7 +69,7 @@
     .fx-hero { padding:20px; }
   }
   @media print {
-    .cda-nav, .cda-footer, footer, .fx-tools, .no-print { display:none !important; }
+    .cda-nav, .cda-footer, footer, .fx-tools, .govco-bar, .cda-skip, .a11y-panel, .no-print { display:none !important; }
     body { background:#fff !important; }
     .fx-hero { background:#fff !important; color:#000 !important; box-shadow:none; border:1px solid #ccc; }
     .fx-hero h1, .fx-ima { color:#000 !important; }
@@ -78,7 +81,7 @@
   <section class="fx-hero mb-4">
     <div class="d-flex flex-wrap justify-content-between gap-3 align-items-start">
       <div>
-        <div class="k">FICHA DE DIAGNÓSTICO · ADMINISTRACIÓN</div>
+        <div class="k">FICHA DE DIAGNÓSTICO{% if vista == "admin" %} · ADMINISTRACIÓN{% endif %}</div>
         <h1>{{ nombre }}</h1>
         <div class="fx-meta">
           {% if respuestas.get('nit_entidad') %}<span><i class="bi bi-hash"></i> NIT {{ respuestas.get('nit_entidad') }}</span>{% endif %}
@@ -92,16 +95,19 @@
       <div class="fx-ima">
         <div class="n">{{ '%.1f'|format(censo.ima or 0) }}%</div>
         <div class="l mb-2">Nivel de madurez</div>
-        <span class="fx-pill" style="color:{{ semaforo(censo.ima or 0) }}"><i style="background:{{ semaforo(censo.ima or 0) }}"></i>Clasificación {{ etiqueta(censo.ima or 0) | lower }}</span>
+        <span class="fx-pill" style="color:{{ tinta(censo.ima or 0) }}"><i style="background:{{ semaforo(censo.ima or 0) }}"></i>Clasificación {{ etiqueta(censo.ima or 0) | lower }}</span>
       </div>
     </div>
     <div class="fx-tools">
+      {% if vista == 'admin' %}
       <label class="visually-hidden" for="cambiarEntidad">Ver otra entidad</label>
       <select id="cambiarEntidad" class="form-select form-select-sm" onchange="if(this.value) location.href=this.value">
         {% for o in opciones %}<option value="{{ url_for('ficha_diagnostico', censo_id=o.id) }}" {% if o.id == censo.id %}selected{% endif %}>{{ nombre_de(o) }} · {{ o.fecha|hora_col('%d/%m/%Y') }} · {{ '%.1f'|format(o.ima or 0) }}%</option>{% endfor %}
       </select>
-      <button type="button" class="btn btn-light btn-sm fw-bold" onclick="window.print()"><i class="bi bi-printer me-1"></i>Imprimir o guardar PDF</button>
-      <a class="btn btn-outline-light btn-sm fw-bold" href="{{ url_for('admin') }}"><i class="bi bi-arrow-left me-1"></i>Panel</a>
+      {% endif %}
+      <button type="button" class="btn btn-light btn-sm fw-bold" onclick="window.print()"><i class="bi bi-printer me-1" aria-hidden="true"></i>Imprimir o guardar PDF</button>
+      {% if vista == 'admin' %}<a class="btn btn-outline-light btn-sm fw-bold" href="{{ url_for('admin') }}"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Panel</a>
+      {% else %}<a class="btn btn-outline-light btn-sm fw-bold" href="{{ url_for('mi_entidad') if session.get('entidad') else url_for('index') }}"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>{{ 'Mi entidad' if session.get('entidad') else 'Inicio' }}</a>{% endif %}
     </div>
   </section>
 
@@ -126,10 +132,11 @@
         <div class="dim-row">
           <a href="#dim-{{ d.clave }}">{{ d.letra }}. {{ d.nombre }}</a>
           <div class="dim-bar" role="img" aria-label="{{ d.nombre }}: {{ d.puntaje if d.puntaje is not none else 'sin puntaje' }}"><span style="width: {{ d.puntaje or 0 }}%; background: {{ semaforo(d.puntaje) }}"></span></div>
-          <div class="dim-val" style="color: {{ semaforo(d.puntaje) }}">{{ (d.puntaje ~ '%') if d.puntaje is not none else '—' }}</div>
-          <div class="dim-risk">{{ d.riesgos|length }} riesgo{{ 's' if d.riesgos|length != 1 }}</div>
+          <div class="dim-val" style="color: {{ tinta(d.puntaje) }}">{{ (d.puntaje ~ '%') if d.puntaje is not none else '—' }}</div>
+          <div class="dim-risk">{% if d.cambio is not none %}<span class="dim-delta {{ 'up' if d.cambio > 0 else ('down' if d.cambio < 0 else '') }}" title="Antes: {{ d.anterior }} %">{{ '%+.1f'|format(d.cambio) }} pts</span>{% else %}{{ d.riesgos|length }} riesgo{{ 's' if d.riesgos|length != 1 }}{% endif %}</div>
         </div>
         {% endfor %}
+        {% if anterior %}<p class="small mt-3 mb-0 cmp-note"><i class="bi bi-arrow-left-right me-1" aria-hidden="true"></i>La última columna compara cada dimensión con el diagnóstico anterior de la entidad, del {{ anterior.fecha|hora_col('%d/%m/%Y') }} ({{ '%.1f'|format(anterior.ima or 0) }} % de nivel de madurez; cambio total {{ '%+.1f'|format((censo.ima or 0) - (anterior.ima or 0)) }} pts).</p>{% endif %}
         <p class="small text-secondary mt-3 mb-0">Bajo: 0–33,3 % · Medio: 33,4–66,6 % · Alto: 66,7–100 %. Cada respuesta vale 0 (no cumple), 0,5 (avance parcial) o 1 (cumple); las preguntas 3, 6, 8 y 10 son descriptivas y no suman puntaje.</p>
       </section>
     </div>
@@ -152,7 +159,7 @@
   <section class="fx-card mb-3 dim" id="dim-{{ d.clave }}">
     <div class="dim-head">
       <h2><span class="dim-letter">{{ d.letra }}</span>{{ d.nombre }}</h2>
-      {% if d.componente and formulario_actual %}<span class="fx-pill" style="border:1px solid #e4ebf1; color: {{ semaforo(d.puntaje) }}"><i style="background: {{ semaforo(d.puntaje) }}"></i>{{ (d.puntaje ~ '%') if d.puntaje is not none else '—' }} · {{ etiqueta(d.puntaje) }}</span>{% endif %}
+      {% if d.componente and formulario_actual %}<span class="fx-pill" style="border:1px solid #e4ebf1; color: {{ tinta(d.puntaje) }}"><i style="background: {{ semaforo(d.puntaje) }}"></i>{{ (d.puntaje ~ '%') if d.puntaje is not none else '—' }} · {{ etiqueta(d.puntaje) }}</span>{% endif %}
     </div>
     {% for q in d.preguntas %}
     <div class="q">
@@ -195,7 +202,7 @@
       <tbody>{% for h in historial %}{% set prev = historial[loop.index] if loop.index < historial|length else none %}
         <tr {% if h.id == censo.id %}class="table-active"{% endif %}><td>{{ h.fecha|hora_col('%d/%m/%Y') }}</td><td class="text-end fw-bold">{{ '%.1f'|format(h.ima or 0) }}%</td><td>{{ etiqueta(h.ima or 0) }}</td>
         <td class="text-end">{% if prev %}{% set dlt = (h.ima or 0) - (prev.ima or 0) %}<span style="color: {{ '#198754' if dlt > 0 else ('#b42318' if dlt < 0 else '#617487') }}">{{ '%+.1f'|format(dlt) }} pts</span>{% else %}—{% endif %}</td>
-        <td>{% if h.id != censo.id %}<a href="{{ url_for('ficha_diagnostico', censo_id=h.id) }}">Ver ficha</a>{% else %}<span class="text-secondary small">En pantalla</span>{% endif %}</td></tr>{% endfor %}</tbody>
+        <td>{% if h.id != censo.id %}<a href="{{ url_for('ficha_diagnostico' if vista == 'admin' else 'ficha_entidad', censo_id=h.id) }}">Ver ficha</a>{% else %}<span class="text-secondary small">En pantalla</span>{% endif %}</td></tr>{% endfor %}</tbody>
     </table></div>
     {% endif %}
   </section>

@@ -4,7 +4,7 @@
 <section class="tp-hero"><div class="container">
   <div class="k">Sesión iniciada {% if entidad.usuario %}con el NIT {{ entidad.usuario }}{% else %}con {{ entidad.correo }}{% endif %}</div>
   <h1>{{ entidad.nombre }}</h1>
-  <p>Diagnósticos enviados por la entidad y solicitudes registradas en servicios en línea.</p>
+  <p>Diagnósticos de la entidad con sus riesgos y recomendaciones, y solicitudes registradas en servicios en línea.</p>
 </div></section>
 <div class="container tp-wrap">
   <div class="tp-card mb-3">
@@ -15,8 +15,9 @@
     {% if diagnosticos %}
     <div class="table-responsive"><table class="table tp-table mb-0">
       <caption class="visually-hidden">Diagnósticos de la entidad</caption>
-      <thead><tr><th scope="col">Fecha</th><th scope="col">Nivel de madurez</th><th scope="col">Clasificación</th><th scope="col">Resultado</th></tr></thead>
-      <tbody>{% for c in diagnosticos %}<tr><td>{{ c.fecha.strftime('%d/%m/%Y') }}</td><td>{{ '%.1f'|format(c.ima or 0) }} %</td><td>{{ c.nivel }}</td><td><a href="{{ url_for('resultado', censo_id=c.id) }}">Ver resultado</a></td></tr>{% endfor %}</tbody>
+      <thead><tr><th scope="col">Fecha</th><th scope="col">Nivel de madurez</th><th scope="col">Clasificación</th><th scope="col">Ficha</th></tr></thead>
+      <tbody>{% for c in diagnosticos %}<tr><td>{{ c.fecha.strftime('%d/%m/%Y') }}</td><td>{{ '%.1f'|format(c.ima or 0) }} %</td><td>{{ c.nivel }}</td>
+        <td><a href="{{ url_for('ficha_entidad', censo_id=c.id) }}">Ver ficha, riesgos y recomendaciones</a></td></tr>{% endfor %}</tbody>
     </table></div>
     {% else %}<p class="tp-meta mb-0">Todavía no hay diagnósticos enviados.</p>{% endif %}
   </div>
