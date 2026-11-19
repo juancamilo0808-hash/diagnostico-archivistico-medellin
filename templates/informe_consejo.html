@@ -46,7 +46,8 @@
     </div>
     <div class="d-flex gap-2">
       <a class="btn btn-outline-secondary btn-sm" href="{{ url_for('admin') }}"><i class="bi bi-arrow-left me-1" aria-hidden="true"></i>Panel</a>
-      <button class="btn btn-primary btn-sm fw-bold" type="button" onclick="window.print()"><i class="bi bi-printer me-1" aria-hidden="true"></i>Imprimir o guardar PDF</button>
+      <a class="btn btn-primary btn-sm fw-bold" href="{{ url_for('informe_consejo_word', desde=desde.isoformat() if desde else None, hasta=hasta.isoformat() if hasta else None) }}"><i class="bi bi-file-earmark-word me-1" aria-hidden="true"></i>Descargar en Word</a>
+      <button class="btn btn-outline-primary btn-sm fw-bold" type="button" onclick="window.print()"><i class="bi bi-printer me-1" aria-hidden="true"></i>Imprimir o guardar PDF</button>
     </div>
   </form>
 

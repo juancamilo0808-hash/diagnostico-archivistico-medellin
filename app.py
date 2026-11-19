@@ -2020,11 +2020,8 @@ def _clasificar(ima):
     return 'Bajo' if ima <= 33.33 else ('Medio' if ima <= 66.66 else 'Alto')
 
 
-@app.route('/admin/informe')
-@admin_required
-def informe_consejo():
-    desde = _fecha_param(request.args.get('desde'))
-    hasta = _fecha_param(request.args.get('hasta'))
+def _datos_informe(desde, hasta):
+    """Cifras del informe consolidado; las usan la vista imprimible y el archivo Word."""
     consulta = Censo.query
     if desde:
         consulta = consulta.filter(Censo.fecha >= datetime.combine(desde, datetime.min.time()))
@@ -2083,13 +2080,205 @@ def informe_consejo():
                          'total': len(del_tipo),
                          'estados': [(e, sum(1 for x in del_tipo if x.estado == e)) for e in cfg['estados']]})
 
-    return render_template('informe_consejo.html', desde=desde, hasta=hasta, generado=datetime.now(),
-                           directorio=directorio, diagnosticadas=len(ultimos), evaluadas=evaluadas,
-                           total_diagnosticos=len(registros), promedio=promedio, semaforo=semaforo,
-                           dimensiones=dimensiones, riesgos=riesgos, prioritarias=prioritarias,
-                           tramites=tramites, nombre_de=_sda_nombre, clasificar=_clasificar,
-                           nombres_dim={c: n for c, n in SDA_COMPONENTES},
-                           convalidaciones=_convalidaciones_publicadas().count(), actas=_actas_publicadas().count())
+    return dict(desde=desde, hasta=hasta, generado=datetime.now(),
+                directorio=directorio, diagnosticadas=len(ultimos), evaluadas=evaluadas,
+                total_diagnosticos=len(registros), promedio=promedio, semaforo=semaforo,
+                dimensiones=dimensiones, riesgos=riesgos, prioritarias=prioritarias,
+                tramites=tramites, nombre_de=_sda_nombre, clasificar=_clasificar,
+                nombres_dim={c: n for c, n in SDA_COMPONENTES},
+                convalidaciones=_convalidaciones_publicadas().count(), actas=_actas_publicadas().count())
+
+
+@app.route('/admin/informe')
+@admin_required
+def informe_consejo():
+    datos = _datos_informe(_fecha_param(request.args.get('desde')), _fecha_param(request.args.get('hasta')))
+    return render_template('informe_consejo.html', **datos)
+
+
+def _num(valor):
+    """Número con coma decimal, como se escribe en los informes en español."""
+    return f'{valor:.1f}'.replace('.', ',')
+
+
+@app.route('/admin/informe.docx')
+@admin_required
+def informe_consejo_word():
+    from docx import Document
+    from docx.enum.table import WD_TABLE_ALIGNMENT
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+    from docx.shared import Pt, RGBColor, Cm
+
+    d = _datos_informe(_fecha_param(request.args.get('desde')), _fecha_param(request.args.get('hasta')))
+    azul = RGBColor(0x12, 0x38, 0x52)
+    doc = Document()
+    for sec in doc.sections:
+        sec.top_margin = sec.bottom_margin = Cm(2.5)
+        sec.left_margin = sec.right_margin = Cm(2.5)
+    normal = doc.styles['Normal']
+    normal.font.name = 'Arial'
+    normal.font.size = Pt(11)
+    normal.element.rPr.rFonts.set(qn('w:eastAsia'), 'Arial')
+    normal.paragraph_format.space_after = Pt(6)
+    for nivel, tam in ((1, 14), (2, 12)):
+        st = doc.styles[f'Heading {nivel}']
+        st.font.name = 'Arial'
+        st.font.size = Pt(tam)
+        st.font.bold = True
+        st.font.color.rgb = azul
+        for atributo in ('w:ascii', 'w:hAnsi', 'w:eastAsia', 'w:cs'):
+            st.element.rPr.rFonts.set(qn(atributo), 'Arial')
+        for atributo in ('w:asciiTheme', 'w:hAnsiTheme', 'w:eastAsiaTheme', 'w:cstheme'):
+            st.element.rPr.rFonts.attrib.pop(qn(atributo), None)
+        st.paragraph_format.space_before = Pt(14 if nivel == 1 else 10)
+        st.paragraph_format.space_after = Pt(6)
+        st.paragraph_format.keep_with_next = True
+
+    def sombrear(celda, color):
+        tc = celda._tc.get_or_add_tcPr()
+        shd = OxmlElement('w:shd')
+        shd.set(qn('w:val'), 'clear')
+        shd.set(qn('w:color'), 'auto')
+        shd.set(qn('w:fill'), color)
+        tc.append(shd)
+
+    def tabla(encabezados, filas, anchos, derecha=()):
+        t = doc.add_table(rows=1, cols=len(encabezados))
+        t.style = 'Table Grid'
+        t.alignment = WD_TABLE_ALIGNMENT.CENTER
+        for i, texto in enumerate(encabezados):
+            c = t.rows[0].cells[i]
+            c.text = ''
+            run = c.paragraphs[0].add_run(texto)
+            run.bold = True
+            run.font.size = Pt(10)
+            run.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+            sombrear(c, '123852')
+        fila_enc = t.rows[0]._tr.get_or_add_trPr()
+        rep = OxmlElement('w:tblHeader')
+        rep.set(qn('w:val'), 'true')
+        fila_enc.append(rep)
+        for fila in filas:
+            celdas = t.add_row().cells
+            for i, valor in enumerate(fila):
+                celdas[i].text = ''
+                lineas = valor if isinstance(valor, (list, tuple)) else [valor]
+                par = celdas[i].paragraphs[0]
+                for n, linea in enumerate(lineas):
+                    if n:
+                        par = celdas[i].add_paragraph()
+                    run = par.add_run(str(linea))
+                    run.font.size = Pt(10 if n == 0 else 9)
+                    if n:
+                        run.italic = True
+                        run.font.color.rgb = RGBColor(0x56, 0x68, 0x7A)
+                    par.paragraph_format.space_after = Pt(0)
+                    if i in derecha:
+                        par.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        t.autofit = False
+        grid = t._tbl.tblGrid
+        for i, col in enumerate(grid.findall(qn('w:gridCol'))):
+            col.set(qn('w:w'), str(int(Cm(anchos[i]).twips)))
+        for fila in t.rows:
+            pr = fila._tr.get_or_add_trPr()
+            sin_corte = OxmlElement('w:cantSplit')
+            pr.append(sin_corte)
+            for i, ancho in enumerate(anchos):
+                fila.cells[i].width = Cm(ancho)
+        doc.add_paragraph()
+        return t
+
+    periodo = ('todos los diagnósticos registrados' if not (d['desde'] or d['hasta']) else
+               f"{d['desde'].strftime('%d/%m/%Y') if d['desde'] else 'inicio'} a {d['hasta'].strftime('%d/%m/%Y') if d['hasta'] else 'la fecha'}")
+    p = doc.add_paragraph()
+    r = p.add_run('CONSEJO DISTRITAL DE ARCHIVOS DE MEDELLÍN · SECRETARÍA TÉCNICA')
+    r.bold = True
+    r.font.size = Pt(9)
+    r.font.color.rgb = RGBColor(0x8A, 0x65, 0x10)
+    titulo = doc.add_heading('Informe del Diagnóstico Territorial Archivístico', level=1)
+    titulo.runs[0].font.size = Pt(16)
+    p = doc.add_paragraph(f"Periodo: {periodo}. Fecha de corte: {d['generado'].strftime('%d/%m/%Y')}.")
+    p.runs[0].font.size = Pt(10)
+
+    if not d['diagnosticadas']:
+        doc.add_paragraph('No hay diagnósticos registrados en el periodo seleccionado.')
+    else:
+        cobertura = d['diagnosticadas'] / d['directorio'] * 100 if d['directorio'] else 0
+        sem = d['semaforo']
+        doc.add_paragraph(
+            f"{d['diagnosticadas']} de {d['directorio']} entidades del directorio ({_num(cobertura)} %) han diligenciado el "
+            f"diagnóstico. El nivel de madurez promedio es de {_num(d['promedio'])} % (nivel {d['clasificar'](d['promedio']).lower()}), "
+            f"y {sem['Bajo']} {'entidad requiere' if sem['Bajo'] == 1 else 'entidades requieren'} atención prioritaria por estar en nivel bajo.")
+
+        doc.add_heading('1. Cobertura y resultado general', level=2)
+        tabla(['Indicador', 'Resultado'], [
+            ['Entidades del directorio (sujetos obligados)', str(d['directorio'])],
+            ['Entidades con diagnóstico', f"{d['diagnosticadas']} ({_num(cobertura)} %)"],
+            ['Diagnósticos registrados en el periodo', str(d['total_diagnosticos'])],
+            ['Nivel de madurez promedio', f"{_num(d['promedio'])} %"],
+        ], [11, 5], derecha=(1,))
+        total = sum(sem.values()) or 1
+        doc.add_paragraph('Distribución de las entidades según el semáforo del nivel de madurez:')
+        tabla(['Clasificación', 'Rango', 'Entidades', '%'], [
+            ['Bajo', '0 a 33,33 %', str(sem['Bajo']), _num(sem['Bajo'] / total * 100) + ' %'],
+            ['Medio', 'Más de 33,33 hasta 66,66 %', str(sem['Medio']), _num(sem['Medio'] / total * 100) + ' %'],
+            ['Alto', 'Más de 66,66 hasta 100 %', str(sem['Alto']), _num(sem['Alto'] / total * 100) + ' %'],
+        ], [3.5, 6.5, 3, 3], derecha=(2, 3))
+
+        doc.add_heading('2. Avance promedio por dimensión', level=2)
+        tabla(['Dimensión', 'Avance promedio', 'Clasificación'],
+              [[x['nombre'], (_num(x['valor']) + ' %') if x['valor'] is not None else 'Sin datos',
+                d['clasificar'](x['valor']) if x['valor'] is not None else '—'] for x in d['dimensiones']],
+              [8, 4, 4], derecha=(1,))
+        con_valor = [x for x in d['dimensiones'] if x['valor'] is not None]
+        if con_valor:
+            baja = min(con_valor, key=lambda x: x['valor'])
+            doc.add_paragraph(f"La dimensión con menor avance es {baja['nombre'].lower()} ({_num(baja['valor'])} %).")
+
+        doc.add_heading('3. Riesgos más frecuentes', level=2)
+        if d['riesgos']:
+            doc.add_paragraph(f"Problemas que más se repiten entre las {d['evaluadas']} entidades evaluadas con el formulario vigente.")
+            tabla(['Riesgo', 'Entidades', '%', 'Recomendación y soporte normativo'],
+                  [[[x['titulo'], d['nombres_dim'].get(x['dimension'], '')], str(x['n']),
+                    f"{round(x['n'] / d['evaluadas'] * 100)} %", [x['recomendacion']] + ([x['norma']] if x['norma'] else [])]
+                   for x in d['riesgos']], [5, 2.4, 1.6, 7], derecha=(1, 2))
+        else:
+            doc.add_paragraph('No hay diagnósticos con el formulario vigente en el periodo.')
+
+        doc.add_heading('4. Entidades que requieren atención prioritaria', level=2)
+        if d['prioritarias']:
+            tabla(['Entidad', 'Fecha del diagnóstico', 'Nivel de madurez'],
+                  [[d['nombre_de'](x), x.fecha.strftime('%d/%m/%Y'), _num(x.ima or 0) + ' %'] for x in d['prioritarias']],
+                  [9, 3.5, 3.5], derecha=(2,))
+        else:
+            doc.add_paragraph('Ninguna entidad está en nivel bajo.')
+
+        doc.add_heading('5. Servicios en línea y transparencia', level=2)
+        filas = []
+        for t in d['tramites']:
+            detalle = '; '.join(f'{e}: {n}' for e, n in t['estados'] if n)
+            filas.append([f"Solicitudes de {t['nombre'][0].lower() + t['nombre'][1:]}", [str(t['total'])] + ([detalle] if detalle else [])])
+        filas.append(['TRD y TVD convalidadas publicadas', str(d['convalidaciones'])])
+        filas.append(['Actas del Consejo publicadas', str(d['actas'])])
+        tabla(['Concepto', 'Cantidad'], filas, [10, 6])
+
+    nota = doc.add_paragraph(
+        'Fuente: herramienta de Diagnóstico Territorial Archivístico del Consejo Distrital de Archivos de Medellín. '
+        'Las cifras usan el diagnóstico más reciente de cada entidad. El nivel de madurez es el promedio de cinco '
+        'dimensiones calificadas con 0, 0,5 o 1; los riesgos se generan con reglas sobre las respuestas y orientan el '
+        'acompañamiento, sin constituir certificación de cumplimiento normativo.')
+    for run in nota.runs:
+        run.font.size = Pt(9)
+        run.font.color.rgb = RGBColor(0x56, 0x68, 0x7A)
+
+    salida = BytesIO()
+    doc.save(salida)
+    salida.seek(0)
+    nombre = f"Informe_diagnostico_territorial_{d['generado'].strftime('%Y-%m-%d')}.docx"
+    return send_file(salida, as_attachment=True, download_name=nombre,
+                     mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
 
 
 def _fecha_param(valor):
