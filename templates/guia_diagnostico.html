@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Guía para diligenciar el diagnóstico | Consejo Distrital de Archivos{% endblock %}
+{% block description %}Cómo diligenciar el Diagnóstico Territorial Archivístico: ingreso, secciones, cada pregunta y sus opciones, evidencias, cálculo del nivel de madurez y resultados.{% endblock %}
+{% block content %}
+<style>
+  .gd-hero { background:linear-gradient(160deg, #071f38, #0b2d50 60%, #0f3a63); color:#fff; padding:2.4rem 0 4.6rem; }
+  .gd-hero .k { font-size:.75rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:#e3b64a; }
+  .gd-hero h1 { color:#fff; font-weight:800; margin:.4rem 0 .5rem; }
+  .gd-hero p { color:rgba(255,255,255,.82); max-width:46rem; margin:0; }
+  .gd-hero a.crumb { color:#fff; }
+  .gd-wrap { margin-top:-3rem; padding-bottom:3rem; }
+  .gd-card { background:#fff; border:1px solid #dce4ec; border-radius:18px; padding:1.4rem 1.5rem; margin-bottom:1.2rem; }
+  .gd-card h2 { font-size:1.2rem; font-weight:800; color:#0b2d50; margin:0 0 .8rem; }
+  .gd-index { display:flex; flex-wrap:wrap; gap:.4rem; }
+  .gd-index a { font-size:.85rem; font-weight:700; color:#123b65; background:#eaf3fb; border-radius:999px; padding:.35rem .8rem; text-decoration:none; }
+  .gd-index a:hover, .gd-index a:focus-visible { background:#123b65; color:#fff; }
+  .gd-steps { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:.8rem; list-style:none; padding:0; margin:0; counter-reset:s; }
+  .gd-steps li { border:1px solid #e4ebf1; border-radius:14px; padding:1rem; position:relative; }
+  .gd-steps li::before { counter-increment:s; content:counter(s); display:grid; place-items:center; width:2rem; height:2rem; border-radius:50%; background:#0b2d50; color:#fff; font-weight:800; margin-bottom:.5rem; }
+  .gd-steps b { display:block; color:#0b2d50; margin-bottom:.2rem; }
+  .gd-steps span { font-size:.88rem; color:#334155; }
+  .gd-sec { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:.6rem; }
+  .gd-sec div { background:#f5f8fb; border-radius:12px; padding:.75rem .9rem; font-size:.88rem; }
+  .gd-sec b { color:#0b2d50; }
+  .gd-q .accordion-button { font-weight:700; color:#0b2d50; }
+  .gd-q .accordion-button:not(.collapsed) { background:#f7f2e4; color:#0b2d50; box-shadow:none; }
+  .gd-dim { font-size:.72rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:#8a6510; display:block; margin-bottom:.15rem; }
+  .gd-opts { width:100%; font-size:.88rem; margin:.6rem 0; }
+  .gd-opts th { font-size:.74rem; text-transform:uppercase; letter-spacing:.04em; color:#56687a; background:#f5f8fb; }
+  .gd-pts { font-weight:800; white-space:nowrap; }
+  .gd-tip { font-size:.86rem; background:#eef5fb; border-radius:10px; padding:.55rem .8rem; margin-top:.5rem; }
+  .gd-heat { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:.6rem; }
+  .gd-heat div { border-radius:12px; padding:.8rem 1rem; font-size:.9rem; }
+  .gd-heat b { display:block; font-size:1.05rem; }
+  @media (max-width: 991.98px) { .gd-steps { grid-template-columns:repeat(2, minmax(0,1fr)); } .gd-sec { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+  @media (max-width: 575.98px) { .gd-steps, .gd-sec, .gd-heat { grid-template-columns:1fr; } }
+</style>
+
+<section class="gd-hero"><div class="container">
+  <div class="k"><a class="crumb" href="{{ url_for('ayuda') }}">Centro de ayuda</a> · Diagnóstico territorial</div>
+  <h1>Guía para diligenciar el diagnóstico</h1>
+  <p>Todo lo que necesita saber para responder el Diagnóstico Territorial Archivístico: cómo ingresar, qué pregunta cada sección, cómo elegir la respuesta y qué recibe la entidad al final.</p>
+</div></section>
+
+<div class="container gd-wrap">
+  <nav class="gd-card" aria-label="Contenido de la guía">
+    <div class="gd-index">
+      <a href="#antes">Antes de empezar</a><a href="#pasos">Paso a paso</a><a href="#secciones">Secciones</a>
+      <a href="#preguntas">Pregunta por pregunta</a><a href="#calculo">Cómo se calcula</a><a href="#resultado">Qué recibe la entidad</a><a href="#faq">Preguntas frecuentes</a>
+    </div>
+  </nav>
+
+  <section class="gd-card" id="antes" aria-labelledby="t-antes">
+    <h2 id="t-antes">Antes de empezar</h2>
+    <ul class="mb-2">
+      <li><strong>NIT de la entidad,</strong> sin dígito de verificación. Es el usuario de ingreso; la clave son sus últimos 4 dígitos.</li>
+      <li><strong>Datos del responsable de gestión documental:</strong> nombre, cargo, correo y teléfono. Si la entidad está en el directorio, se cargan solos y puede corregirlos.</li>
+      <li><strong>Documentos de soporte a la mano:</strong> Política de Gestión Documental, Programa de Gestión Documental (PGD), Tablas de Retención Documental (TRD), plan de capacitación y, si existe, información del sistema de gestión de documentos electrónicos.</li>
+      <li><strong>Enlaces o referencias a las evidencias,</strong> por ejemplo la carpeta compartida o el número del acto administrativo.</li>
+    </ul>
+    <p class="mb-0">Se recomienda que lo diligencie el responsable de gestión documental, con apoyo de las áreas de planeación y de tecnología.</p>
+  </section>
+
+  <section class="gd-card" id="pasos" aria-labelledby="t-pasos">
+    <h2 id="t-pasos">Paso a paso</h2>
+    <ol class="gd-steps">
+      <li><b>Ingrese con el NIT</b><span>Usuario: NIT. Clave: últimos 4 dígitos. Si varias dependencias comparten el NIT, elija la suya en la lista.</span></li>
+      <li><b>Revise la identificación</b><span>Confirme los datos de la entidad y del responsable. El nombre y el NIT quedan fijos según el ingreso.</span></li>
+      <li><b>Responda las secciones B a F</b><span>Diez preguntas. Según la respuesta, aparecen preguntas complementarias y un campo para la evidencia.</span></li>
+      <li><b>Autorice y envíe</b><span>Marque la autorización de tratamiento de datos y pulse «Guardar diagnóstico». Recibirá su resultado de inmediato.</span></li>
+    </ol>
+    <p class="gd-tip mb-0"><i class="bi bi-cloud-check me-1" aria-hidden="true"></i><strong>El avance se guarda solo.</strong> Puede cerrar la página y continuar después ingresando de nuevo con el NIT: el borrador queda a nombre de la entidad. La sesión se cierra tras 2 horas sin actividad.</p>
+  </section>
+
+  <section class="gd-card" id="secciones" aria-labelledby="t-sec">
+    <h2 id="t-sec">Las seis secciones</h2>
+    <p>Las secciones B a F corresponden a los componentes del Modelo de Gestión Documental y Administración de Archivos (MGDA) del Archivo General de la Nación.</p>
+    <div class="gd-sec">
+      <div><b>A. Identificación</b><br>Datos de la entidad y del responsable. No suma puntaje.</div>
+      <div><b>B. Estratégico</b><br>Política de Gestión Documental y seguimiento al PGD (preguntas 1 y 2).</div>
+      <div><b>C. Administración de archivos</b><br>Personal y condiciones de los depósitos (preguntas 3 y 4).</div>
+      <div><b>D. Procesos de gestión documental</b><br>Tablas de Retención Documental y procedimientos (preguntas 5 y 6).</div>
+      <div><b>E. Tecnológico</b><br>Sistema de gestión de documentos electrónicos y preservación digital (preguntas 7 y 8).</div>
+      <div><b>F. Cultural</b><br>Capacitación y acción prioritaria (preguntas 9 y 10).</div>
+    </div>
+  </section>
+
+  <section class="gd-card" id="preguntas" aria-labelledby="t-preg">
+    <h2 id="t-preg">Pregunta por pregunta</h2>
+    <p>Responda según la situación <strong>real y verificable</strong> de la entidad, no según lo que está planeado. Que un documento exista no significa que esté implementado.</p>
+    <div class="accordion gd-q" id="acPreg">
+      {% set preguntas = [
+        ('p1', 'B. Estratégico', '1. Estado de la Política de Gestión Documental',
+          [('No existe', '0', 'La entidad no ha formulado la política.'), ('En desarrollo, aprobada o en implementación', '0,5', 'Hay avance, pero aún no se aplica completamente o no tiene seguimiento.'), ('Implementada y con seguimiento', '1', 'Se aplica y se mide su cumplimiento.')],
+          'Acto administrativo de adopción (resolución o decreto) y, si aplica, el informe de seguimiento.'),
+        ('p2', 'B. Estratégico', '2. Seguimiento al Programa de Gestión Documental (PGD)',
+          [('No', '0', 'No se hace seguimiento o no hay PGD formulado.'), ('Parcialmente', '0,5', 'Hay seguimiento ocasional o sin acciones de mejora.'), ('Sí', '1', 'Se hace seguimiento periódico y se registran acciones de mejora.')],
+          'Informe de seguimiento del PGD, actas del Comité Institucional de Gestión y Desempeño o plan de mejoramiento.'),
+        ('p3', 'C. Administración de archivos', '3. Personas en gestión documental y archivo',
+          [], 'Número de personas (planta o contrato) que cumplen funciones de gestión documental. No suma puntaje, pero si hay una sola persona o ninguna la ficha lo marca como riesgo.'),
+        ('p4', 'C. Administración de archivos', '4. Condiciones de los depósitos de archivo',
+          [('No', '0', 'Hay humedad, sobrecupo, riesgo de pérdida o acceso sin control.'), ('Parcialmente', '0,5', 'Cumplen algunas condiciones de espacio, seguridad o ambiente, pero no todas.'), ('Sí', '1', 'Espacio, mobiliario, seguridad y condiciones ambientales adecuadas.')],
+          'Diagnóstico integral de archivo, registros de condiciones ambientales o fotografías del depósito.'),
+        ('p5', 'D. Procesos de gestión documental', '5. Estado de las Tablas de Retención Documental (TRD)',
+          [('No elaboradas', '0', 'La entidad no tiene TRD.'), ('En elaboración, en evaluación, convalidadas, en implementación o por actualizar', '0,5', 'Hay avance, pero aún no se aplican plenamente o están desactualizadas.'), ('Implementadas', '1', 'Convalidadas, inscritas y aplicadas en la organización de los archivos.')],
+          'Acto de aprobación, concepto de convalidación del Consejo o certificado de inscripción en el Registro Único de Series Documentales (RUSD).'),
+        ('p6', 'D. Procesos de gestión documental', '6. Procesos con procedimientos documentados',
+          [], 'Marque cuáles de los ocho procesos de la gestión documental (planeación, producción, gestión y trámite, organización, transferencias, disposición final, preservación a largo plazo y valoración) tienen procedimiento o evidencia de ejecución. No suma puntaje; los faltantes aparecen como riesgo.'),
+        ('p7', 'E. Tecnológico', '7. Sistema de gestión de documentos electrónicos (SGDEA)',
+          [('No', '0', 'No hay un sistema que controle el ciclo de vida de los documentos.'), ('Parcialmente', '0,5', 'Hay un sistema, pero cubre solo algunos procesos o no garantiza la trazabilidad.'), ('Sí', '1', 'Un sistema controla el ciclo de vida y la trazabilidad de los documentos.')],
+          'Nombre del sistema, procesos que cubre y, si aplica, el documento de requisitos.'),
+        ('p8', 'E. Tecnológico', '8. Mecanismos de seguridad y preservación digital',
+          [], 'Marque los que existen: copias de seguridad verificadas, controles de acceso, registros de auditoría, verificación de integridad, migración de formatos y plan de preservación digital. No suma puntaje; los faltantes aparecen como riesgo.'),
+        ('p9', 'F. Cultural', '9. Capacitación y sensibilización en gestión documental',
+          [('No se realiza', '0', 'No hay capacitaciones.'), ('Ocasional', '0,5', 'Se hacen sin planeación ni población objetivo definida.'), ('Planificada y periódica', '1', 'Están en el Plan Institucional de Capacitación y se hacen con regularidad.')],
+          'Plan Institucional de Capacitación, listas de asistencia o material de las jornadas.'),
+        ('p10', 'F. Cultural', '10. Acción prioritaria para mejorar el acceso y uso de la información',
+          [], 'Respuesta abierta. Describa en pocas líneas qué acción considera más urgente para la entidad. No suma puntaje; orienta la asistencia técnica del Consejo.'),
+      ] %}
+      {% for id, dim, titulo, opciones, nota in preguntas %}
+      <div class="accordion-item">
+        <h3 class="accordion-header" id="h-{{ id }}"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-{{ id }}" aria-expanded="false" aria-controls="c-{{ id }}"><span><span class="gd-dim">{{ dim }}</span>{{ titulo }}</span></button></h3>
+        <div id="c-{{ id }}" class="accordion-collapse collapse" aria-labelledby="h-{{ id }}" data-bs-parent="#acPreg">
+          <div class="accordion-body">
+            {% if opciones %}
+            <div class="table-responsive"><table class="table table-sm gd-opts">
+              <thead><tr><th scope="col">Opción</th><th scope="col">Cuándo elegirla</th><th scope="col" class="text-end">Puntaje</th></tr></thead>
+              <tbody>{% for o, p, cuando in opciones %}<tr><td>{{ o }}</td><td>{{ cuando }}</td><td class="text-end gd-pts">{{ p }}</td></tr>{% endfor %}</tbody>
+            </table></div>
+            <p class="gd-tip mb-0"><strong>Evidencia sugerida:</strong> {{ nota }}</p>
+            {% else %}<p class="mb-0">{{ nota }}</p>{% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="mt-3 mb-0"><strong>«No se tiene información» y «No aplica»:</strong> úselas solo cuando de verdad no pueda responder. No cuentan en el cálculo, pero la ficha las señala para que el Consejo las revise con la entidad.</p>
+  </section>
+
+  <section class="gd-card" id="calculo" aria-labelledby="t-calc">
+    <h2 id="t-calc">Cómo se calcula el nivel de madurez</h2>
+    <p>Cada respuesta puntuable vale 0, 0,5 o 1. Se promedia cada dimensión (B a F) y el nivel de madurez es el promedio de las dimensiones, en porcentaje. El resultado se ubica en el mapa de calor:</p>
+    <div class="gd-heat">
+      <div style="background:#fdecea"><b style="color:#b42318">Bajo</b>0 a {{ UMBRAL_BAJO }} %</div>
+      <div style="background:#fbf3df"><b style="color:#7a5a00">Medio</b>más de {{ UMBRAL_BAJO }} hasta {{ UMBRAL_MEDIO }} %</div>
+      <div style="background:#e3f4ea"><b style="color:#14532d">Alto</b>más de {{ UMBRAL_MEDIO }} hasta 100 %</div>
+    </div>
+  </section>
+
+  <section class="gd-card" id="resultado" aria-labelledby="t-res">
+    <h2 id="t-res">Qué recibe la entidad</h2>
+    <ul class="mb-0">
+      <li>El <strong>nivel de madurez</strong> y su clasificación en el mapa de calor.</li>
+      <li>La <strong>ficha de diagnóstico</strong>, con el puntaje de cada dimensión, los riesgos encontrados (alto, medio o bajo) y una recomendación para cada uno con la norma en la que se apoya. Se puede imprimir o guardar en PDF.</li>
+      <li>Si la entidad ya había hecho un diagnóstico, la ficha muestra <strong>cuánto subió o bajó</strong> cada dimensión.</li>
+      <li>Todo queda disponible en <strong>«Mi entidad»</strong> al ingresar con el NIT.</li>
+    </ul>
+  </section>
+
+  <section class="gd-card" id="faq" aria-labelledby="t-faq">
+    <h2 id="t-faq">Preguntas frecuentes del diagnóstico</h2>
+    <div class="accordion gd-q" id="acFaq">
+      {% set faq = [
+        ('f1', '¿Quién debe diligenciar el diagnóstico?', 'El responsable de gestión documental de la entidad, con apoyo de las áreas que tengan la información (planeación, tecnología, talento humano).'),
+        ('f2', '¿Olvidé la clave o la entidad no puede ingresar?', 'La clave son los últimos 4 dígitos del NIT, sin el dígito de verificación. Si la entidad no aparece o el NIT no coincide, escriba a consejodarchivo@medellin.gov.co con el nombre de la entidad y el NIT.'),
+        ('f3', 'Mi entidad comparte NIT con otras dependencias, ¿qué hago?', 'Después de ingresar, elija su dependencia en la lista. Cada dependencia tiene su propio diagnóstico y su propio borrador.'),
+        ('f4', '¿Puedo corregir el diagnóstico después de enviarlo?', 'Puede enviar uno nuevo cuando lo necesite. El anterior queda en el historial y la ficha compara ambos resultados.'),
+        ('f5', '¿Cada cuánto se debe diligenciar?', 'Cuando el Consejo lo convoque, y cada vez que la entidad tenga avances importantes que quiera reflejar.'),
+        ('f6', '¿Los resultados son públicos?', 'No. El resultado de cada entidad solo lo ven la propia entidad y el equipo del Consejo. En el sitio solo se publican cifras totales.'),
+        ('f7', '¿El resultado es una certificación de cumplimiento?', 'No. Es un instrumento de diagnóstico que orienta el acompañamiento del Consejo; no reemplaza las verificaciones de las autoridades competentes.'),
+      ] %}
+      {% for id, q, a in faq %}
+      <div class="accordion-item">
+        <h3 class="accordion-header" id="h-{{ id }}"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-{{ id }}" aria-expanded="false" aria-controls="c-{{ id }}">{{ q }}</button></h3>
+        <div id="c-{{ id }}" class="accordion-collapse collapse" aria-labelledby="h-{{ id }}" data-bs-parent="#acFaq"><div class="accordion-body">{{ a }}</div></div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <div class="text-center">
+    <a href="{{ url_for('censo') }}" class="btn btn-primary btn-lg px-4"><i class="bi bi-clipboard-check me-1" aria-hidden="true"></i>Ir al diagnóstico</a>
+    <a href="{{ url_for('ayuda') }}" class="btn btn-link">Volver al centro de ayuda</a>
+  </div>
+</div>
+{% endblock %}

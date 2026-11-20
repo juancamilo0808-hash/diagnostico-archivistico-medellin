@@ -151,9 +151,9 @@
                         </ul>
                     </div>
 
-                    <a class="nav-link {% if request.endpoint == 'ayuda' %}active{% endif %}"
+                    <a class="nav-link {% if request.endpoint in ('ayuda', 'guia_diagnostico') %}active{% endif %}"
                        href="{{ url_for('ayuda') }}">
-                        <i class="bi bi-question-circle"></i> Ayuda
+                        <i class="bi bi-question-circle"></i> Centro de ayuda
                     </a>
 
                     <a class="btn btn-nav" href="{{ url_for('admin') }}">

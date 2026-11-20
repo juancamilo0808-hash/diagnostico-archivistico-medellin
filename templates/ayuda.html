@@ -1,283 +1,190 @@
-
 {% extends "base.html" %}
-
+{% block title %}Centro de ayuda | Consejo Distrital de Archivos{% endblock %}
+{% block description %}Orientación del Consejo Distrital de Archivos de Medellín: preguntas frecuentes, competencia del Consejo, convalidación de TRD y TVD, diagnóstico, asistencia técnica, normativa y glosario archivístico.{% endblock %}
 {% block content %}
-<div class="container py-4">
+<style>
+  .ca-hero { background:linear-gradient(160deg, #071f38, #0b2d50 60%, #0f3a63); color:#fff; padding:2.6rem 0 5rem; text-align:center; }
+  .ca-hero .k { font-size:.75rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:#e3b64a; }
+  .ca-hero h1 { color:#fff; font-weight:800; margin:.4rem 0 .4rem; }
+  .ca-hero p { color:rgba(255,255,255,.82); margin:0 auto 1.3rem; max-width:40rem; }
+  .ca-search { max-width:38rem; margin:0 auto; position:relative; }
+  .ca-search input { border-radius:999px; padding:.85rem 1.2rem .85rem 2.9rem; font-size:1rem; border:0; }
+  .ca-search i { position:absolute; left:1.1rem; top:50%; transform:translateY(-50%); color:#56687a; }
+  .ca-wrap { margin-top:-3rem; padding-bottom:3rem; }
+  .ca-cats { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:.9rem; margin-bottom:1.6rem; }
+  .ca-cat { background:#fff; border:1px solid #dce4ec; border-radius:16px; padding:1.1rem; display:grid; grid-template-columns:2.6rem 1fr; gap:.8rem; text-decoration:none; color:inherit; }
+  .ca-cat:hover, .ca-cat:focus-visible { border-color:#2f7fd1; box-shadow:0 8px 22px rgba(13,42,72,.1); color:inherit; }
+  .ca-cat .ico { width:2.6rem; height:2.6rem; border-radius:12px; display:grid; place-items:center; background:#eaf3fb; color:#123b65; font-size:1.2rem; }
+  .ca-cat b { display:block; color:#0b2d50; }
+  .ca-cat span { font-size:.86rem; color:#56687a; }
+  .ca-card { background:#fff; border:1px solid #dce4ec; border-radius:18px; padding:1.4rem 1.5rem; margin-bottom:1.2rem; scroll-margin-top:90px; }
+  .ca-card h2 { font-size:1.2rem; font-weight:800; color:#0b2d50; margin:0 0 .8rem; }
+  .ca-q .accordion-button { font-weight:700; color:#0b2d50; }
+  .ca-q .accordion-button:not(.collapsed) { background:#f7f2e4; color:#0b2d50; box-shadow:none; }
+  .ca-check { list-style:none; padding:0; margin:0; }
+  .ca-check li { padding:.5rem 0 .5rem 1.9rem; position:relative; border-top:1px solid #eef2f6; }
+  .ca-check li:first-child { border-top:0; }
+  .ca-check li i { position:absolute; left:0; top:.55rem; font-size:1.1rem; }
+  .ca-find { display:flex; gap:.5rem; flex-wrap:wrap; }
+  .ca-find input { flex:1; min-width:14rem; }
+  .ca-res { margin-top:.7rem; font-size:.92rem; }
+  .ca-flow { list-style:none; padding:0; margin:0; display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:.6rem; counter-reset:f; }
+  .ca-flow li { background:#f5f8fb; border-radius:12px; padding:.8rem .9rem; font-size:.88rem; }
+  .ca-flow li::before { counter-increment:f; content:counter(f); display:inline-grid; place-items:center; width:1.6rem; height:1.6rem; border-radius:50%; background:#0b2d50; color:#fff; font-weight:800; font-size:.8rem; margin-bottom:.35rem; }
+  .ca-flow b { display:block; color:#0b2d50; }
+  .ca-glos { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:.2rem 1.4rem; margin:0; }
+  .ca-glos div { padding:.55rem 0; border-top:1px solid #eef2f6; }
+  .ca-glos dt { color:#0b2d50; }
+  .ca-glos dd { margin:0; font-size:.9rem; color:#334155; }
+  .ca-empty { display:none; text-align:center; color:#56687a; padding:1rem; }
+  @media (max-width: 991.98px) { .ca-cats { grid-template-columns:repeat(2, minmax(0,1fr)); } .ca-flow { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+  @media (max-width: 575.98px) { .ca-cats, .ca-flow, .ca-glos { grid-template-columns:1fr; } }
+</style>
 
-    <!-- Encabezado -->
-    <div class="p-4 p-md-5 mb-4 rounded-4 text-white"
-         style="background: linear-gradient(135deg, #102b4e, #1d527c);">
-        <div class="d-flex align-items-center gap-3 mb-3">
-            <i class="bi bi-question-circle-fill"
-               style="font-size: 3rem;"></i>
-            <div>
-                <h1 class="h2 fw-bold mb-1">Centro de Ayuda</h1>
-                <p class="mb-0">
-                    Diagnóstico Archivístico Territorial
-                </p>
-            </div>
-        </div>
-        <p class="mb-0">
-            Encuentra orientación para diligenciar el instrumento,
-            comprender sus secciones y consultar los resultados.
-        </p>
+<section class="ca-hero"><div class="container">
+  <div class="k">Consejo Distrital de Archivos de Medellín</div>
+  <h1>¿En qué podemos ayudarle?</h1>
+  <p>Orientación sobre los servicios del Consejo, los trámites de instrumentos archivísticos y el diagnóstico territorial.</p>
+  <div class="ca-search" role="search">
+    <i class="bi bi-search" aria-hidden="true"></i>
+    <label for="caBuscar" class="visually-hidden">Buscar en el centro de ayuda</label>
+    <input type="search" id="caBuscar" class="form-control" placeholder="Buscar: convalidación, TRD, clave, asistencia…" autocomplete="off">
+  </div>
+</div></section>
+
+<div class="container ca-wrap">
+  <nav class="ca-cats" aria-label="Temas del centro de ayuda">
+    <a class="ca-cat" href="#faq"><span class="ico"><i class="bi bi-question-circle" aria-hidden="true"></i></span><span><b>Preguntas frecuentes</b>El Consejo, sus funciones y cuándo acudir a él.</span></a>
+    <a class="ca-cat" href="#competencia"><span class="ico"><i class="bi bi-building-check" aria-hidden="true"></i></span><span><b>¿Mi entidad debe acudir al Consejo?</b>Competencia y sujetos obligados.</span></a>
+    <a class="ca-cat" href="#trd"><span class="ico"><i class="bi bi-patch-check" aria-hidden="true"></i></span><span><b>Convalidación de TRD y TVD</b>Cómo se presentan y qué plazos aplican.</span></a>
+    <a class="ca-cat" href="{{ url_for('guia_diagnostico') }}"><span class="ico"><i class="bi bi-clipboard2-check" aria-hidden="true"></i></span><span><b>Diagnóstico territorial</b>Guía para diligenciarlo paso a paso.</span></a>
+    <a class="ca-cat" href="{{ url_for('servicios_en_linea', servicio='asistencia') }}"><span class="ico"><i class="bi bi-headset" aria-hidden="true"></i></span><span><b>Asistencia técnica</b>Solicite acompañamiento del Consejo.</span></a>
+    <a class="ca-cat" href="{{ url_for('normatividad') }}"><span class="ico"><i class="bi bi-journal-text" aria-hidden="true"></i></span><span><b>Normativa y guías</b>Normas archivísticas en orden jerárquico.</span></a>
+  </nav>
+
+  <p class="ca-empty" id="caVacio" role="status">No encontramos resultados. Pruebe con otras palabras o escriba a <a href="mailto:consejodarchivo@medellin.gov.co">consejodarchivo@medellin.gov.co</a>.</p>
+
+  <section class="ca-card" id="faq" aria-labelledby="t-faq">
+    <h2 id="t-faq">Preguntas frecuentes</h2>
+    <div class="accordion ca-q" id="acFaq">
+      {% set faq = [
+        ('q1', '¿Qué es el Consejo Distrital de Archivos de Medellín?', 'Es la instancia asesora y de articulación del Sistema Nacional de Archivos en el Distrito, creada por el Decreto Distrital 0673 de 2024. Promueve el desarrollo de la función archivística en las entidades del Distrito.'),
+        ('q2', '¿Cuáles son sus funciones?', 'Entre otras: asesorar en la aplicación de la política archivística, hacer seguimiento al cumplimiento de las normas, evaluar y convalidar las Tablas de Retención Documental (TRD) y de Valoración Documental (TVD), e informar al Archivo General de la Nación. La lista completa está en la página de inicio, pestaña «Funciones».'),
+        ('q3', '¿Qué hace y qué no hace el Consejo?', 'Asesora, evalúa, hace seguimiento y formula recomendaciones. No ejerce inspección, vigilancia, control ni sanción: esas funciones corresponden al Archivo General de la Nación u otras autoridades.'),
+        ('q4', '¿Qué es una asistencia técnica?', 'Es el acompañamiento que el Consejo brinda a una entidad en temas de gestión documental: orientación sobre instrumentos archivísticos, organización de archivos, preparación de TRD o TVD, entre otros. Se solicita en Servicios en línea y se le hace seguimiento con el número de solicitud.'),
+        ('q5', '¿Cuándo debo acudir al Consejo?', 'Cuando la entidad necesite presentar sus TRD o TVD para evaluación y convalidación, requiera orientación técnica en gestión documental, o deba diligenciar el diagnóstico territorial cuando el Consejo lo convoque.'),
+        ('q6', '¿Las sesiones del Consejo son públicas?', 'Sí, salvo los asuntos con reserva legal o información clasificada. Las actas aprobadas se publican en Transparencia, en «Actas del Consejo».'),
+        ('q7', '¿Cómo consulto el estado de una solicitud?', 'En Servicios en línea, pestaña «Consultar trámite», con el número de solicitud (por ejemplo CDA-AT-…) y el correo con el que la registró.'),
+      ] %}
+      {% for id, q, a in faq %}
+      <div class="accordion-item ca-item">
+        <h3 class="accordion-header" id="h-{{ id }}"><button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#c-{{ id }}" aria-expanded="false" aria-controls="c-{{ id }}">{{ q }}</button></h3>
+        <div id="c-{{ id }}" class="accordion-collapse collapse" aria-labelledby="h-{{ id }}" data-bs-parent="#acFaq"><div class="accordion-body">{{ a }}</div></div>
+      </div>
+      {% endfor %}
     </div>
+  </section>
 
-    <!-- Introducción -->
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-body p-4">
-            <h2 class="h4 fw-bold" style="color: #17365d;">
-                <i class="bi bi-info-circle me-2"></i>
-                ¿Cómo utilizar la herramienta?
-            </h2>
-            <p class="mb-0">
-                Esta herramienta permite recopilar información sobre
-                la gestión documental y el estado de los archivos de
-                las entidades. Para obtener información útil, responde
-                cada pregunta con base en la situación real de tu entidad
-                y en los documentos que permitan respaldar las respuestas.
-            </p>
-        </div>
+  <section class="ca-card ca-item" id="competencia" aria-labelledby="t-comp">
+    <h2 id="t-comp">¿Mi entidad debe acudir al Consejo Distrital de Archivos?</h2>
+    <p>En general, acuden al Consejo las entidades que cumplen la función archivística dentro del Distrito de Medellín:</p>
+    <ul class="ca-check mb-3">
+      <li><i class="bi bi-check-circle-fill text-success" aria-hidden="true"></i><strong>Entidades públicas del orden distrital,</strong> del sector central y descentralizado: secretarías, departamentos administrativos, establecimientos públicos, empresas y sociedades del Distrito, entre otras.</li>
+      <li><i class="bi bi-check-circle-fill text-success" aria-hidden="true"></i><strong>Particulares que cumplen funciones públicas</strong> en el Distrito, respecto de los documentos que producen en ejercicio de esas funciones.</li>
+      <li><i class="bi bi-x-circle-fill text-danger" aria-hidden="true"></i><strong>Entidades del orden nacional,</strong> aunque tengan sede en Medellín: sus instrumentos los evalúa el Archivo General de la Nación.</li>
+      <li><i class="bi bi-info-circle-fill text-primary" aria-hidden="true"></i><strong>Archivos privados</strong> sin funciones públicas: pueden pedir orientación de forma voluntaria.</li>
+    </ul>
+    <h3 class="h6 fw-bold">Busque su entidad en el directorio del Consejo</h3>
+    <div class="ca-find">
+      <label for="caEntidad" class="visually-hidden">Nombre o sigla de la entidad</label>
+      <input type="search" id="caEntidad" class="form-control" placeholder="Nombre o sigla de la entidad" autocomplete="off">
     </div>
+    <div class="ca-res" id="caEntidadRes" role="status" aria-live="polite"></div>
+    <p class="small text-secondary mt-2 mb-0">Si tiene dudas sobre la competencia, escriba a <a href="mailto:consejodarchivo@medellin.gov.co">consejodarchivo@medellin.gov.co</a> indicando el nombre, el NIT y la naturaleza jurídica de la entidad.</p>
+  </section>
 
-    <!-- Pasos -->
-    <h2 class="h4 fw-bold mb-3" style="color: #17365d;">
-        Pasos para realizar el diagnóstico
-    </h2>
+  <section class="ca-card ca-item" id="trd" aria-labelledby="t-trd">
+    <h2 id="t-trd">Convalidación de TRD y TVD</h2>
+    <p>Las Tablas de Retención Documental (TRD) y las Tablas de Valoración Documental (TVD) de las entidades del Distrito se presentan al Consejo para su evaluación y convalidación, según el Acuerdo 001 de 2024 del Archivo General de la Nación.</p>
+    <ol class="ca-flow mb-3">
+      <li><b>Aprobación interna</b>El Comité Institucional de Gestión y Desempeño de la entidad aprueba el instrumento.</li>
+      <li><b>Presentación</b>Dentro de los 30 días hábiles siguientes, la entidad lo presenta con oficio por el canal de correspondencia de la Alcaldía de Medellín.</li>
+      <li><b>Evaluación</b>El Consejo cuenta con hasta 60 días hábiles para emitir el informe técnico; puede pedir ajustes.</li>
+      <li><b>Convalidación</b>Con concepto favorable, la entidad solicita la inscripción en el Registro Único de Series Documentales (RUSD).</li>
+    </ol>
+    <p class="mb-2"><strong>Qué se recomienda presentar:</strong> el instrumento, el acto o acta de aprobación del Comité, la memoria descriptiva y los anexos que soportan la valoración de las series.</p>
+    <p class="small text-secondary mb-0">Referencia: Acuerdo 001 de 2024 del AGN, artículos 5.1.2.1 y 5.1.2.4. Consulte las TRD y TVD ya convalidadas en <a href="{{ url_for('convalidaciones_publicas') }}">Transparencia</a>.</p>
+  </section>
 
-    <div class="row g-3 mb-4">
-        <div class="col-md-6 col-lg-3">
-            <div class="card h-100 border-0 shadow-sm rounded-4">
-                <div class="card-body p-4">
-                    <div class="mb-3" style="color: #b58a35;">
-                        <i class="bi bi-building" style="font-size: 2rem;"></i>
-                    </div>
-                    <h3 class="h5 fw-bold">1. Identifica la entidad</h3>
-                    <p class="mb-0">
-                        Ten disponibles los datos institucionales y la
-                        información de contacto solicitada en el formulario.
-                    </p>
-                </div>
-            </div>
-        </div>
+  <section class="ca-card" id="glosario" aria-labelledby="t-glos">
+    <h2 id="t-glos">Glosario archivístico</h2>
+    <dl class="ca-glos">
+      {% for t, d in [
+        ('Tabla de Retención Documental (TRD)', 'Listado de series y subseries documentales con su tiempo de permanencia en cada etapa del ciclo vital y su disposición final.'),
+        ('Tabla de Valoración Documental (TVD)', 'Instrumento para organizar los fondos documentales acumulados, con los tiempos de retención y la disposición final de sus series.'),
+        ('Cuadro de Clasificación Documental (CCD)', 'Esquema que refleja la estructura de los documentos de la entidad por fondos, secciones, series y subseries.'),
+        ('Convalidación', 'Concepto del Consejo que certifica que las TRD o TVD cumplen los requisitos técnicos y normativos.'),
+        ('Programa de Gestión Documental (PGD)', 'Instrumento que planea el desarrollo de los procesos de la gestión documental a corto, mediano y largo plazo.'),
+        ('Plan Institucional de Archivos (PINAR)', 'Instrumento de planeación de la función archivística de la entidad, articulado con sus planes estratégicos.'),
+        ('Sistema Integrado de Conservación (SIC)', 'Conjunto de planes y programas para conservar los documentos físicos y preservar los digitales.'),
+        ('SGDEA', 'Sistema de Gestión de Documentos Electrónicos de Archivo: software que controla el ciclo de vida y la trazabilidad de los documentos electrónicos.'),
+        ('Registro Único de Series Documentales (RUSD)', 'Registro del Archivo General de la Nación donde se inscriben las series de las TRD y TVD convalidadas.'),
+        ('Transferencia documental', 'Traslado de documentos del archivo de gestión al central, o del central al histórico, según los tiempos de la TRD.'),
+        ('MGDA', 'Modelo de Gestión Documental y Administración de Archivos del AGN; sus componentes son la base del diagnóstico territorial.'),
+        ('Comité Institucional de Gestión y Desempeño', 'Instancia de la entidad que aprueba, entre otros, los instrumentos archivísticos antes de presentarlos al Consejo.'),
+      ] %}
+      <div class="ca-item"><dt>{{ t }}</dt><dd>{{ d }}</dd></div>
+      {% endfor %}
+    </dl>
+  </section>
 
-        <div class="col-md-6 col-lg-3">
-            <div class="card h-100 border-0 shadow-sm rounded-4">
-                <div class="card-body p-4">
-                    <div class="mb-3" style="color: #b58a35;">
-                        <i class="bi bi-clipboard-check"
-                           style="font-size: 2rem;"></i>
-                    </div>
-                    <h3 class="h5 fw-bold">2. Responde el instrumento</h3>
-                    <p class="mb-0">
-                        Lee cada pregunta con atención y selecciona
-                        la respuesta que corresponda a la realidad institucional.
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-lg-3">
-            <div class="card h-100 border-0 shadow-sm rounded-4">
-                <div class="card-body p-4">
-                    <div class="mb-3" style="color: #b58a35;">
-                        <i class="bi bi-shield-check"
-                           style="font-size: 2rem;"></i>
-                    </div>
-                    <h3 class="h5 fw-bold">3. Verifica la información</h3>
-                    <p class="mb-0">
-                        Comprueba las respuestas antes de enviar y utiliza
-                        evidencias cuando estén disponibles.
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-lg-3">
-            <div class="card h-100 border-0 shadow-sm rounded-4">
-                <div class="card-body p-4">
-                    <div class="mb-3" style="color: #b58a35;">
-                        <i class="bi bi-graph-up-arrow"
-                           style="font-size: 2rem;"></i>
-                    </div>
-                    <h3 class="h5 fw-bold">4. Consulta los resultados</h3>
-                    <p class="mb-0">
-                        Revisa los resultados disponibles y utiliza los
-                        hallazgos para identificar oportunidades de mejora.
-                    </p>
-                </div>
-            </div>
-        </div>
+  <section class="ca-card" id="canales" aria-labelledby="t-can">
+    <h2 id="t-can">¿No encontró lo que buscaba?</h2>
+    <div class="row g-3">
+      <div class="col-md-4"><strong>Correo del Consejo</strong><br><a href="mailto:consejodarchivo@medellin.gov.co">consejodarchivo@medellin.gov.co</a></div>
+      <div class="col-md-4"><strong>Asistencia técnica</strong><br><a href="{{ url_for('servicios_en_linea', servicio='asistencia') }}">Solicitar en Servicios en línea</a></div>
+      <div class="col-md-4"><strong>Peticiones, quejas y reclamos</strong><br><a href="https://www.medellin.gov.co/es/pqrsd/" target="_blank" rel="noopener">PQRSD de la Alcaldía de Medellín</a></div>
     </div>
-
-    <!-- Secciones -->
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-body p-4">
-            <h2 class="h4 fw-bold mb-3" style="color: #17365d;">
-                <i class="bi bi-folder2-open me-2"></i>
-                ¿Qué debo tener en cuenta?
-            </h2>
-
-            <div class="accordion" id="ayudaAccordion">
-
-                <div class="accordion-item">
-                    <h3 class="accordion-header">
-                        <button class="accordion-button" type="button"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#ayuda1"
-                                aria-expanded="true">
-                            Información institucional
-                        </button>
-                    </h3>
-                    <div id="ayuda1"
-                         class="accordion-collapse collapse show"
-                         data-bs-parent="#ayudaAccordion">
-                        <div class="accordion-body">
-                            Registra correctamente el nombre oficial de la
-                            entidad, su identificación y los datos de contacto
-                            requeridos. Revisa la información antes de continuar.
-                        </div>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <h3 class="accordion-header">
-                        <button class="accordion-button collapsed"
-                                type="button"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#ayuda2">
-                            Organización e instrumentos archivísticos
-                        </button>
-                    </h3>
-                    <div id="ayuda2"
-                         class="accordion-collapse collapse"
-                         data-bs-parent="#ayudaAccordion">
-                        <div class="accordion-body">
-                            Responde según el estado real de la organización
-                            documental y de los instrumentos archivísticos
-                            de la entidad. Consulta los documentos institucionales
-                            disponibles para validar tus respuestas.
-                        </div>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <h3 class="accordion-header">
-                        <button class="accordion-button collapsed"
-                                type="button"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#ayuda3">
-                            Estado general de los archivos
-                        </button>
-                    </h3>
-                    <div id="ayuda3"
-                         class="accordion-collapse collapse"
-                         data-bs-parent="#ayudaAccordion">
-                        <div class="accordion-body">
-                            Ten en cuenta las condiciones de organización,
-                            administración, conservación y acceso a los
-                            documentos, de acuerdo con las preguntas del instrumento.
-                        </div>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <h3 class="accordion-header">
-                        <button class="accordion-button collapsed"
-                                type="button"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#ayuda4">
-                            Documentos electrónicos y preservación digital
-                        </button>
-                    </h3>
-                    <div id="ayuda4"
-                         class="accordion-collapse collapse"
-                         data-bs-parent="#ayudaAccordion">
-                        <div class="accordion-body">
-                            Cuando corresponda, considera la gestión de
-                            documentos electrónicos, sus metadatos, los
-                            mecanismos de seguridad, la conservación y la
-                            disponibilidad de la información a largo plazo.
-                        </div>
-                    </div>
-                </div>
-
-                <div class="accordion-item">
-                    <h3 class="accordion-header">
-                        <button class="accordion-button collapsed"
-                                type="button"
-                                data-bs-toggle="collapse"
-                                data-bs-target="#ayuda5">
-                            Seguimiento y oportunidades de mejora
-                        </button>
-                    </h3>
-                    <div id="ayuda5"
-                         class="accordion-collapse collapse"
-                         data-bs-parent="#ayudaAccordion">
-                        <div class="accordion-body">
-                            Utiliza los hallazgos del diagnóstico para
-                            identificar necesidades y priorizar acciones de
-                            mejoramiento. Los resultados deben interpretarse
-                            según el alcance y los criterios definidos en el instrumento.
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
-    <!-- Recomendaciones -->
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-body p-4">
-            <h2 class="h4 fw-bold mb-3" style="color: #17365d;">
-                <i class="bi bi-lightbulb me-2"></i>
-                Recomendaciones
-            </h2>
-            <ul class="mb-0">
-                <li class="mb-2">
-                    Responde con información verificable y actualizada.
-                </li>
-                <li class="mb-2">
-                    No confundas la existencia de un documento con su
-                    implementación efectiva.
-                </li>
-                <li class="mb-2">
-                    Consulta las fuentes institucionales antes de seleccionar
-                    una respuesta cuando tengas dudas.
-                </li>
-                <li>
-                    Si una pregunta no es clara, consulta al responsable de
-                    gestión documental de tu entidad antes de responder.
-                </li>
-            </ul>
-        </div>
-    </div>
-
-    <!-- Acción principal -->
-    <div class="text-center p-4 rounded-4"
-         style="background: #f3f6fa;">
-        <h2 class="h4 fw-bold" style="color: #17365d;">
-            ¿Listo para comenzar?
-        </h2>
-        <p>
-            Ingresa al formulario para iniciar o continuar el diligenciamiento.
-        </p>
-        <a href="{{ url_for('censo') }}"
-           class="btn btn-primary btn-lg px-4"
-           style="background-color: #17365d; border-color: #17365d;">
-            <i class="bi bi-clipboard-check me-2"></i>
-            Ir al diagnóstico
-        </a>
-        <div class="mt-3">
-            <a href="{{ url_for('index') }}"
-               class="text-decoration-none">
-                <i class="bi bi-house me-1"></i>
-                Volver al inicio
-            </a>
-        </div>
-    </div>
-
+  </section>
 </div>
-{% endblock %}
 
+<script>
+  (function () {
+    // Buscador del centro de ayuda: filtra preguntas, secciones y términos del glosario.
+    var input = document.getElementById('caBuscar'), vacio = document.getElementById('caVacio');
+    var items = Array.prototype.slice.call(document.querySelectorAll('.ca-item'));
+    function norm(t) { return (t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+    input.addEventListener('input', function () {
+      var q = norm(input.value.trim()), hay = 0;
+      items.forEach(function (el) {
+        var ok = !q || norm(el.textContent).indexOf(q) !== -1;
+        el.hidden = !ok; if (ok) hay++;
+        var c = el.querySelector('.accordion-collapse');
+        if (c && q && ok && window.bootstrap) bootstrap.Collapse.getOrCreateInstance(c, { toggle: false }).show();
+      });
+      document.querySelectorAll('.ca-card').forEach(function (card) {
+        var propios = card.querySelectorAll('.ca-item');
+        if (card.classList.contains('ca-item') || !propios.length) return;
+        card.hidden = q && !Array.prototype.some.call(propios, function (i) { return !i.hidden; });
+      });
+      vacio.style.display = q && !hay ? 'block' : 'none';
+    });
+
+    // Consulta del directorio de sujetos obligados.
+    var ent = document.getElementById('caEntidad'), res = document.getElementById('caEntidadRes'), t;
+    function esc(s) { return String(s || '').replace(/[&<>"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+    ent.addEventListener('input', function () {
+      clearTimeout(t);
+      var q = ent.value.trim();
+      if (q.length < 3) { res.innerHTML = ''; return; }
+      t = setTimeout(function () {
+        fetch('{{ url_for('api_buscar_entidades') }}?q=' + encodeURIComponent(q)).then(function (r) { return r.json(); }).then(function (lista) {
+          if (!lista.length) { res.innerHTML = '<i class="bi bi-info-circle me-1" aria-hidden="true"></i>No encontramos la entidad en el directorio. Si cree que debería estar, escríbanos.'; return; }
+          res.innerHTML = '<i class="bi bi-check-circle-fill text-success me-1" aria-hidden="true"></i>Está en el directorio de sujetos obligados del Consejo:<ul class="mb-0 mt-1">' +
+            lista.slice(0, 5).map(function (e) { return '<li>' + esc(e.nombre) + (e.datos && e.datos.NIT ? ' · NIT ' + esc(e.datos.NIT) : '') + '</li>'; }).join('') + '</ul>';
+        }).catch(function () { res.textContent = 'No fue posible consultar el directorio en este momento.'; });
+      }, 300);
+    });
+  })();
+</script>
+{% endblock %}

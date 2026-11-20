@@ -6,6 +6,7 @@
   <h1>Ingreso de la entidad</h1>
   {% if modo_acceso_entidades == 'nit' %}<p>Para diligenciar el diagnóstico, ingrese con el NIT de su entidad. Así el avance queda guardado a nombre de la entidad y puede retomarlo desde cualquier equipo.</p>
   {% else %}<p>Para diligenciar el diagnóstico, ingrese con el correo institucional autorizado para su entidad. Le enviaremos un código de un solo uso; no necesita contraseña.</p>{% endif %}
+  <p class="mt-2 mb-0"><a class="text-white fw-bold" href="{{ url_for('guia_diagnostico') }}"><i class="bi bi-book me-1" aria-hidden="true"></i>Consulte la guía para diligenciar el diagnóstico</a></p>
 </div></section>
 <div class="container tp-wrap">
   <div class="row justify-content-center"><div class="col-lg-6 col-md-8">

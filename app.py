@@ -789,6 +789,11 @@ def ayuda():
     return render_template('ayuda.html')
 
 
+@app.route('/diagnostico/guia')
+def guia_diagnostico():
+    return render_template('guia_diagnostico.html')
+
+
 
 ADMIN_INACTIVIDAD_SEG = 60 * 60
 _INTENTOS_LOGIN = {}  # IP -> lista de marcas de tiempo de intentos fallidos
