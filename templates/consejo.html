@@ -42,13 +42,17 @@
   .ch-role { display:inline-block; margin-top:.4rem; font-size:.7rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; padding:.15rem .5rem; border-radius:999px; background:#fbf3df; color:#7a5a00; }
   .ch-role.nv { background:#eef2f6; color:#334155; }
 
-  .ch-facts { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:.9rem; }
-  .ch-fact { background:#fff; border:1px solid #dce4ec; border-radius:16px; padding:1.1rem; }
-  .ch-fact b { display:block; font-size:1.35rem; font-weight:800; color:#0b2d50; line-height:1.15; }
-  .ch-fact span { font-size:.85rem; color:#56687a; }
 
 
 
+  .ch-rules { margin:0; }
+  .ch-rules > div { display:grid; grid-template-columns:15rem 1fr; gap:1rem; padding:.9rem 0; border-top:1px solid #eef2f6; }
+  .ch-rules > div:first-child { border-top:0; padding-top:0; }
+  .ch-rules > div:last-child { padding-bottom:0; }
+  .ch-rules dt { color:#0b2d50; font-weight:800; display:flex; gap:.55rem; align-items:flex-start; }
+  .ch-rules dt i { color:#123b65; font-size:1.05rem; }
+  .ch-rules dd { margin:0; color:#243447; }
+  @media (max-width: 767.98px) { .ch-rules > div { grid-template-columns:1fr; gap:.3rem; } }
   .ch-strip { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:.9rem; }
   .ch-num { background:#fff; border:1px solid #dce4ec; border-radius:16px; padding:1rem 1.1rem; text-decoration:none; color:inherit; display:block; }
   .ch-num:hover, .ch-num:focus-visible { border-color:#2f7fd1; color:inherit; }
@@ -57,9 +61,9 @@
 
   .ch-end { padding-bottom:3rem; }
 
-  @media (max-width: 991.98px) { .ch-members { grid-template-columns:repeat(2, minmax(0,1fr)); } .ch-facts, .ch-strip { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+  @media (max-width: 991.98px) { .ch-members { grid-template-columns:repeat(2, minmax(0,1fr)); } .ch-strip { grid-template-columns:repeat(2, minmax(0,1fr)); } }
   @media (max-width: 767.98px) { .ch-members { grid-template-columns:1fr; } }
-  @media (max-width: 420px) { .ch-facts, .ch-strip { grid-template-columns:1fr; } }
+  @media (max-width: 420px) { .ch-strip { grid-template-columns:1fr; } }
 </style>
 
 <section class="ch-hero">
@@ -162,16 +166,15 @@
   <section class="ch-sec" id="panel-sesiones" role="tabpanel" aria-labelledby="tab-sesiones" data-panel="sesiones"><span id="sesiones"></span>
     <h2 id="t-ses">Cómo sesiona el Consejo</h2>
     <p class="sub">Reglas de funcionamiento según el Decreto 1080 de 2015, el Decreto Distrital 0673 de 2024 y el reglamento interno del Consejo.</p>
-    <div class="ch-facts">
-      <div class="ch-fact"><b>Cada 2 meses</b><span>sesiones ordinarias; extraordinarias cuando se requiera</span></div>
-      <div class="ch-fact"><b>2/3</b><span>de los miembros para deliberar</span></div>
-      <div class="ch-fact"><b>Mitad más uno</b><span>de los asistentes con voto para decidir</span></div>
-      <div class="ch-fact"><b>5 días hábiles</b><span>de antelación para convocar a sesión ordinaria</span></div>
-    </div>
-    <div class="row g-3 mt-1">
-      <div class="col-md-4"><div class="ch-card"><h3>Modalidad</h3><p>Presencial, virtual o mixta, según lo defina la Presidencia con la Secretaría Técnica. Las sesiones son públicas, salvo los asuntos con reserva legal o información clasificada.</p></div></div>
-      <div class="col-md-4"><div class="ch-card"><h3>Documentos para la sesión</h3><p>Los temas y documentos técnicos que se quieran presentar se entregan a la Secretaría Técnica con al menos diez días calendario de anticipación.</p></div></div>
-      <div class="col-md-4"><div class="ch-card"><h3>Votaciones</h3><p>Son públicas e identificables. El acta registra el asunto, el resultado, los votos a favor y en contra, las abstenciones, los impedimentos y las constancias.</p></div></div>
+    <div class="ch-card">
+      <dl class="ch-rules">
+        <div><dt><i class="bi bi-calendar3" aria-hidden="true"></i>Periodicidad</dt><dd>Sesiones ordinarias cada dos meses. Extraordinarias cuando lo requiera el servicio, convocadas por la Secretaría Técnica, la Presidencia o dos o más integrantes.</dd></div>
+        <div><dt><i class="bi bi-envelope-paper" aria-hidden="true"></i>Convocatoria</dt><dd>Por comunicación oficial, con al menos cinco días hábiles de antelación para las sesiones ordinarias. Indica fecha, hora, modalidad, lugar o enlace, orden del día y documentos de soporte.</dd></div>
+        <div><dt><i class="bi bi-file-earmark-text" aria-hidden="true"></i>Documentos para la sesión</dt><dd>Los temas y documentos técnicos se entregan a la Secretaría Técnica con al menos diez días calendario de anticipación.</dd></div>
+        <div><dt><i class="bi bi-laptop" aria-hidden="true"></i>Modalidad</dt><dd>Presencial, virtual o mixta. Las sesiones son públicas, salvo los asuntos con reserva legal o información clasificada.</dd></div>
+        <div><dt><i class="bi bi-people" aria-hidden="true"></i>Quórum</dt><dd>Para deliberar, las dos terceras partes de los miembros. Para decidir, la mitad más uno de los asistentes con derecho a voto.</dd></div>
+        <div><dt><i class="bi bi-check2-square" aria-hidden="true"></i>Votaciones y actas</dt><dd>Las votaciones son públicas e identificables. Cada sesión queda en un acta que, una vez aprobada y firmada por la Presidencia y la Secretaría Técnica, se publica en Transparencia.</dd></div>
+      </dl>
     </div>
   </section>
 
