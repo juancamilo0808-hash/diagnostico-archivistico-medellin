@@ -68,13 +68,9 @@
   .ch-num b { display:block; font-size:1.7rem; font-weight:800; color:#123b65; font-variant-numeric:tabular-nums; }
   .ch-num span { font-size:.85rem; color:#56687a; }
 
-  .ch-contact { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:.9rem; }
-  .ch-contact dl { margin:0; font-size:.92rem; }
-  .ch-contact dt { font-size:.74rem; text-transform:uppercase; letter-spacing:.05em; color:#56687a; margin-top:.6rem; }
-  .ch-contact dd { margin:0; color:#1f2d3a; }
   .ch-end { padding-bottom:3rem; }
 
-  @media (max-width: 991.98px) { .ch-members { grid-template-columns:repeat(2, minmax(0,1fr)); } .ch-facts, .ch-strip { grid-template-columns:repeat(2, minmax(0,1fr)); } .ch-contact { grid-template-columns:1fr; } }
+  @media (max-width: 991.98px) { .ch-members { grid-template-columns:repeat(2, minmax(0,1fr)); } .ch-facts, .ch-strip { grid-template-columns:repeat(2, minmax(0,1fr)); } }
   @media (max-width: 767.98px) { .ch-members, .ch-docs, .ch-feature { grid-template-columns:1fr; } }
   @media (max-width: 420px) { .ch-facts, .ch-strip { grid-template-columns:1fr; } }
 </style>
@@ -98,7 +94,6 @@
       <button type="button" role="tab" id="tab-sesiones" aria-controls="panel-sesiones" aria-selected="false" tabindex="-1" data-tab="sesiones"><i class="bi bi-calendar3" aria-hidden="true"></i> Sesiones</button>
       <button type="button" role="tab" id="tab-documentos" aria-controls="panel-documentos" aria-selected="false" tabindex="-1" data-tab="documentos"><i class="bi bi-folder2-open" aria-hidden="true"></i> Actas y documentos</button>
       <button type="button" role="tab" id="tab-servicios" aria-controls="panel-servicios" aria-selected="false" tabindex="-1" data-tab="servicios"><i class="bi bi-send-check" aria-hidden="true"></i> Servicios</button>
-      <button type="button" role="tab" id="tab-contacto" aria-controls="panel-contacto" aria-selected="false" tabindex="-1" data-tab="contacto"><i class="bi bi-geo-alt" aria-hidden="true"></i> Contacto</button>
     </div>
   </div>
 </nav>
@@ -249,24 +244,6 @@
   </section>
 
 
-  <section class="ch-sec" id="panel-contacto" role="tabpanel" aria-labelledby="tab-contacto" data-panel="contacto"><span id="contacto"></span>
-    <h2 id="t-con">Contacto</h2>
-    <p class="sub">Secretaría Técnica del Consejo Distrital de Archivos: Unidad de Gestión Documental, Secretaría de Innovación Digital.</p>
-    <div class="ch-contact">
-      <div class="ch-card"><h3>Sede</h3><dl>
-        <dt>Dirección</dt><dd>Centro Administrativo Distrital La Alpujarra, Calle 44 # 52-165, Medellín</dd>
-        <dt>Horario</dt><dd>Lunes a jueves de 7:30 a. m. a 12:00 m. y de 1:30 p. m. a 5:00 p. m.; viernes hasta las 4:00 p. m.</dd>
-      </dl></div>
-      <div class="ch-card"><h3>Atención</h3><dl>
-        <dt>Línea Única de Atención a la Ciudadanía</dt><dd><a href="tel:+576044444144">(+57) 604 44 44 144</a></dd>
-        <dt>Correo del Consejo</dt><dd><a href="mailto:consejodarchivo@medellin.gov.co">consejodarchivo@medellin.gov.co</a></dd>
-      </dl></div>
-      <div class="ch-card"><h3>Trámites y solicitudes</h3><dl>
-        <dt>Peticiones, quejas, reclamos y sugerencias</dt><dd><a href="https://www.medellin.gov.co/es/pqrsd/" target="_blank" rel="noopener">PQRSD de la Alcaldía de Medellín</a></dd>
-        <dt>Asistencia técnica y evaluación de TRD y TVD</dt><dd><a href="{{ url_for('servicios_en_linea') }}">Servicios en línea del Consejo</a></dd>
-      </dl></div>
-    </div>
-  </section>
 </div>
 
 <script>
