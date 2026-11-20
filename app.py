@@ -2342,65 +2342,6 @@ def documento_convalidacion(conv_id):
     return _enviar_pdf(conv)
 
 
-DATASETS = {
-    'convalidaciones': {
-        'titulo': 'TRD y TVD convalidadas por el Consejo Distrital de Archivos',
-        'descripcion': 'Instrumentos archivísticos convalidados, con la entidad, el acta de convalidación y el estado de inscripción en el Registro Único de Series Documentales (RUSD).',
-        'campos': [('entidad', 'Texto', 'Nombre de la entidad'), ('nit', 'Texto', 'NIT de la entidad'),
-                   ('instrumento', 'Texto', 'TRD o TVD'), ('tramite', 'Texto', 'Primera vez o actualización'),
-                   ('version', 'Texto', 'Versión del instrumento'), ('fecha_convalidacion', 'Fecha (AAAA-MM-DD)', 'Fecha de la sesión que convalidó'),
-                   ('acta', 'Texto', 'Acta del Consejo en la que consta la convalidación'), ('numero_concepto', 'Texto', 'Número del informe o concepto técnico'),
-                   ('estado_rusd', 'Texto', 'Estado de la inscripción en el RUSD'), ('fecha_rusd', 'Fecha (AAAA-MM-DD)', 'Fecha del último cambio de estado en el RUSD')],
-    },
-    'actas': {
-        'titulo': 'Actas de sesión del Consejo Distrital de Archivos',
-        'descripcion': 'Índice de las actas publicadas, con la fecha, el tipo de sesión y los temas tratados.',
-        'campos': [('acta', 'Texto', 'Número y año del acta'), ('fecha_sesion', 'Fecha (AAAA-MM-DD)', 'Fecha de la sesión'),
-                   ('tipo_sesion', 'Texto', 'Ordinaria o extraordinaria'), ('modalidad', 'Texto', 'Presencial, virtual o mixta'),
-                   ('temas', 'Texto', 'Temas y decisiones principales'), ('fecha_publicacion', 'Fecha (AAAA-MM-DD)', 'Fecha de publicación en el micrositio')],
-    },
-}
-
-
-def _filas_dataset(nombre):
-    if nombre == 'convalidaciones':
-        for c in _convalidaciones_publicadas().all():
-            yield {'entidad': c.entidad, 'nit': c.nit, 'instrumento': c.instrumento, 'tramite': c.tramite or '',
-                   'version': c.version or '', 'fecha_convalidacion': c.fecha_convalidacion.isoformat() if c.fecha_convalidacion else '',
-                   'acta': c.acta.nombre_acta if c.acta else '', 'numero_concepto': c.numero_concepto or '',
-                   'estado_rusd': c.estado_rusd or '', 'fecha_rusd': c.fecha_rusd.isoformat() if c.fecha_rusd else ''}
-    else:
-        for a in _actas_publicadas().all():
-            yield {'acta': a.nombre_acta, 'fecha_sesion': a.fecha.isoformat() if a.fecha else '',
-                   'tipo_sesion': a.tipo_sesion or '', 'modalidad': a.modalidad or '', 'temas': a.resumen or '',
-                   'fecha_publicacion': a.fecha_publicacion.date().isoformat() if a.fecha_publicacion else ''}
-
-
-@app.route('/datos-abiertos')
-def datos_abiertos():
-    return render_template('datos_abiertos.html', datasets=DATASETS,
-                           conteos={k: sum(1 for _ in _filas_dataset(k)) for k in DATASETS})
-
-
-@app.route('/datos-abiertos/<nombre>.<formato>')
-def descargar_dataset(nombre, formato):
-    if nombre not in DATASETS or formato not in ('csv', 'json'):
-        abort(404)
-    filas = list(_filas_dataset(nombre))
-    if formato == 'json':
-        respuesta = jsonify({'titulo': DATASETS[nombre]['titulo'], 'publicador': 'Consejo Distrital de Archivos de Medellín',
-                             'generado': datetime.utcnow().isoformat(timespec='seconds') + 'Z', 'registros': filas})
-    else:
-        salida = io.StringIO()
-        escritor = csv.DictWriter(salida, fieldnames=[c for c, _, _ in DATASETS[nombre]['campos']])
-        escritor.writeheader()
-        escritor.writerows(filas)
-        respuesta = app.response_class('﻿' + salida.getvalue(), mimetype='text/csv; charset=utf-8')
-        respuesta.headers['Content-Disposition'] = f'attachment; filename=cda_medellin_{nombre}.csv'
-    respuesta.headers['Access-Control-Allow-Origin'] = '*'
-    return respuesta
-
-
 @app.route('/accesibilidad')
 def accesibilidad():
     return render_template('politica.html', pagina='accesibilidad')

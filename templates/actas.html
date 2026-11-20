@@ -40,6 +40,5 @@
     <div class="tp-vacio"><i class="bi bi-journal" style="font-size:2rem" aria-hidden="true"></i><p class="mb-0 mt-2">{% if filtro.q or filtro.anio or filtro.tipo %}No hay actas que coincidan con el filtro.{% else %}Aún no hay actas publicadas.{% endif %}</p></div>
     {% endif %}
   </div>
-  <p class="tp-meta mt-3 mb-0">También puede descargar el índice de actas en <a href="{{ url_for('descargar_dataset', nombre='actas', formato='csv') }}">CSV</a> o <a href="{{ url_for('descargar_dataset', nombre='actas', formato='json') }}">JSON</a>.</p>
 </div>
 {% endblock %}

@@ -135,7 +135,7 @@
                         <i class="bi bi-journal-text"></i> Normatividad
                     </a>
 
-                    {% set ep_transp = ('transparencia', 'actas_publicas', 'convalidaciones_publicas', 'documentos_publicos', 'reglamento_publico', 'datos_abiertos') %}
+                    {% set ep_transp = ('transparencia', 'actas_publicas', 'convalidaciones_publicas', 'documentos_publicos', 'reglamento_publico') %}
                     <div class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {% if request.endpoint in ep_transp %}active{% endif %}" href="{{ url_for('transparencia') }}"
                            role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -148,7 +148,6 @@
                             <li><a class="dropdown-item" href="{{ url_for('convalidaciones_publicas') }}"><i class="bi bi-patch-check"></i> TRD y TVD convalidadas</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('reglamento_publico') }}"><i class="bi bi-bookmark-check"></i> Reglamento interno</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('documentos_publicos') }}"><i class="bi bi-folder2-open"></i> Planes e informes</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('datos_abiertos') }}"><i class="bi bi-database"></i> Datos abiertos</a></li>
                         </ul>
                     </div>
 
@@ -260,7 +259,6 @@
             <nav class="cda-footer-links" aria-label="Enlaces de pie de página">
                 <a href="{{ url_for('transparencia') }}">Transparencia y acceso a la información</a>
                 <a href="https://www.medellin.gov.co/es/pqrsd/" target="_blank" rel="noopener">PQRSD de la Alcaldía</a>
-                <a href="{{ url_for('datos_abiertos') }}">Datos abiertos</a>
                 <a href="{{ url_for('politica_datos') }}">Política de tratamiento de datos</a>
                 <a href="{{ url_for('terminos') }}">Términos y condiciones</a>
                 <a href="{{ url_for('accesibilidad') }}">Accesibilidad</a>
