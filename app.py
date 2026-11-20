@@ -125,6 +125,11 @@ class UbicacionEntidad(db.Model):
 INSTRUMENTOS=["CCD","TRD","TVD","PGD","PINAR","Inventarios documentales","Banco terminológico","Modelo de requisitos para documentos electrónicos","Sistema Integrado de Conservación (SIC)","Plan de Conservación Documental","Plan de Preservación Digital a Largo Plazo"]
 INSTRUMENTO_OPCIONES=[("0","No cuenta"),("0.5","En elaboración, actualización o implementación parcial"),("1","Vigente / implementado"),("NA","N/A")]
 
+# Rangos del mapa de calor del nivel de madurez (porcentaje).
+# Bajo: 0 a 40 · Medio: más de 40 hasta 75 · Alto: más de 75 hasta 100.
+UMBRAL_BAJO = 40
+UMBRAL_MEDIO = 75
+
 # Ordenada por jerarquía normativa (nivel 1 = Constitución) y, dentro de cada nivel, por año.
 NIVELES_NORMATIVOS = {
     1: "Constitución Política",
@@ -287,10 +292,15 @@ def calcular(form):
     add(form.get('q18'),{'No (0)':0,'Parcialmente (0,5)':.5,'Sí (1)':1,'No aplica (N/A)':None})
     add(form.get('q19'),{'No (0)':0,'En proceso / Implementación parcial (0,5)':.5,'Sí, implementado (1)':1})
     ima=round(total/aplicables*100,2) if aplicables else 0
-    if ima <= 33.33: nivel = 'Bajo'
-    elif ima <= 66.66: nivel = 'Medio'
+    if ima <= UMBRAL_BAJO: nivel = 'Bajo'
+    elif ima <= UMBRAL_MEDIO: nivel = 'Medio'
     else: nivel = 'Alto'
     return total,aplicables,ima,nivel,q6
+
+@app.context_processor
+def _umbrales():
+    return {'UMBRAL_BAJO': UMBRAL_BAJO, 'UMBRAL_MEDIO': UMBRAL_MEDIO}
+
 
 @app.route('/')
 def index():
@@ -755,8 +765,8 @@ def calcular_diagnostico_nuevo(form):
     ima = round((sum(puntajes) / len(puntajes)) * 100, 2) if puntajes else 0
     total = round(sum(puntajes), 2)
     aplicables = float(len(puntajes))
-    if ima <= 33.33: nivel = 'Bajo'
-    elif ima <= 66.66: nivel = 'Medio'
+    if ima <= UMBRAL_BAJO: nivel = 'Bajo'
+    elif ima <= UMBRAL_MEDIO: nivel = 'Medio'
     else: nivel = 'Alto'
     return total, aplicables, ima, nivel
 
@@ -1043,16 +1053,16 @@ def admin():
 
     def semaforo(ima):
         # Clasificación simplificada en tres niveles: Bajo, Medio y Alto.
-        if ima <= 33.33: return {'label':'Bajo','color':'#dc3545','class':'low','texto':'#b42318'}
-        if ima <= 66.66: return {'label':'Medio','color':'#e0a800','class':'medium','texto':'#7a5a00'}
+        if ima <= UMBRAL_BAJO: return {'label':'Bajo','color':'#dc3545','class':'low','texto':'#b42318'}
+        if ima <= UMBRAL_MEDIO: return {'label':'Medio','color':'#e0a800','class':'medium','texto':'#7a5a00'}
         return {'label':'Alto','color':'#198754','class':'high','texto':'#14532d'}
 
     semaforos={
-        'Bajo':sum(1 for x in registros if (x.ima or 0) <= 33.33),
-        'Medio':sum(1 for x in registros if 33.33 < (x.ima or 0) <= 66.66),
-        'Alto':sum(1 for x in registros if (x.ima or 0) > 66.66),
+        'Bajo':sum(1 for x in registros if (x.ima or 0) <= UMBRAL_BAJO),
+        'Medio':sum(1 for x in registros if UMBRAL_BAJO < (x.ima or 0) <= UMBRAL_MEDIO),
+        'Alto':sum(1 for x in registros if (x.ima or 0) > UMBRAL_MEDIO),
     }
-    ranking=[{'nombre':x.nombre_entidad,'ima':round(x.ima or 0,2),'nivel':semaforo(x.ima or 0)['label'],'semaforo':semaforo(x.ima or 0)['label']} for x in sorted(registros,key=lambda r:r.ima or 0,reverse=True)]
+    ranking=[{'nombre':_sda_nombre(x),'ima':round(x.ima or 0,2),'nivel':semaforo(x.ima or 0)['label'],'semaforo':semaforo(x.ima or 0)['label']} for x in sorted(registros,key=lambda r:r.ima or 0,reverse=True)]
 
     # Avance promedio por dimensión, calculado con las respuestas del formulario vigente.
     # Si no hay respuestas nuevas, se usa el promedio de instrumentos (pregunta 6) de
@@ -1365,7 +1375,7 @@ def indicadores_sistema_distrital():
         en_curso = 0
 
     def nivel(ima):
-        return 'Bajo' if ima <= 33.33 else ('Medio' if ima <= 66.66 else 'Alto')
+        return 'Bajo' if ima <= UMBRAL_BAJO else ('Medio' if ima <= UMBRAL_MEDIO else 'Alto')
 
     niveles = {'Bajo': 0, 'Medio': 0, 'Alto': 0}
     for e in entidades:
@@ -2083,7 +2093,7 @@ def ficha_entidad(censo_id):
 # ============================================================
 
 def _clasificar(ima):
-    return 'Bajo' if ima <= 33.33 else ('Medio' if ima <= 66.66 else 'Alto')
+    return 'Bajo' if ima <= UMBRAL_BAJO else ('Medio' if ima <= UMBRAL_MEDIO else 'Alto')
 
 
 def _datos_informe(desde, hasta):
@@ -2286,11 +2296,11 @@ def informe_consejo_word():
             ['Nivel de madurez promedio', f"{_num(d['promedio'])} %"],
         ], [11, 5], derecha=(1,))
         total = sum(sem.values()) or 1
-        doc.add_paragraph('Distribución de las entidades según el semáforo del nivel de madurez:')
+        doc.add_paragraph('Distribución de las entidades según el mapa de calor del nivel de madurez:')
         tabla(['Clasificación', 'Rango', 'Entidades', '%'], [
-            ['Bajo', '0 a 33,33 %', str(sem['Bajo']), _num(sem['Bajo'] / total * 100) + ' %'],
-            ['Medio', 'Más de 33,33 hasta 66,66 %', str(sem['Medio']), _num(sem['Medio'] / total * 100) + ' %'],
-            ['Alto', 'Más de 66,66 hasta 100 %', str(sem['Alto']), _num(sem['Alto'] / total * 100) + ' %'],
+            ['Bajo', '0 a 40 %', str(sem['Bajo']), _num(sem['Bajo'] / total * 100) + ' %'],
+            ['Medio', 'Más de 40 hasta 75 %', str(sem['Medio']), _num(sem['Medio'] / total * 100) + ' %'],
+            ['Alto', 'Más de 75 hasta 100 %', str(sem['Alto']), _num(sem['Alto'] / total * 100) + ' %'],
         ], [3.5, 6.5, 3, 3], derecha=(2, 3))
 
         doc.add_heading('2. Avance promedio por dimensión', level=2)
@@ -2332,7 +2342,7 @@ def informe_consejo_word():
 
     nota = doc.add_paragraph(
         'Fuente: herramienta de Diagnóstico Territorial Archivístico del Consejo Distrital de Archivos de Medellín. '
-        'Las cifras usan el diagnóstico más reciente de cada entidad. El nivel de madurez es el promedio de cinco '
+        'Las cifras usan el diagnóstico más reciente de cada entidad. El mapa de calor clasifica el nivel de madurez en bajo (0 a 40 %), medio (más de 40 hasta 75 %) y alto (más de 75 %). El nivel de madurez es el promedio de cinco '
         'dimensiones calificadas con 0, 0,5 o 1; los riesgos se generan con reglas sobre las respuestas y orientan el '
         'acompañamiento, sin constituir certificación de cumplimiento normativo.')
     for run in nota.runs:

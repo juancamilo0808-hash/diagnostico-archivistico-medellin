@@ -2,9 +2,9 @@
 {% block title %}Ficha de diagnóstico · {{ nombre }}{% endblock %}
 {% block content %}
 {% set color_nivel = {'Alto':'#b42318','Medio':'#9a6700','Bajo':'#475569'} %}
-{% macro semaforo(p) -%}{% if p is none %}#94a3b8{% elif p <= 33.33 %}#dc3545{% elif p <= 66.66 %}#e0a800{% else %}#198754{% endif %}{%- endmacro %}
-{% macro tinta(p) -%}{% if p is none %}#56687a{% elif p <= 33.33 %}#b42318{% elif p <= 66.66 %}#7a5a00{% else %}#14532d{% endif %}{%- endmacro %}
-{% macro etiqueta(p) -%}{% if p is none %}Sin respuestas puntuables{% elif p <= 33.33 %}Bajo{% elif p <= 66.66 %}Medio{% else %}Alto{% endif %}{%- endmacro %}
+{% macro semaforo(p) -%}{% if p is none %}#94a3b8{% elif p <= UMBRAL_BAJO %}#dc3545{% elif p <= UMBRAL_MEDIO %}#e0a800{% else %}#198754{% endif %}{%- endmacro %}
+{% macro tinta(p) -%}{% if p is none %}#56687a{% elif p <= UMBRAL_BAJO %}#b42318{% elif p <= UMBRAL_MEDIO %}#7a5a00{% else %}#14532d{% endif %}{%- endmacro %}
+{% macro etiqueta(p) -%}{% if p is none %}Sin respuestas puntuables{% elif p <= UMBRAL_BAJO %}Bajo{% elif p <= UMBRAL_MEDIO %}Medio{% else %}Alto{% endif %}{%- endmacro %}
 {% macro valor(v) -%}
   {%- if v is string -%}{{ v if v else '' }}{%- else -%}{{ v|join(', ') }}{%- endif -%}
 {%- endmacro %}
@@ -137,7 +137,7 @@
         </div>
         {% endfor %}
         {% if anterior %}<p class="small mt-3 mb-0 cmp-note"><i class="bi bi-arrow-left-right me-1" aria-hidden="true"></i>La última columna compara cada dimensión con el diagnóstico anterior de la entidad, del {{ anterior.fecha|hora_col('%d/%m/%Y') }} ({{ '%.1f'|format(anterior.ima or 0) }} % de nivel de madurez; cambio total {{ '%+.1f'|format((censo.ima or 0) - (anterior.ima or 0)) }} pts).</p>{% endif %}
-        <p class="small text-secondary mt-3 mb-0">Bajo: 0–33,3 % · Medio: 33,4–66,6 % · Alto: 66,7–100 %. Cada respuesta vale 0 (no cumple), 0,5 (avance parcial) o 1 (cumple); las preguntas 3, 6, 8 y 10 son descriptivas y no suman puntaje.</p>
+        <p class="small text-secondary mt-3 mb-0">Mapa de calor: bajo 0–40 % · medio más de 40–75 % · alto más de 75–100 %. Cada respuesta vale 0 (no cumple), 0,5 (avance parcial) o 1 (cumple); las preguntas 3, 6, 8 y 10 son descriptivas y no suman puntaje.</p>
       </section>
     </div>
     <div class="col-12">

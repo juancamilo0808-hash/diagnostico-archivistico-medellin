@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Informe del diagnóstico territorial | Consejo Distrital de Archivos{% endblock %}
 {% block content %}
-{% macro color(v) -%}{% if v is none %}#94a3b8{% elif v <= 33.33 %}#dc3545{% elif v <= 66.66 %}#e0a800{% else %}#198754{% endif %}{%- endmacro %}
-{% macro tinta(v) -%}{% if v is none %}#56687a{% elif v <= 33.33 %}#b42318{% elif v <= 66.66 %}#7a5a00{% else %}#14532d{% endif %}{%- endmacro %}
+{% macro color(v) -%}{% if v is none %}#94a3b8{% elif v <= UMBRAL_BAJO %}#dc3545{% elif v <= UMBRAL_MEDIO %}#e0a800{% else %}#198754{% endif %}{%- endmacro %}
+{% macro tinta(v) -%}{% if v is none %}#56687a{% elif v <= UMBRAL_BAJO %}#b42318{% elif v <= UMBRAL_MEDIO %}#7a5a00{% else %}#14532d{% endif %}{%- endmacro %}
 <style>
   .inf { max-width: 1040px; margin: 0 auto; }
   .inf-tools { background:#fff; border:1px solid #e4ebf1; border-radius:16px; padding:14px 18px; display:flex; flex-wrap:wrap; gap:.8rem; align-items:flex-end; justify-content:space-between; }
@@ -69,14 +69,14 @@
       <div class="inf-kpi"><b style="color:#b42318">{{ semaforo.Bajo }}</b><span>entidades en nivel bajo</span></div>
     </div>
     {% set tot = semaforo.Bajo + semaforo.Medio + semaforo.Alto %}
-    <p class="mt-3 mb-1 fw-bold" style="font-size:.9rem">Distribución por semáforo</p>
+    <p class="mt-3 mb-1 fw-bold" style="font-size:.9rem">Distribución por mapa de calor</p>
     <div class="inf-sem" role="img" aria-label="Bajo {{ semaforo.Bajo }}, medio {{ semaforo.Medio }}, alto {{ semaforo.Alto }}">
       {% for n, c in [('Bajo','#dc3545'),('Medio','#e0a800'),('Alto','#198754')] %}{% if semaforo[n] %}<span style="width: {{ semaforo[n] / tot * 100 }}%; background: {{ c }}"></span>{% endif %}{% endfor %}
     </div>
     <div class="inf-leg">
-      <span><i style="background:#dc3545"></i>Bajo (0 a 33,33 %): {{ semaforo.Bajo }}</span>
-      <span><i style="background:#e0a800"></i>Medio (hasta 66,66 %): {{ semaforo.Medio }}</span>
-      <span><i style="background:#198754"></i>Alto (más de 66,66 %): {{ semaforo.Alto }}</span>
+      <span><i style="background:#dc3545"></i>Bajo (0 a 40 %): {{ semaforo.Bajo }}</span>
+      <span><i style="background:#e0a800"></i>Medio (más de 40 hasta 75 %): {{ semaforo.Medio }}</span>
+      <span><i style="background:#198754"></i>Alto (más de 75 %): {{ semaforo.Alto }}</span>
     </div>
 
     <h2>2. Avance promedio por dimensión</h2>

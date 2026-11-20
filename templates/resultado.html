@@ -8,9 +8,9 @@
     <h1>{{ censo.nombre_entidad.split('|')[0].strip() }}</h1>
     <p class="mb-1">Nivel de madurez</p>
     <div class="ima-number">{{ '%.1f'|format(censo.ima or 0) }}%</div>
-    {% if (censo.ima or 0) <= 33.33 %}
+    {% if (censo.ima or 0) <= UMBRAL_BAJO %}
       <h2>Clasificación: Bajo</h2>
-    {% elif (censo.ima or 0) <= 66.66 %}
+    {% elif (censo.ima or 0) <= UMBRAL_MEDIO %}
       <h2>Clasificación: Medio</h2>
     {% else %}
       <h2>Clasificación: Alto</h2>
