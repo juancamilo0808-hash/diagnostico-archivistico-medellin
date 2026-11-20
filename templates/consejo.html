@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Consejo Distrital de Archivos de Medellín{% endblock %}
-{% block description %}Conozca el Consejo Distrital de Archivos de Medellín: integrantes, funciones, sesiones, actas, TRD y TVD convalidadas, plan de acción e informes.{% endblock %}
+{% block description %}Conozca el Consejo Distrital de Archivos de Medellín: integrantes, funciones y sesiones.{% endblock %}
 {% block body_class %}cda-home{% endblock %}
 {% block content %}
 <style>
@@ -47,20 +47,7 @@
   .ch-fact b { display:block; font-size:1.35rem; font-weight:800; color:#0b2d50; line-height:1.15; }
   .ch-fact span { font-size:.85rem; color:#56687a; }
 
-  .ch-docs { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:.9rem; }
-  .ch-doc { background:#fff; border:1px solid #dce4ec; border-radius:18px; padding:1.4rem; display:flex; flex-direction:column; }
-  .ch-doc .ico { width:2.8rem; height:2.8rem; border-radius:12px; display:grid; place-items:center; background:#eaf3fb; color:#123b65; font-size:1.25rem; margin-bottom:.8rem; }
-  .ch-doc h3 { font-size:1.08rem; font-weight:800; color:#0b2d50; margin:0 0 .4rem; }
-  .ch-doc p { font-size:.92rem; color:#243447; flex:1; }
-  .ch-doc .n { font-size:.8rem; color:#56687a; margin-bottom:.8rem; }
 
-  .ch-feature { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:.9rem; }
-  .ch-feat { border-radius:18px; padding:1.6rem; color:#fff; background:linear-gradient(150deg, #0b2d50, #123b65); display:flex; flex-direction:column; }
-  .ch-feat.alt { background:linear-gradient(150deg, #0f3a63, #1c5d8f); }
-  .ch-feat h3 { color:#fff; font-size:1.2rem; font-weight:800; }
-  .ch-feat p { color:rgba(255,255,255,.86); flex:1; }
-  .ch-feat ol { color:rgba(255,255,255,.9); font-size:.9rem; padding-left:1.1rem; }
-  .ch-feat .btn { align-self:flex-start; }
 
   .ch-strip { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:.9rem; }
   .ch-num { background:#fff; border:1px solid #dce4ec; border-radius:16px; padding:1rem 1.1rem; text-decoration:none; color:inherit; display:block; }
@@ -71,7 +58,7 @@
   .ch-end { padding-bottom:3rem; }
 
   @media (max-width: 991.98px) { .ch-members { grid-template-columns:repeat(2, minmax(0,1fr)); } .ch-facts, .ch-strip { grid-template-columns:repeat(2, minmax(0,1fr)); } }
-  @media (max-width: 767.98px) { .ch-members, .ch-docs, .ch-feature { grid-template-columns:1fr; } }
+  @media (max-width: 767.98px) { .ch-members { grid-template-columns:1fr; } }
   @media (max-width: 420px) { .ch-facts, .ch-strip { grid-template-columns:1fr; } }
 </style>
 
@@ -92,8 +79,6 @@
       <button type="button" role="tab" id="tab-integrantes" aria-controls="panel-integrantes" aria-selected="false" tabindex="-1" data-tab="integrantes"><i class="bi bi-people" aria-hidden="true"></i> Integrantes</button>
       <button type="button" role="tab" id="tab-funciones" aria-controls="panel-funciones" aria-selected="false" tabindex="-1" data-tab="funciones"><i class="bi bi-list-check" aria-hidden="true"></i> Funciones</button>
       <button type="button" role="tab" id="tab-sesiones" aria-controls="panel-sesiones" aria-selected="false" tabindex="-1" data-tab="sesiones"><i class="bi bi-calendar3" aria-hidden="true"></i> Sesiones</button>
-      <button type="button" role="tab" id="tab-documentos" aria-controls="panel-documentos" aria-selected="false" tabindex="-1" data-tab="documentos"><i class="bi bi-folder2-open" aria-hidden="true"></i> Actas y documentos</button>
-      <button type="button" role="tab" id="tab-servicios" aria-controls="panel-servicios" aria-selected="false" tabindex="-1" data-tab="servicios"><i class="bi bi-send-check" aria-hidden="true"></i> Servicios</button>
     </div>
   </div>
 </nav>
@@ -190,57 +175,7 @@
     </div>
   </section>
 
-  <section class="ch-sec" id="panel-documentos" role="tabpanel" aria-labelledby="tab-documentos" data-panel="documentos"><span id="documentos"></span>
-    <h2 id="t-docs">Actas y documentos del Consejo</h2>
-    <p class="sub">Información que el Consejo publica en cumplimiento de la Ley 1712 de 2014 de transparencia y acceso a la información pública.</p>
-    <div class="ch-docs">
-      <article class="ch-doc" id="acuerdos">
-        <div class="ico"><i class="bi bi-bookmark-check" aria-hidden="true"></i></div>
-        <h3>Acuerdos y reglamento interno</h3>
-        <p>El reglamento interno establece las reglas de funcionamiento del Consejo: participación de sus integrantes, sesiones, deliberaciones, decisiones, actas e informes. Se adopta mediante Acuerdo del Consejo.</p>
-        <div class="n">{{ conteos.documentos }} documento{{ 's' if conteos.documentos != 1 }} publicado{{ 's' if conteos.documentos != 1 }}</div>
-        <a class="btn btn-outline-primary btn-sm" href="{{ url_for('documentos_publicos') }}">Conozca los acuerdos y el reglamento <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
-      </article>
-      <article class="ch-doc" id="actas">
-        <div class="ico"><i class="bi bi-journal-check" aria-hidden="true"></i></div>
-        <h3>Actas</h3>
-        <p>De cada sesión se elabora un acta con los asistentes, el orden del día, las decisiones, el resultado de las votaciones y los compromisos. Una vez aprobada y firmada por la Presidencia y la Secretaría Técnica, se publica.</p>
-        <div class="n">{{ conteos.actas }} acta{{ 's' if conteos.actas != 1 }} publicada{{ 's' if conteos.actas != 1 }}</div>
-        <a class="btn btn-outline-primary btn-sm" href="{{ url_for('actas_publicas') }}">Conozca las actas <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
-      </article>
-      <article class="ch-doc" id="convalidadas">
-        <div class="ico"><i class="bi bi-patch-check" aria-hidden="true"></i></div>
-        <h3>Listado de TRD y TVD convalidadas</h3>
-        <p>Registro de las Tablas de Retención Documental y Tablas de Valoración Documental que el Consejo ha evaluado y convalidado, con su estado de inscripción en el Registro Único de Series Documentales (RUSD).</p>
-        <div class="n">{{ conteos.convalidaciones }} registro{{ 's' if conteos.convalidaciones != 1 }}</div>
-        <a class="btn btn-outline-primary btn-sm" href="{{ url_for('convalidaciones_publicas') }}">Conozca el listado <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
-      </article>
-      <article class="ch-doc" id="planes">
-        <div class="ico"><i class="bi bi-clipboard-data" aria-hidden="true"></i></div>
-        <h3>Plan de acción e informes semestrales</h3>
-        <p>El Plan de Acción Anual se aprueba en la última sesión de cada año. Los informes semestrales de actividades se publican y se envían al Archivo General de la Nación a más tardar la segunda semana de enero y la última semana de julio.</p>
-        <div class="n">Acuerdo 001 de 2024 del AGN, artículo 2.2.4</div>
-        <a class="btn btn-outline-primary btn-sm" href="{{ url_for('documentos_publicos') }}">Conozca los planes e informes <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
-      </article>
-    </div>
-  </section>
 
-  <section class="ch-sec" id="panel-servicios" role="tabpanel" aria-labelledby="tab-servicios" data-panel="servicios"><span id="servicios"></span>
-    <h2 id="t-serv">Servicios a las entidades</h2>
-    <p class="sub">Trámites y herramientas para las entidades del Distrito.</p>
-    <div class="ch-feature">
-      <article class="ch-feat">
-        <h3>Asistencia técnica</h3>
-        <p>Las entidades del Distrito pueden solicitar acompañamiento técnico del Consejo en gestión documental y archivos, y consultar el avance de su solicitud con el número que reciben.</p>
-        <a class="btn btn-light btn-sm fw-bold" href="{{ url_for('servicios_en_linea', servicio='asistencia') }}">Solicitar asistencia <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
-      </article>
-      <article class="ch-feat alt">
-        <h3>Diagnóstico territorial y seguimiento</h3>
-        <p>Las entidades diligencian el diagnóstico de su gestión documental y reciben su nivel de madurez, los riesgos encontrados y recomendaciones con su soporte normativo. Con esta información el Consejo hace seguimiento y prioriza la asistencia técnica.</p>
-        <a class="btn btn-light btn-sm fw-bold" href="{{ url_for('censo') }}">Iniciar diagnóstico <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
-      </article>
-    </div>
-  </section>
 
 
 </div>
