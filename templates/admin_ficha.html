@@ -112,7 +112,7 @@
   </section>
 
   {% if not formulario_actual %}
-  <div class="alert alert-warning">Este registro se hizo con una versión anterior del formulario y no tiene respuestas por dimensión. Se muestran solo los datos generales.</div>
+  <div class="alert alert-warning">Este registro se hizo con una versión anterior del formulario y no tiene respuestas por componente. Se muestran solo los datos generales.</div>
   {% else %}
 
   <div class="row g-3 mb-4">
@@ -120,14 +120,14 @@
     <div class="col-6 col-lg-3"><div class="fx-kpi"><div class="v" style="color:#9a6700">{{ conteo.Medio }}</div><div class="t">Riesgos medios</div></div></div>
     <div class="col-6 col-lg-3"><div class="fx-kpi"><div class="v" style="color:#475569">{{ conteo.Bajo }}</div><div class="t">Riesgos bajos</div></div></div>
     {% set criticas = dimensiones|selectattr('puntaje','ne',none)|selectattr('puntaje','le',50)|list %}
-    <div class="col-6 col-lg-3"><div class="fx-kpi"><div class="v" style="color:#123852">{{ criticas|length }} de 5</div><div class="t">Dimensiones en 50 % o menos</div></div></div>
+    <div class="col-6 col-lg-3"><div class="fx-kpi"><div class="v" style="color:#123852">{{ criticas|length }} de 5</div><div class="t">Componentes en 50 % o menos</div></div></div>
   </div>
 
   <div class="row g-4 mb-4">
     <div class="col-12">
       <section class="fx-card">
-        <h2>Perfil por dimensión</h2>
-        <p class="fx-sub">Nivel de madurez de cada dimensión evaluada. Clic en el nombre para ver su detalle.</p>
+        <h2>Perfil por componente</h2>
+        <p class="fx-sub">Nivel de madurez de cada componente evaluado. Clic en el nombre para ver su detalle.</p>
         {% for d in dimensiones if d.componente %}
         <div class="dim-row">
           <a href="#dim-{{ d.clave }}">{{ d.letra }}. {{ d.nombre }}</a>
@@ -136,7 +136,7 @@
           <div class="dim-risk">{% if d.cambio is not none %}<span class="dim-delta {{ 'up' if d.cambio > 0 else ('down' if d.cambio < 0 else '') }}" title="Antes: {{ d.anterior }} %">{{ '%+.1f'|format(d.cambio) }} pts</span>{% else %}{{ d.riesgos|length }} riesgo{{ 's' if d.riesgos|length != 1 }}{% endif %}</div>
         </div>
         {% endfor %}
-        {% if anterior %}<p class="small mt-3 mb-0 cmp-note"><i class="bi bi-arrow-left-right me-1" aria-hidden="true"></i>La última columna compara cada dimensión con el diagnóstico anterior de la entidad, del {{ anterior.fecha|hora_col('%d/%m/%Y') }} ({{ '%.1f'|format(anterior.ima or 0) }} % de nivel de madurez; cambio total {{ '%+.1f'|format((censo.ima or 0) - (anterior.ima or 0)) }} pts).</p>{% endif %}
+        {% if anterior %}<p class="small mt-3 mb-0 cmp-note"><i class="bi bi-arrow-left-right me-1" aria-hidden="true"></i>La última columna compara cada componente con el diagnóstico anterior de la entidad, del {{ anterior.fecha|hora_col('%d/%m/%Y') }} ({{ '%.1f'|format(anterior.ima or 0) }} % de nivel de madurez; cambio total {{ '%+.1f'|format((censo.ima or 0) - (anterior.ima or 0)) }} pts).</p>{% endif %}
         <p class="small text-secondary mt-3 mb-0">Mapa de calor: bajo 0–40 % · medio más de 40–75 % · alto más de 75–100 %. Cada respuesta vale 0 (no cumple), 0,5 (avance parcial) o 1 (cumple); las preguntas 3, 6, 8 y 10 son descriptivas y no suman puntaje.</p>
       </section>
     </div>
@@ -146,7 +146,7 @@
         <p class="fx-sub">Derivados de las respuestas de la entidad, ordenados de mayor a menor prioridad. Cada recomendación indica la norma en la que se apoya.</p>
         {% if riesgos %}
         <div class="table-responsive"><table class="table rk-table mb-0">
-          <thead><tr><th style="width:6rem">Prioridad</th><th style="width:16rem">Dimensión</th><th>Riesgo</th><th style="width:38%">Recomendación y soporte normativo</th></tr></thead>
+          <thead><tr><th style="width:6rem">Prioridad</th><th style="width:16rem">Componente</th><th>Riesgo</th><th style="width:38%">Recomendación y soporte normativo</th></tr></thead>
           <tbody>{% for x in riesgos %}<tr><td><span class="rk-badge rk-{{ x.nivel }}">{{ x.nivel }}</span></td><td class="text-nowrap">{{ nombres_dim[x.dimension] }}</td><td><strong>{{ x.titulo }}</strong>{% if x.detalle %}<span class="rk-det">{{ x.detalle }}</span>{% endif %}</td><td>{{ x.recomendacion }}{% if x.norma %}<span class="rk-norma"><i class="bi bi-journal-text" aria-hidden="true"></i> {{ x.norma }}</span>{% endif %}</td></tr>{% endfor %}</tbody>
         </table></div>
         {% else %}<p class="mb-0 text-secondary">No se identificaron riesgos con las reglas actuales.</p>{% endif %}
