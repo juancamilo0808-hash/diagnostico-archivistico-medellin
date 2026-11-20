@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Consejo Distrital de Archivos de Medellín{% endblock %}
-{% block description %}Conozca el Consejo Distrital de Archivos de Medellín: integrantes, funciones, sesiones, actas, TRD y TVD convalidadas, plan de acción e informes.{% endblock %}
+{% block description %}Conozca el Consejo Distrital de Archivos de Medellín: integrantes, funciones, actas, TRD y TVD convalidadas, plan de acción e informes.{% endblock %}
 {% block body_class %}cda-home{% endblock %}
 {% block content %}
 <style>
@@ -39,10 +39,6 @@
   .ch-role { display:inline-block; margin-top:.4rem; font-size:.7rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; padding:.15rem .5rem; border-radius:999px; background:#fbf3df; color:#7a5a00; }
   .ch-role.nv { background:#eef2f6; color:#334155; }
 
-  .ch-facts { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:.9rem; }
-  .ch-fact { background:#fff; border:1px solid #dce4ec; border-radius:16px; padding:1.1rem; }
-  .ch-fact b { display:block; font-size:1.35rem; font-weight:800; color:#0b2d50; line-height:1.15; }
-  .ch-fact span { font-size:.85rem; color:#56687a; }
 
   .ch-docs { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:.9rem; }
   .ch-doc { background:#fff; border:1px solid #dce4ec; border-radius:18px; padding:1.4rem; display:flex; flex-direction:column; }
@@ -71,9 +67,9 @@
   .ch-contact dd { margin:0; color:#1f2d3a; }
   .ch-end { padding-bottom:3rem; }
 
-  @media (max-width: 991.98px) { .ch-members { grid-template-columns:repeat(2, minmax(0,1fr)); } .ch-facts, .ch-strip { grid-template-columns:repeat(2, minmax(0,1fr)); } .ch-contact { grid-template-columns:1fr; } }
+  @media (max-width: 991.98px) { .ch-members { grid-template-columns:repeat(2, minmax(0,1fr)); } .ch-strip { grid-template-columns:repeat(2, minmax(0,1fr)); } .ch-contact { grid-template-columns:1fr; } }
   @media (max-width: 767.98px) { .ch-members, .ch-docs, .ch-feature { grid-template-columns:1fr; } }
-  @media (max-width: 420px) { .ch-facts, .ch-strip { grid-template-columns:1fr; } }
+  @media (max-width: 420px) { .ch-strip { grid-template-columns:1fr; } }
 </style>
 
 <section class="ch-hero">
@@ -92,7 +88,6 @@
       <li><a href="#sobre">Sobre el Consejo</a></li>
       <li><a href="#integrantes">Integrantes</a></li>
       <li><a href="#funciones">Funciones</a></li>
-      <li><a href="#sesiones">Sesiones</a></li>
       <li><a href="#acuerdos">Acuerdos y reglamento</a></li>
       <li><a href="#actas">Actas</a></li>
       <li><a href="#convalidadas">TRD y TVD convalidadas</a></li>
@@ -162,22 +157,6 @@
         <div class="ch-card"><h3>Presidencia</h3><p>A cargo del Secretario de Despacho de Innovación Digital o su delegado. Orienta la gestión del Consejo, presenta el Plan de Acción Anual para aprobación en la última sesión de cada año y garantiza la publicación y remisión de los informes semestrales al Archivo General de la Nación.</p></div>
         <div class="ch-card"><h3>Secretaría Técnica</h3><p>A cargo del Líder de Programa de la Unidad de Gestión Documental. Convoca las sesiones, elabora y custodia las actas, hace seguimiento al Plan de Acción, consolida los conceptos de las mesas de trabajo, difunde las decisiones y brinda orientación técnica archivística.</p></div>
       </div>
-    </div>
-  </section>
-
-  <section class="ch-sec" id="sesiones" aria-labelledby="t-ses">
-    <h2 id="t-ses">Cómo sesiona el Consejo</h2>
-    <p class="sub">Reglas de funcionamiento según el Decreto 1080 de 2015, el Decreto Distrital 0673 de 2024 y el reglamento interno del Consejo.</p>
-    <div class="ch-facts">
-      <div class="ch-fact"><b>Cada 2 meses</b><span>sesiones ordinarias; extraordinarias cuando se requiera</span></div>
-      <div class="ch-fact"><b>2/3</b><span>de los miembros para deliberar</span></div>
-      <div class="ch-fact"><b>Mitad más uno</b><span>de los asistentes con voto para decidir</span></div>
-      <div class="ch-fact"><b>5 días hábiles</b><span>de antelación para convocar a sesión ordinaria</span></div>
-    </div>
-    <div class="row g-3 mt-1">
-      <div class="col-md-4"><div class="ch-card"><h3>Modalidad</h3><p>Presencial, virtual o mixta, según lo defina la Presidencia con la Secretaría Técnica. Las sesiones son públicas, salvo los asuntos con reserva legal o información clasificada.</p></div></div>
-      <div class="col-md-4"><div class="ch-card"><h3>Documentos para la sesión</h3><p>Los temas y documentos técnicos que se quieran presentar se entregan a la Secretaría Técnica con al menos diez días calendario de anticipación.</p></div></div>
-      <div class="col-md-4"><div class="ch-card"><h3>Votaciones</h3><p>Son públicas e identificables. El acta registra el asunto, el resultado, los votos a favor y en contra, las abstenciones, los impedimentos y las constancias.</p></div></div>
     </div>
   </section>
 
