@@ -15,20 +15,10 @@
   .nm-card p { font-size:.9rem; color:var(--cda-text,#243447); margin:0 0 .7rem; }
   .nm-card .st { font-size:.75rem; color:var(--cda-muted,#56687a); }
   .nm-links { display:flex; gap:.5rem; flex-wrap:wrap; }
-  .nm-pyr { background:#fff; border:1px solid var(--cda-border,#dce4ec); border-radius:18px; padding:1.2rem 1.3rem; margin-bottom:1.6rem; }
-  .nm-levels { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; align-items:center; gap:.35rem; }
-  .nm-levels li { width:100%; display:flex; justify-content:center; }
-  .nm-levels a { display:flex; align-items:center; gap:.6rem; justify-content:center; text-decoration:none; color:#fff; background:#123b65; border-radius:10px; padding:.45rem .8rem; font-size:.86rem; font-weight:700; }
-  .nm-levels li:nth-child(1) a { width:34%; background:#071f38; } .nm-levels li:nth-child(2) a { width:44%; background:#0b2d50; }
-  .nm-levels li:nth-child(3) a { width:54%; background:#0f3a63; } .nm-levels li:nth-child(4) a { width:64%; background:#123b65; }
-  .nm-levels li:nth-child(5) a { width:74%; background:#1c5d8f; } .nm-levels li:nth-child(6) a { width:84%; background:#22679c; }
-  .nm-levels li:nth-child(7) a { width:94%; background:#2a6fa6; }
-  .nm-levels a:hover, .nm-levels a:focus-visible { outline:3px solid #e3b64a; outline-offset:1px; color:#fff; }
-  .nm-levels b { display:inline-grid; place-items:center; width:1.5rem; height:1.5rem; border-radius:50%; background:#e3b64a; color:#071f38; font-size:.78rem; }
   .nm-group { margin-bottom:1.6rem; scroll-margin-top:90px; }
   .nm-gt { display:flex; align-items:center; gap:.6rem; font-size:1.1rem; font-weight:800; color:var(--cda-blue-dark,#092947); margin:0 0 .8rem; }
   .nm-gt span { display:inline-grid; place-items:center; width:1.9rem; height:1.9rem; border-radius:50%; background:#0b2d50; color:#fff; font-size:.9rem; }
-  @media (max-width: 767.98px) { .nm-grid { grid-template-columns:1fr; } .nm-levels a { width:100% !important; justify-content:flex-start; } }
+  @media (max-width: 767.98px) { .nm-grid { grid-template-columns:1fr; } }
 </style>
 <section class="nm-hero"><div class="container">
   <div class="k">Normalización · Sistema Distrital de Archivos</div>
@@ -36,13 +26,6 @@
   <p>Normas que orientan la gestión documental y la función archivística, ordenadas de mayor a menor jerarquía: Constitución, leyes, decretos, actos de autoridades nacionales, normas distritales, circulares y referentes técnicos.</p>
 </div></section>
 <div class="container nm-wrap">
-  <section class="nm-pyr" aria-labelledby="nm-pyr-t">
-    <h2 id="nm-pyr-t" class="h6 fw-bold mb-2">Orden jerárquico</h2>
-    <p class="small text-secondary mb-3">Las normas se presentan de mayor a menor jerarquía: una norma de nivel inferior debe ajustarse a las superiores. Dentro de cada nivel van de la más antigua a la más reciente.</p>
-    <ol class="nm-levels">
-      {% for n, nombre in niveles.items() %}{% if normatividad|selectattr('nivel', 'equalto', n)|list %}<li><a href="#nivel-{{ n }}"><b>{{ n }}</b>{{ nombre }}</a></li>{% endif %}{% endfor %}
-    </ol>
-  </section>
   {% for n, nombre in niveles.items() %}{% set grupo = normatividad|selectattr('nivel', 'equalto', n)|list %}{% if grupo %}
   <section class="nm-group" id="nivel-{{ n }}" aria-labelledby="nivel-{{ n }}-t">
     <h2 class="nm-gt" id="nivel-{{ n }}-t"><span>{{ n }}</span>{{ nombre }}</h2>
