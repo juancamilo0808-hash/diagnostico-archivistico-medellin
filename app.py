@@ -1566,18 +1566,23 @@ def sistema_distrital():
     return redirect(url_for('index'), code=301)
 
 
+# Servicios que las entidades pueden solicitar en línea. La evaluación de TRD y TVD
+# no se tramita por la herramienta: se presenta por el canal de correspondencia.
+SERVICIOS_PUBLICOS = ('asistencia',)
+
+
 @app.route('/servicios-en-linea')
 def servicios_en_linea():
     servicio = request.args.get('servicio', '')
     return render_template('servicios_en_linea.html', tipos=SDA_TIPOS, valores={}, errores={},
-                           tipo_activo=servicio if servicio in ('asistencia', 'evaluacion', 'consulta') else '')
+                           tipo_activo=servicio if servicio in SERVICIOS_PUBLICOS + ('consulta',) else '')
 
 
 @app.route('/sistema-distrital/solicitud', methods=['POST'])
 def sistema_distrital_solicitud():
     f = request.form
     tipo = f.get('tipo', '')
-    if tipo not in SDA_TIPOS:
+    if tipo not in SERVICIOS_PUBLICOS:
         abort(400)
     if f.get('sitio_web_alterno'):          # campo trampa contra robots
         return redirect(url_for('sistema_distrital'))
@@ -2135,7 +2140,7 @@ def _datos_informe(desde, hasta):
     if hasta:
         solicitudes = [x for x in solicitudes if x.creado_en and x.creado_en.date() <= hasta]
     tramites = []
-    for tipo, cfg in SDA_TIPOS.items():
+    for tipo, cfg in ((t, SDA_TIPOS[t]) for t in SERVICIOS_PUBLICOS):
         del_tipo = [x for x in solicitudes if x.tipo == tipo]
         tramites.append({'nombre': 'Asistencia técnica' if tipo == 'asistencia' else 'Evaluación de TRD y TVD',
                          'total': len(del_tipo),

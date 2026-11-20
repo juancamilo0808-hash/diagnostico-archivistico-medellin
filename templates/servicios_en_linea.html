@@ -77,7 +77,7 @@
   <div class="container">
     <span class="sda-eyebrow">Sistema Distrital de Archivos · Servicios en línea</span>
     <h1>Servicios en línea del Consejo Distrital de Archivos</h1>
-    <p>Solicite asistencia técnica o la evaluación y convalidación de sus Tablas de Retención Documental (TRD) y Tablas de Valoración Documental (TVD), y consulte el avance de su solicitud.</p>
+    <p>Solicite asistencia técnica al Consejo y consulte el avance de su solicitud.</p>
     <div class="sv-steps"><span><b>1</b> Registre la solicitud</span><span><b>2</b> Reciba su número de solicitud</span><span><b>3</b> Consulte etapas y observaciones</span></div>
   </div>
 </section>
@@ -89,11 +89,10 @@
     <div class="svc svc-top">
       <div class="svc-tabs" role="tablist" aria-label="Servicios en línea">
         <button type="button" class="svc-tab" role="tab" id="t-asistencia" aria-controls="s-asistencia" data-svc="asistencia"><i class="bi bi-headset"></i><span>Asistencia técnica<small>Solicitar acompañamiento</small></span></button>
-        <button type="button" class="svc-tab" role="tab" id="t-evaluacion" aria-controls="s-evaluacion" data-svc="evaluacion"><i class="bi bi-file-earmark-check"></i><span>Evaluación de TRD / TVD<small>Solicitar convalidación</small></span></button>
         <button type="button" class="svc-tab" role="tab" id="t-consulta" aria-controls="s-consulta" data-svc="consulta"><i class="bi bi-search"></i><span>Consultar trámite<small>Con su número de solicitud</small></span></button>
       </div>
 
-      {% for prefijo in ['asistencia', 'evaluacion'] %}{% set cfg = tipos[prefijo] %}
+      {% for prefijo in ['asistencia'] %}{% set cfg = tipos[prefijo] %}
       <div class="svc-pane" role="tabpanel" id="s-{{ prefijo }}" aria-labelledby="t-{{ prefijo }}">
         <div class="pane-head">
           <div>
@@ -153,15 +152,15 @@
             <h3>Consulte el estado de su trámite</h3>
             <p class="sda-note mt-1">Ingrese el número de solicitud y el correo con el que hizo la solicitud.</p>
             <form method="post" action="{{ url_for('sistema_distrital_tramite') }}" class="d-grid gap-3 mt-3">
-              <div class="sda-field"><label class="form-label" for="c-rad">Número de solicitud</label><input class="form-control form-control-lg" id="c-rad" name="radicado" placeholder="Ej.: CDA-EV-890905211-2026-0001" required></div>
+              <div class="sda-field"><label class="form-label" for="c-rad">Número de solicitud</label><input class="form-control form-control-lg" id="c-rad" name="radicado" placeholder="Ej.: CDA-AT-890905211-2026-0001" required></div>
               <div class="sda-field"><label class="form-label" for="c-cor">Correo registrado</label><input class="form-control form-control-lg" id="c-cor" name="correo" type="email" required></div>
               <button class="btn btn-primary btn-lg" type="submit"><i class="bi bi-search"></i> Consultar</button>
             </form>
           </div>
           <div class="track-art">
             <div class="sda-note mb-2">Etapas por las que pasa su trámite</div>
-            <div class="track-cols">
-              {% for clave in ['asistencia', 'evaluacion'] %}{% set cfg = tipos[clave] %}
+            <div class="track-cols" style="grid-template-columns:1fr">
+              {% for clave in ['asistencia'] %}{% set cfg = tipos[clave] %}
               <div>
                 <div class="track-tit">{{ 'Asistencia técnica' if clave == 'asistencia' else 'Evaluación de TRD / TVD' }} <span>CDA-{{ cfg.prefijo }}</span></div>
                 <ol class="track-list">{% for e in cfg.estados %}<li class="row-s"><span class="dot" aria-hidden="true"></span>{{ e }}</li>{% endfor %}</ol>
