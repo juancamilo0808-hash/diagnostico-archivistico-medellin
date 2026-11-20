@@ -7,54 +7,67 @@
   .nm-hero h1 { color:#fff; font-weight:800; margin:.4rem 0 .4rem; }
   .nm-hero p { color:rgba(255,255,255,.78); max-width:44rem; margin:0; }
   .nm-wrap { margin-top:-3rem; padding-bottom:3rem; }
-  .nm-filter { display:flex; gap:.4rem; flex-wrap:wrap; margin-bottom:1rem; }
-  .nm-filter button { border:1px solid var(--cda-border,#dce4ec); background:#fff; border-radius:999px; padding:.4rem .9rem; font-size:.85rem; font-weight:600; color:var(--cda-blue-dark,#092947); }
-  .nm-filter button[aria-pressed="true"] { background:var(--cda-blue,#123b65); color:#fff; border-color:var(--cda-blue,#123b65); }
   .nm-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:1rem; }
   .nm-card { background:#fff; border:1px solid var(--cda-border,#dce4ec); border-radius:18px; padding:1.3rem; display:grid; grid-template-columns: 3rem 1fr; gap:1rem; }
   .nm-ico { width:3rem; height:3rem; border-radius:12px; display:grid; place-items:center; background:var(--cda-blue-light,#eaf3fb); color:var(--cda-blue,#123b65); font-size:1.3rem; }
   .nm-card small { font-size:.7rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#8a6510; }
-  .nm-card h2 { font-size:1.05rem; font-weight:800; color:var(--cda-blue-dark,#092947); margin:.15rem 0 .35rem; }
+  .nm-card h3 { font-size:1.05rem; font-weight:800; color:var(--cda-blue-dark,#092947); margin:.15rem 0 .35rem; }
   .nm-card p { font-size:.9rem; color:var(--cda-text,#243447); margin:0 0 .7rem; }
   .nm-card .st { font-size:.75rem; color:var(--cda-muted,#56687a); }
   .nm-links { display:flex; gap:.5rem; flex-wrap:wrap; }
-  @media (max-width: 767.98px) { .nm-grid { grid-template-columns:1fr; } }
+  .nm-pyr { background:#fff; border:1px solid var(--cda-border,#dce4ec); border-radius:18px; padding:1.2rem 1.3rem; margin-bottom:1.6rem; }
+  .nm-levels { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; align-items:center; gap:.35rem; }
+  .nm-levels li { width:100%; display:flex; justify-content:center; }
+  .nm-levels a { display:flex; align-items:center; gap:.6rem; justify-content:center; text-decoration:none; color:#fff; background:#123b65; border-radius:10px; padding:.45rem .8rem; font-size:.86rem; font-weight:700; }
+  .nm-levels li:nth-child(1) a { width:34%; background:#071f38; } .nm-levels li:nth-child(2) a { width:44%; background:#0b2d50; }
+  .nm-levels li:nth-child(3) a { width:54%; background:#0f3a63; } .nm-levels li:nth-child(4) a { width:64%; background:#123b65; }
+  .nm-levels li:nth-child(5) a { width:74%; background:#1c5d8f; } .nm-levels li:nth-child(6) a { width:84%; background:#22679c; }
+  .nm-levels li:nth-child(7) a { width:94%; background:#2a6fa6; }
+  .nm-levels a:hover, .nm-levels a:focus-visible { outline:3px solid #e3b64a; outline-offset:1px; color:#fff; }
+  .nm-levels b { display:inline-grid; place-items:center; width:1.5rem; height:1.5rem; border-radius:50%; background:#e3b64a; color:#071f38; font-size:.78rem; }
+  .nm-group { margin-bottom:1.6rem; scroll-margin-top:90px; }
+  .nm-gt { display:flex; align-items:center; gap:.6rem; font-size:1.1rem; font-weight:800; color:var(--cda-blue-dark,#092947); margin:0 0 .8rem; }
+  .nm-gt span { display:inline-grid; place-items:center; width:1.9rem; height:1.9rem; border-radius:50%; background:#0b2d50; color:#fff; font-size:.9rem; }
+  @media (max-width: 767.98px) { .nm-grid { grid-template-columns:1fr; } .nm-levels a { width:100% !important; justify-content:flex-start; } }
 </style>
 <section class="nm-hero"><div class="container">
   <div class="k">Normalización · Sistema Distrital de Archivos</div>
   <h1>Normatividad y referentes técnicos</h1>
-  <p>Leyes, decretos, acuerdos y guías oficiales que orientan la gestión documental y la función archivística de las entidades.</p>
+  <p>Normas que orientan la gestión documental y la función archivística, ordenadas de mayor a menor jerarquía: Constitución, leyes, decretos, actos de autoridades nacionales, normas distritales, circulares y referentes técnicos.</p>
 </div></section>
 <div class="container nm-wrap">
-  <div class="nm-filter" role="group" aria-label="Filtrar por categoría">
-    <button type="button" data-cat="" aria-pressed="true">Todas</button>
-    {% for c in normatividad|map(attribute='categoria')|unique %}<button type="button" data-cat="{{ c }}" aria-pressed="false">{{ c }}</button>{% endfor %}
-  </div>
-  <div class="nm-grid">
-    {% for n in normatividad %}
-    <article class="nm-card" data-cat="{{ n.categoria }}">
-      <div class="nm-ico"><i class="bi {{ n.icono }}"></i></div>
-      <div>
-        <small>{{ n.categoria }}</small>
-        <h2>{{ n.titulo }}</h2>
-        <p>{{ n.descripcion }}</p>
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-          <span class="st"><i class="bi bi-info-circle"></i> {{ n.estado }}</span>
-          <span class="nm-links">
-            {% if n.web %}<a class="btn btn-sm btn-outline-primary" href="{{ n.web }}" target="_blank" rel="noopener">Consultar</a>{% endif %}
-            {% if n.pdf %}<a class="btn btn-sm btn-outline-secondary" href="{{ n.pdf }}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf"></i> PDF</a>{% endif %}
-          </span>
+  <section class="nm-pyr" aria-labelledby="nm-pyr-t">
+    <h2 id="nm-pyr-t" class="h6 fw-bold mb-2">Orden jerárquico</h2>
+    <p class="small text-secondary mb-3">Las normas se presentan de mayor a menor jerarquía: una norma de nivel inferior debe ajustarse a las superiores. Dentro de cada nivel van de la más antigua a la más reciente.</p>
+    <ol class="nm-levels">
+      {% for n, nombre in niveles.items() %}{% if normatividad|selectattr('nivel', 'equalto', n)|list %}<li><a href="#nivel-{{ n }}"><b>{{ n }}</b>{{ nombre }}</a></li>{% endif %}{% endfor %}
+    </ol>
+  </section>
+  {% for n, nombre in niveles.items() %}{% set grupo = normatividad|selectattr('nivel', 'equalto', n)|list %}{% if grupo %}
+  <section class="nm-group" id="nivel-{{ n }}" aria-labelledby="nivel-{{ n }}-t">
+    <h2 class="nm-gt" id="nivel-{{ n }}-t"><span>{{ n }}</span>{{ nombre }}</h2>
+    <div class="nm-grid">
+      {% for x in grupo %}
+      <article class="nm-card">
+        <div class="nm-ico"><i class="bi {{ x.icono }}" aria-hidden="true"></i></div>
+        <div>
+          <small>{{ x.categoria }}</small>
+          <h3>{{ x.titulo }}</h3>
+          <p>{{ x.descripcion }}</p>
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="st"><i class="bi bi-info-circle" aria-hidden="true"></i> {{ x.estado }}</span>
+            <span class="nm-links">
+              {% if x.web %}<a class="btn btn-sm btn-outline-primary" href="{{ x.web }}" target="_blank" rel="noopener">Consultar<span class="visually-hidden"> {{ x.titulo }} (abre en una pestaña nueva)</span></a>{% endif %}
+              {% if x.pdf %}<a class="btn btn-sm btn-outline-secondary" href="{{ x.pdf }}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> PDF<span class="visually-hidden"> de {{ x.titulo }}</span></a>{% endif %}
+            </span>
+          </div>
         </div>
-      </div>
-    </article>
-    {% endfor %}
-  </div>
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}{% endfor %}
   <p class="small text-secondary mt-4 mb-0">Enlaces a fuentes oficiales. Verifique siempre la versión vigente en el sitio del emisor.</p>
 </div>
-<script>
-  document.querySelectorAll('.nm-filter button').forEach(b => b.addEventListener('click', () => {
-    document.querySelectorAll('.nm-filter button').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
-    document.querySelectorAll('.nm-card').forEach(c => { c.hidden = !!b.dataset.cat && c.dataset.cat !== b.dataset.cat; });
-  }));
-</script>
+
 {% endblock %}

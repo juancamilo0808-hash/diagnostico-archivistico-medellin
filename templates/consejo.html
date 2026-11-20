@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% block title %}Consejo Distrital de Archivos de Medellín{% endblock %}
+{% block description %}Conozca el Consejo Distrital de Archivos de Medellín: integrantes, funciones, sesiones, actas, TRD y TVD convalidadas, plan de acción e informes.{% endblock %}
+{% block body_class %}cda-home{% endblock %}
+{% block content %}
+<style>
+  .cda-home { background:#f3f6fa; }
+  .ch-hero { position:relative; isolation:isolate; overflow:hidden; color:#fff; padding:2.2rem 0 3.4rem;
+    background:#173b5a url("{{ url_for('static', filename='images/Panorama de Medellín con Metro y Montañas.png') }}") center 45% / cover no-repeat; }
+  .ch-hero::before { content:""; position:absolute; inset:0; z-index:-1; background:linear-gradient(90deg, rgba(7,31,55,.95) 0%, rgba(10,43,72,.86) 48%, rgba(9,37,62,.55) 100%); }
+  .ch-crumb { font-size:.82rem; color:rgba(255,255,255,.8); margin-bottom:1.6rem; }
+  .ch-crumb a { color:#fff; }
+  .ch-crumb span[aria-hidden] { margin:0 .4rem; opacity:.6; }
+  .ch-k { display:inline-flex; align-items:center; gap:.5rem; font-size:.75rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:#e3b64a; }
+  .ch-k::before { content:""; width:28px; height:2px; background:#e3b64a; }
+  .ch-hero h1 { font-size:clamp(2rem, 4.4vw, 3.3rem); font-weight:800; line-height:1.05; margin:.8rem 0 .8rem; color:#fff; max-width:44rem; }
+  .ch-hero .lead { color:rgba(255,255,255,.86); font-size:1.08rem; max-width:40rem; margin:0; }
+  .ch-norma { display:inline-block; margin-top:1.1rem; font-size:.84rem; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.25); border-radius:999px; padding:.3rem .8rem; color:#fff; }
+
+  .ch-tabs { position:sticky; top:0; z-index:20; background:#fff; border-bottom:1px solid #dce4ec; box-shadow:0 4px 14px rgba(13,42,72,.06); }
+  .ch-tabs ul { display:flex; gap:.2rem; overflow-x:auto; list-style:none; margin:0; padding:0; scrollbar-width:thin; }
+  .ch-tabs a { display:block; white-space:nowrap; padding:.95rem .9rem; font-size:.88rem; font-weight:700; color:#123852; text-decoration:none; border-bottom:3px solid transparent; }
+  .ch-tabs a:hover, .ch-tabs a:focus-visible, .ch-tabs a.on { border-bottom-color:#c99a2e; color:#0b2d50; }
+
+  .ch-sec { padding:2.6rem 0 0; scroll-margin-top:64px; }
+  .ch-sec h2 { font-size:1.55rem; font-weight:800; color:#0b2d50; margin:0 0 .3rem; }
+  .ch-sec .sub { color:#56687a; margin:0 0 1.3rem; max-width:48rem; }
+  .ch-card { background:#fff; border:1px solid #dce4ec; border-radius:18px; padding:1.5rem; height:100%; }
+  .ch-card h3 { font-size:1.05rem; font-weight:800; color:#0b2d50; margin:0 0 .5rem; }
+  .ch-card p:last-child, .ch-card ul:last-child, .ch-card ol:last-child { margin-bottom:0; }
+  .ch-src { font-size:.78rem; color:#56687a; margin-top:.8rem; }
+
+  .ch-members { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:.9rem; list-style:none; padding:0; margin:0; counter-reset:m; }
+  .ch-member { background:#fff; border:1px solid #dce4ec; border-radius:16px; padding:1.05rem 1.1rem; display:grid; grid-template-columns:2.4rem 1fr; gap:.8rem; align-items:start; }
+  .ch-member::before { counter-increment:m; content:counter(m); width:2.4rem; height:2.4rem; border-radius:12px; display:grid; place-items:center; background:#eaf3fb; color:#123b65; font-weight:800; }
+  .ch-member.key { border-color:#c99a2e; box-shadow:0 0 0 1px #c99a2e inset; }
+  .ch-member strong { display:block; color:#0b2d50; font-size:.93rem; line-height:1.3; }
+  .ch-member span { display:block; font-size:.82rem; color:#56687a; margin-top:.2rem; }
+  .ch-role { display:inline-block; margin-top:.4rem; font-size:.7rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; padding:.15rem .5rem; border-radius:999px; background:#fbf3df; color:#7a5a00; }
+  .ch-role.nv { background:#eef2f6; color:#334155; }
+
+  .ch-facts { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:.9rem; }
+  .ch-fact { background:#fff; border:1px solid #dce4ec; border-radius:16px; padding:1.1rem; }
+  .ch-fact b { display:block; font-size:1.35rem; font-weight:800; color:#0b2d50; line-height:1.15; }
+  .ch-fact span { font-size:.85rem; color:#56687a; }
+
+  .ch-docs { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:.9rem; }
+  .ch-doc { background:#fff; border:1px solid #dce4ec; border-radius:18px; padding:1.4rem; display:flex; flex-direction:column; }
+  .ch-doc .ico { width:2.8rem; height:2.8rem; border-radius:12px; display:grid; place-items:center; background:#eaf3fb; color:#123b65; font-size:1.25rem; margin-bottom:.8rem; }
+  .ch-doc h3 { font-size:1.08rem; font-weight:800; color:#0b2d50; margin:0 0 .4rem; }
+  .ch-doc p { font-size:.92rem; color:#243447; flex:1; }
+  .ch-doc .n { font-size:.8rem; color:#56687a; margin-bottom:.8rem; }
+
+  .ch-feature { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:.9rem; }
+  .ch-feat { border-radius:18px; padding:1.6rem; color:#fff; background:linear-gradient(150deg, #0b2d50, #123b65); display:flex; flex-direction:column; }
+  .ch-feat.alt { background:linear-gradient(150deg, #0f3a63, #1c5d8f); }
+  .ch-feat h3 { color:#fff; font-size:1.2rem; font-weight:800; }
+  .ch-feat p { color:rgba(255,255,255,.86); flex:1; }
+  .ch-feat ol { color:rgba(255,255,255,.9); font-size:.9rem; padding-left:1.1rem; }
+  .ch-feat .btn { align-self:flex-start; }
+
+  .ch-strip { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:.9rem; }
+  .ch-num { background:#fff; border:1px solid #dce4ec; border-radius:16px; padding:1rem 1.1rem; text-decoration:none; color:inherit; display:block; }
+  .ch-num:hover, .ch-num:focus-visible { border-color:#2f7fd1; color:inherit; }
+  .ch-num b { display:block; font-size:1.7rem; font-weight:800; color:#123b65; font-variant-numeric:tabular-nums; }
+  .ch-num span { font-size:.85rem; color:#56687a; }
+
+  .ch-contact { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:.9rem; }
+  .ch-contact dl { margin:0; font-size:.92rem; }
+  .ch-contact dt { font-size:.74rem; text-transform:uppercase; letter-spacing:.05em; color:#56687a; margin-top:.6rem; }
+  .ch-contact dd { margin:0; color:#1f2d3a; }
+  .ch-end { padding-bottom:3rem; }
+
+  @media (max-width: 991.98px) { .ch-members { grid-template-columns:repeat(2, minmax(0,1fr)); } .ch-facts, .ch-strip { grid-template-columns:repeat(2, minmax(0,1fr)); } .ch-contact { grid-template-columns:1fr; } }
+  @media (max-width: 767.98px) { .ch-members, .ch-docs, .ch-feature { grid-template-columns:1fr; } }
+  @media (max-width: 420px) { .ch-facts, .ch-strip { grid-template-columns:1fr; } }
+</style>
+
+<section class="ch-hero">
+  <div class="container">
+    <nav class="ch-crumb" aria-label="Ruta de navegación"><a href="{{ url_for('index') }}">Sistema Distrital de Archivos</a><span aria-hidden="true">›</span><span aria-current="page">Consejo Distrital de Archivos de Medellín</span></nav>
+    <div class="ch-k">Sistema Distrital de Archivos</div>
+    <h1>Consejo Distrital de Archivos de Medellín</h1>
+    <p class="lead">Conozca el Consejo: la instancia asesora y de articulación que promueve el desarrollo de la función archivística en las entidades del Distrito Especial de Ciencia, Tecnología e Innovación de Medellín.</p>
+    <span class="ch-norma"><i class="bi bi-journal-text me-1" aria-hidden="true"></i>Creado por el Decreto Distrital 0673 de 2024</span>
+  </div>
+</section>
+
+<nav class="ch-tabs" aria-label="Secciones del Consejo">
+  <div class="container">
+    <ul>
+      <li><a href="#sobre">Sobre el Consejo</a></li>
+      <li><a href="#integrantes">Integrantes</a></li>
+      <li><a href="#funciones">Funciones</a></li>
+      <li><a href="#sesiones">Sesiones</a></li>
+      <li><a href="#acuerdos">Acuerdos y reglamento</a></li>
+      <li><a href="#actas">Actas</a></li>
+      <li><a href="#convalidadas">TRD y TVD convalidadas</a></li>
+      <li><a href="#planes">Plan de acción e informes</a></li>
+      <li><a href="#contacto">Contacto</a></li>
+    </ul>
+  </div>
+</nav>
+
+<div class="container">
+
+  <section class="ch-sec" id="sobre" aria-labelledby="t-sobre">
+    <h2 id="t-sobre">Sobre el Consejo</h2>
+    <p class="sub">El Consejo Distrital de Archivos de Medellín (CDA) fue creado mediante el Decreto Distrital 0673 de 2024 como instancia asesora y de articulación del Sistema Nacional de Archivos en el Distrito.</p>
+    <div class="row g-3">
+      <div class="col-lg-7"><div class="ch-card">
+        <h3>Naturaleza</h3>
+        <p>El CDA es una instancia de articulación y promoción del desarrollo de la función archivística en el ámbito distrital. Ejerce exclusivamente las funciones que le atribuyen el Decreto 1080 de 2015, el Acuerdo 001 de 2024 del Archivo General de la Nación y el Decreto Distrital 0673 de 2024.</p>
+        <p>No ejerce funciones de inspección, vigilancia, control o sanción, que corresponden al Archivo General de la Nación o a otras autoridades competentes. Su labor es asesorar, evaluar, hacer seguimiento y formular recomendaciones.</p>
+      </div></div>
+      <div class="col-lg-5"><div class="ch-card">
+        <h3>Principios de actuación</h3>
+        <p class="mb-2">Actúa conforme a los principios de la función administrativa (artículo 209 de la Constitución y Ley 489 de 1998):</p>
+        <p class="small mb-2">Buena fe · igualdad · moralidad · celeridad · economía · imparcialidad · eficacia · eficiencia · participación · publicidad · responsabilidad · transparencia · coordinación · colaboración.</p>
+        <p class="small">Además, protección del patrimonio documental, acceso a la información pública e integridad, autenticidad, fiabilidad, disponibilidad y preservación de los documentos.</p>
+      </div></div>
+    </div>
+  </section>
+
+  <section class="ch-sec" id="integrantes" aria-labelledby="t-int">
+    <h2 id="t-int">Integrantes</h2>
+    <p class="sub">El Consejo está integrado por nueve consejeros, según el artículo 2 del Decreto Distrital 0673 de 2024. Todos tienen voz y voto, salvo el Secretario de Evaluación y Control, que tiene voz pero no voto.</p>
+    <ol class="ch-members">
+      <li class="ch-member key"><div><strong>Secretario de Despacho de Innovación Digital</strong><span>o su delegado</span><em class="ch-role">Presidencia</em></div></li>
+      <li class="ch-member key"><div><strong>Líder de Programa de la Unidad de Gestión Documental</strong><span>Secretaría de Innovación Digital</span><em class="ch-role">Secretaría Técnica</em></div></li>
+      <li class="ch-member"><div><strong>Secretario de Despacho de Cultura Ciudadana</strong><span>o su delegado</span></div></li>
+      <li class="ch-member"><div><strong>Subsecretario de Bibliotecas, Lectura y Patrimonio</strong><span>Secretaría de Cultura Ciudadana, o su delegado</span></div></li>
+      <li class="ch-member"><div><strong>Secretario de Evaluación y Control</strong><span>o su delegado</span><em class="ch-role nv">Voz sin voto</em></div></li>
+      <li class="ch-member"><div><strong>Subsecretario de Servicios de Tecnologías de la Información</strong><span>Secretaría de Innovación Digital</span></div></li>
+      <li class="ch-member"><div><strong>Representante de los archivistas</strong><span>Designado por el Colegio Colombiano de Archivistas y la Sociedad Colombiana de Archivistas</span></div></li>
+      <li class="ch-member"><div><strong>Representante de las instituciones de educación superior</strong><span>De la jurisdicción, o del Servicio Nacional de Aprendizaje (SENA)</span></div></li>
+      <li class="ch-member"><div><strong>Representante de la Cámara de Comercio de Medellín</strong></div></li>
+    </ol>
+    <div class="row g-3 mt-1">
+      <div class="col-md-6"><div class="ch-card"><h3>Periodo de los representantes externos</h3><p>Los representantes de los archivistas, de la educación superior y de la Cámara de Comercio se designan por dos años, prorrogables una única vez por dos años más, y los eligen las mismas agremiaciones. Su participación no genera erogaciones presupuestales a cargo del Distrito.</p></div></div>
+      <div class="col-md-6"><div class="ch-card"><h3>Invitados</h3><p>El Consejo puede invitar a representantes de otros sectores según los temas por tratar, con voz pero sin voto. Cuando se traten Tablas de Retención o Valoración Documental que lo ameriten, puede invitar a los líderes de transparencia, seguridad de la información, gobernanza de datos, protección de datos personales y archivos de derechos humanos.</p></div></div>
+    </div>
+  </section>
+
+  <section class="ch-sec" id="funciones" aria-labelledby="t-fun">
+    <h2 id="t-fun">Funciones</h2>
+    <p class="sub">El Consejo ejerce las funciones del artículo 2.8.2.1.9 del Decreto 1080 de 2015 y del artículo 4 del Decreto Distrital 0673 de 2024, con los criterios técnicos del Acuerdo 001 de 2024 del Archivo General de la Nación.</p>
+    <div class="row g-3">
+      <div class="col-lg-7"><div class="ch-card"><h3>Del Consejo</h3>
+        <ul>
+          <li>Asesorar al Archivo General del Distrito en la aplicación de la política archivística.</li>
+          <li>Hacer seguimiento al cumplimiento de las políticas y normas archivísticas.</li>
+          <li>Programar y coordinar acciones acordes con las políticas, planes y programas del Archivo General de la Nación.</li>
+          <li>Evaluar las Tablas de Retención Documental (TRD) y las Tablas de Valoración Documental (TVD) de las entidades, pedir ajustes y emitir el concepto de convalidación.</li>
+          <li>Presentar cada semestre informes de su gestión al Archivo General de la Nación.</li>
+          <li>Evaluar las solicitudes de declaratoria de archivos como bienes de interés cultural y los planes especiales de manejo y protección.</li>
+          <li>Apoyar los programas de organización, conservación y servicio de los archivos del Distrito.</li>
+          <li>Informar al Archivo General de la Nación las irregularidades que atenten contra el patrimonio documental.</li>
+        </ul>
+      </div></div>
+      <div class="col-lg-5 d-flex flex-column gap-3">
+        <div class="ch-card"><h3>Presidencia</h3><p>A cargo del Secretario de Despacho de Innovación Digital o su delegado. Orienta la gestión del Consejo, presenta el Plan de Acción Anual para aprobación en la última sesión de cada año y garantiza la publicación y remisión de los informes semestrales al Archivo General de la Nación.</p></div>
+        <div class="ch-card"><h3>Secretaría Técnica</h3><p>A cargo del Líder de Programa de la Unidad de Gestión Documental. Convoca las sesiones, elabora y custodia las actas, hace seguimiento al Plan de Acción, consolida los conceptos de las mesas de trabajo, difunde las decisiones y brinda orientación técnica archivística.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="ch-sec" id="sesiones" aria-labelledby="t-ses">
+    <h2 id="t-ses">Cómo sesiona el Consejo</h2>
+    <p class="sub">Reglas de funcionamiento según el Decreto 1080 de 2015, el Decreto Distrital 0673 de 2024 y el reglamento interno del Consejo.</p>
+    <div class="ch-facts">
+      <div class="ch-fact"><b>Cada 2 meses</b><span>sesiones ordinarias; extraordinarias cuando se requiera</span></div>
+      <div class="ch-fact"><b>2/3</b><span>de los miembros para deliberar</span></div>
+      <div class="ch-fact"><b>Mitad más uno</b><span>de los asistentes con voto para decidir</span></div>
+      <div class="ch-fact"><b>5 días hábiles</b><span>de antelación para convocar a sesión ordinaria</span></div>
+    </div>
+    <div class="row g-3 mt-1">
+      <div class="col-md-4"><div class="ch-card"><h3>Modalidad</h3><p>Presencial, virtual o mixta, según lo defina la Presidencia con la Secretaría Técnica. Las sesiones son públicas, salvo los asuntos con reserva legal o información clasificada.</p></div></div>
+      <div class="col-md-4"><div class="ch-card"><h3>Documentos para la sesión</h3><p>Los temas y documentos técnicos que se quieran presentar se entregan a la Secretaría Técnica con al menos diez días calendario de anticipación.</p></div></div>
+      <div class="col-md-4"><div class="ch-card"><h3>Votaciones</h3><p>Son públicas e identificables. El acta registra el asunto, el resultado, los votos a favor y en contra, las abstenciones, los impedimentos y las constancias.</p></div></div>
+    </div>
+  </section>
+
+  <section class="ch-sec" aria-labelledby="t-docs">
+    <h2 id="t-docs">Documentos del Consejo</h2>
+    <p class="sub">Información que el Consejo publica en cumplimiento de la Ley 1712 de 2014 de transparencia y acceso a la información pública.</p>
+    <div class="ch-docs">
+      <article class="ch-doc" id="acuerdos">
+        <div class="ico"><i class="bi bi-bookmark-check" aria-hidden="true"></i></div>
+        <h3>Acuerdos y reglamento interno</h3>
+        <p>El reglamento interno establece las reglas de funcionamiento del Consejo: participación de sus integrantes, sesiones, deliberaciones, decisiones, actas e informes. Se adopta mediante Acuerdo del Consejo.</p>
+        <div class="n">{{ conteos.documentos }} documento{{ 's' if conteos.documentos != 1 }} publicado{{ 's' if conteos.documentos != 1 }}</div>
+        <a class="btn btn-outline-primary btn-sm" href="{{ url_for('documentos_publicos') }}">Conozca los acuerdos y el reglamento <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+      </article>
+      <article class="ch-doc" id="actas">
+        <div class="ico"><i class="bi bi-journal-check" aria-hidden="true"></i></div>
+        <h3>Actas</h3>
+        <p>De cada sesión se elabora un acta con los asistentes, el orden del día, las decisiones, el resultado de las votaciones y los compromisos. Una vez aprobada y firmada por la Presidencia y la Secretaría Técnica, se publica.</p>
+        <div class="n">{{ conteos.actas }} acta{{ 's' if conteos.actas != 1 }} publicada{{ 's' if conteos.actas != 1 }}</div>
+        <a class="btn btn-outline-primary btn-sm" href="{{ url_for('actas_publicas') }}">Conozca las actas <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+      </article>
+      <article class="ch-doc" id="convalidadas">
+        <div class="ico"><i class="bi bi-patch-check" aria-hidden="true"></i></div>
+        <h3>Listado de TRD y TVD convalidadas</h3>
+        <p>Registro de las Tablas de Retención Documental y Tablas de Valoración Documental que el Consejo ha evaluado y convalidado, con su estado de inscripción en el Registro Único de Series Documentales (RUSD).</p>
+        <div class="n">{{ conteos.convalidaciones }} registro{{ 's' if conteos.convalidaciones != 1 }}</div>
+        <a class="btn btn-outline-primary btn-sm" href="{{ url_for('convalidaciones_publicas') }}">Conozca el listado <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+      </article>
+      <article class="ch-doc" id="planes">
+        <div class="ico"><i class="bi bi-clipboard-data" aria-hidden="true"></i></div>
+        <h3>Plan de acción e informes semestrales</h3>
+        <p>El Plan de Acción Anual se aprueba en la última sesión de cada año. Los informes semestrales de actividades se publican y se envían al Archivo General de la Nación a más tardar la segunda semana de enero y la última semana de julio.</p>
+        <div class="n">Acuerdo 001 de 2024 del AGN, artículo 2.2.4</div>
+        <a class="btn btn-outline-primary btn-sm" href="{{ url_for('documentos_publicos') }}">Conozca los planes e informes <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+      </article>
+    </div>
+  </section>
+
+  <section class="ch-sec" aria-labelledby="t-serv">
+    <h2 id="t-serv">Servicios a las entidades</h2>
+    <p class="sub">Trámites y herramientas para las entidades del Distrito.</p>
+    <div class="ch-feature">
+      <article class="ch-feat">
+        <h3>Revisión, evaluación y convalidación de TRD y TVD</h3>
+        <p>El Consejo evalúa técnicamente las tablas de las entidades, solicita los ajustes necesarios y emite el concepto de convalidación.</p>
+        <ol><li>Solicitud y revisión preliminar</li><li>Mesa técnica con la entidad</li><li>Ajustes, si los hay</li><li>Sesión del Consejo y concepto</li></ol>
+        <a class="btn btn-light btn-sm fw-bold" href="{{ url_for('servicios_en_linea', servicio='evaluacion') }}">Solicitar evaluación <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+      </article>
+      <article class="ch-feat alt">
+        <h3>Diagnóstico territorial y seguimiento</h3>
+        <p>Las entidades diligencian el diagnóstico de su gestión documental y reciben su nivel de madurez, los riesgos encontrados y recomendaciones con su soporte normativo. Con esta información el Consejo hace seguimiento y prioriza la asistencia técnica.</p>
+        <a class="btn btn-light btn-sm fw-bold" href="{{ url_for('censo') }}">Iniciar diagnóstico <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+      </article>
+    </div>
+  </section>
+
+  {% if cifras %}
+  <section class="ch-sec" aria-labelledby="t-cif">
+    <h2 id="t-cif">El Sistema en cifras</h2>
+    <p class="sub">Datos que se actualizan con la información registrada en la herramienta.</p>
+    <div class="ch-strip">
+      <a class="ch-num" href="{{ url_for('censo') }}"><b>{{ cifras.entidades }}</b><span>entidades del Distrito en el directorio</span></a>
+      <a class="ch-num" href="{{ url_for('censo') }}"><b>{{ cifras.diagnosticos }}</b><span>entidades con diagnóstico</span></a>
+      <a class="ch-num" href="{{ url_for('convalidaciones_publicas') }}"><b>{{ cifras.convalidaciones }}</b><span>TRD y TVD convalidadas</span></a>
+      <a class="ch-num" href="{{ url_for('actas_publicas') }}"><b>{{ cifras.actas }}</b><span>actas publicadas</span></a>
+    </div>
+  </section>
+  {% endif %}
+
+  <section class="ch-sec ch-end" id="contacto" aria-labelledby="t-con">
+    <h2 id="t-con">Contacto</h2>
+    <p class="sub">Secretaría Técnica del Consejo Distrital de Archivos: Unidad de Gestión Documental, Secretaría de Innovación Digital.</p>
+    <div class="ch-contact">
+      <div class="ch-card"><h3>Sede</h3><dl>
+        <dt>Dirección</dt><dd>Centro Administrativo Distrital La Alpujarra, Calle 44 # 52-165, Medellín</dd>
+        <dt>Horario</dt><dd>Lunes a jueves de 7:30 a. m. a 12:00 m. y de 1:30 p. m. a 5:00 p. m.; viernes hasta las 4:00 p. m.</dd>
+      </dl></div>
+      <div class="ch-card"><h3>Atención</h3><dl>
+        <dt>Línea Única de Atención a la Ciudadanía</dt><dd><a href="tel:+576044444144">(+57) 604 44 44 144</a></dd>
+        <dt>Correo del Consejo</dt><dd><a href="mailto:consejodarchivo@medellin.gov.co">consejodarchivo@medellin.gov.co</a></dd>
+      </dl></div>
+      <div class="ch-card"><h3>Trámites y solicitudes</h3><dl>
+        <dt>Peticiones, quejas, reclamos y sugerencias</dt><dd><a href="https://www.medellin.gov.co/es/pqrsd/" target="_blank" rel="noopener">PQRSD de la Alcaldía de Medellín</a></dd>
+        <dt>Asistencia técnica y evaluación de TRD y TVD</dt><dd><a href="{{ url_for('servicios_en_linea') }}">Servicios en línea del Consejo</a></dd>
+      </dl></div>
+    </div>
+  </section>
+</div>
+
+<script>
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('.ch-tabs a'));
+    var secs = links.map(function (a) { return document.querySelector(a.getAttribute('href')); });
+    if (!('IntersectionObserver' in window)) return;
+    var io = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        if (!e.isIntersecting) return;
+        links.forEach(function (a) { a.classList.toggle('on', a.getAttribute('href') === '#' + e.target.id); });
+      });
+    }, { rootMargin: '-30% 0px -60% 0px' });
+    secs.forEach(function (s) { if (s) io.observe(s); });
+  })();
+</script>
+{% endblock %}

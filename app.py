@@ -125,96 +125,147 @@ class UbicacionEntidad(db.Model):
 INSTRUMENTOS=["CCD","TRD","TVD","PGD","PINAR","Inventarios documentales","Banco terminológico","Modelo de requisitos para documentos electrónicos","Sistema Integrado de Conservación (SIC)","Plan de Conservación Documental","Plan de Preservación Digital a Largo Plazo"]
 INSTRUMENTO_OPCIONES=[("0","No cuenta"),("0.5","En elaboración, actualización o implementación parcial"),("1","Vigente / implementado"),("NA","N/A")]
 
+# Ordenada por jerarquía normativa (nivel 1 = Constitución) y, dentro de cada nivel, por año.
+NIVELES_NORMATIVOS = {
+    1: "Constitución Política",
+    2: "Leyes",
+    3: "Decretos nacionales",
+    4: "Acuerdos y resoluciones de autoridades nacionales",
+    5: "Normas distritales",
+    6: "Circulares y directrices",
+    7: "Guías, instrumentos y referentes técnicos",
+}
+
 NORMATIVIDAD=[
     {
-        "categoria":"Ley",
-        "titulo":"Ley 594 de 2000",
-        "descripcion":"Ley General de Archivos y marco general de la función archivística del Estado.",
-        "estado":"Vigente",
-        "icono":"bi-journal-text",
-        "web":"https://normativa.archivogeneral.gov.co/ley-594-de-2000/",
-        "pdf":"https://normativa.archivogeneral.gov.co/ley-594-de-2000/?pdf=41"
+        "categoria": "Constitución",
+        "titulo": "Constitución Política de Colombia de 1991",
+        "descripcion": "Norma superior. Consagra el derecho de acceso a los documentos públicos (artículo 74), el derecho de petición y la protección de los datos personales y del patrimonio cultural.",
+        "estado": "Vigente",
+        "icono": "bi-bank",
+        "web": "http://www.secretariasenado.gov.co/senado/basedoc/constitucion_politica_1991.html",
+        "pdf": "",
+        "nivel": 1
     },
     {
-        "categoria":"Ley",
-        "titulo":"Ley 1712 de 2014",
-        "descripcion":"Transparencia y derecho de acceso a la información pública nacional.",
-        "estado":"Vigente",
-        "icono":"bi-shield-check",
-        "web":"https://normativa.archivogeneral.gov.co/ley-1712-de-2014/",
-        "pdf":"https://normativa.archivogeneral.gov.co/ley-1712-de-2014/?pdf=418"
+        "categoria": "Ley",
+        "titulo": "Ley 594 de 2000",
+        "descripcion": "Ley General de Archivos y marco general de la función archivística del Estado.",
+        "estado": "Vigente",
+        "icono": "bi-journal-text",
+        "web": "https://normativa.archivogeneral.gov.co/ley-594-de-2000/",
+        "pdf": "https://normativa.archivogeneral.gov.co/ley-594-de-2000/?pdf=41",
+        "nivel": 2
     },
     {
-        "categoria":"Decreto",
-        "titulo":"Decreto 1080 de 2015",
-        "descripcion":"Decreto Único Reglamentario del Sector Cultura, con disposiciones aplicables a la gestión documental.",
-        "estado":"Vigente",
-        "icono":"bi-file-earmark-ruled",
-        "web":"https://normativa.archivogeneral.gov.co/decreto-1080-de-2015/",
-        "pdf":"https://normativa.archivogeneral.gov.co/decreto-1080-de-2015/?pdf=33"
+        "categoria": "Ley",
+        "titulo": "Ley 1581 de 2012",
+        "descripcion": "Ley Estatutaria de protección de datos personales, aplicable a los documentos y bases de datos que gestionan las entidades.",
+        "estado": "Vigente",
+        "icono": "bi-person-lock",
+        "web": "https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=49981",
+        "pdf": "",
+        "nivel": 2
     },
     {
-        "categoria":"Acuerdo",
-        "titulo":"Acuerdo No. 001 de 2024",
-        "descripcion":"Acuerdo Único de la Función Archivística y criterios técnicos y jurídicos para su implementación.",
-        "estado":"Vigente",
-        "icono":"bi-file-earmark-medical",
-        "web":"https://normativa.archivogeneral.gov.co/acuerdo-no-001-del-2024/",
-        "pdf":"https://normativa.archivogeneral.gov.co/wp-content/uploads/2024/04/2024-02_29_AcuerdoAGN-FIRMADO.pdf"
+        "categoria": "Ley",
+        "titulo": "Ley 1712 de 2014",
+        "descripcion": "Transparencia y derecho de acceso a la información pública nacional.",
+        "estado": "Vigente",
+        "icono": "bi-shield-check",
+        "web": "https://normativa.archivogeneral.gov.co/ley-1712-de-2014/",
+        "pdf": "https://normativa.archivogeneral.gov.co/ley-1712-de-2014/?pdf=418",
+        "nivel": 2
     },
     {
-        "categoria":"Resolución",
-        "titulo":"Resolución MinTIC 1519 de 2020",
-        "descripcion":"Lineamientos de publicación, accesibilidad web, transparencia, seguridad digital y datos abiertos.",
-        "estado":"Fuente normativa oficial",
-        "icono":"bi-gear",
-        "web":"https://normograma.mintic.gov.co/mintic/compilacion/docs/resolucion_mintic_1519_2020.htm",
-        "pdf":""
+        "categoria": "Decreto",
+        "titulo": "Decreto 1080 de 2015",
+        "descripcion": "Decreto Único Reglamentario del Sector Cultura, con disposiciones aplicables a la gestión documental.",
+        "estado": "Vigente",
+        "icono": "bi-file-earmark-ruled",
+        "web": "https://normativa.archivogeneral.gov.co/decreto-1080-de-2015/",
+        "pdf": "https://normativa.archivogeneral.gov.co/decreto-1080-de-2015/?pdf=33",
+        "nivel": 3
     },
     {
-        "categoria":"Circular",
-        "titulo":"Circulares y directrices archivísticas del AGN",
-        "descripcion":"Consulta las circulares y orientaciones oficiales emitidas para la función archivística.",
-        "estado":"Repositorio oficial de circulares",
-        "icono":"bi-file-earmark",
-        "web":"https://normativa.archivogeneral.gov.co/inicio/circulares/",
-        "pdf":""
+        "categoria": "Resolución",
+        "titulo": "Resolución MinTIC 1519 de 2020",
+        "descripcion": "Lineamientos de publicación, accesibilidad web, transparencia, seguridad digital y datos abiertos.",
+        "estado": "Fuente normativa oficial",
+        "icono": "bi-gear",
+        "web": "https://normograma.mintic.gov.co/mintic/compilacion/docs/resolucion_mintic_1519_2020.htm",
+        "pdf": "",
+        "nivel": 4
     },
     {
-        "categoria":"Guía y manual",
-        "titulo":"Guías y manuales de gestión documental",
-        "descripcion":"Material técnico de orientación para organizar, conservar y administrar documentos y archivos.",
-        "estado":"Repositorio oficial de publicaciones",
-        "icono":"bi-book",
-        "web":"https://www.archivogeneral.gov.co/consulte/recursos/publicaciones",
-        "pdf":""
+        "categoria": "Acuerdo",
+        "titulo": "Acuerdo No. 001 de 2024",
+        "descripcion": "Acuerdo Único de la Función Archivística y criterios técnicos y jurídicos para su implementación.",
+        "estado": "Vigente",
+        "icono": "bi-file-earmark-medical",
+        "web": "https://normativa.archivogeneral.gov.co/acuerdo-no-001-del-2024/",
+        "pdf": "https://normativa.archivogeneral.gov.co/wp-content/uploads/2024/04/2024-02_29_AcuerdoAGN-FIRMADO.pdf",
+        "nivel": 4
     },
     {
-        "categoria":"Instrumento archivístico",
-        "titulo":"Instrumentos archivísticos: TRD, TVD, PGD y PINAR",
-        "descripcion":"Referentes y recursos para la elaboración e implementación de instrumentos archivísticos.",
-        "estado":"Portal oficial de instrumentos",
-        "icono":"bi-stack",
-        "web":"https://www.archivogeneral.gov.co/instrumentos-archivisticos",
-        "pdf":""
+        "categoria": "Decreto distrital",
+        "titulo": "Decreto Distrital 0673 de 2024",
+        "descripcion": "Crea y reglamenta el Consejo Distrital de Archivos de Medellín: integración, funciones, Presidencia, Secretaría Técnica, sesiones, quórum y actas.",
+        "estado": "Vigente · texto oficial en la Gaceta Oficial del Distrito",
+        "icono": "bi-buildings",
+        "web": "",
+        "pdf": "",
+        "nivel": 5
     },
     {
-        "categoria":"Documento formativo",
-        "titulo":"Material formativo en gestión documental y archivos",
-        "descripcion":"Recursos de capacitación, cartillas, infografías y materiales pedagógicos para fortalecer conocimientos archivísticos.",
-        "estado":"Repositorio oficial de publicaciones",
-        "icono":"bi-mortarboard",
-        "web":"https://www.archivogeneral.gov.co/consulte/recursos/publicaciones",
-        "pdf":""
+        "categoria": "Circular",
+        "titulo": "Circulares y directrices archivísticas del AGN",
+        "descripcion": "Consulta las circulares y orientaciones oficiales emitidas para la función archivística.",
+        "estado": "Repositorio oficial de circulares",
+        "icono": "bi-file-earmark",
+        "web": "https://normativa.archivogeneral.gov.co/inicio/circulares/",
+        "pdf": "",
+        "nivel": 6
     },
     {
-        "categoria":"Referente técnico",
-        "titulo":"MGDA – Modelo de Gestión Documental y Administración de Archivos",
-        "descripcion":"Referente técnico del AGN para diagnóstico, gestión y desarrollo de la función archivística. La copia oficial disponible corresponde a la versión 2.0 (2020).",
-        "estado":"Documento técnico",
-        "icono":"bi-diagram-3",
-        "web":"https://www.archivogeneral.gov.co/",
-        "pdf":"https://www.archivogeneral.gov.co/sites/default/files/Estructura_Web/5_Consulte/Recursos/Publicacionees/V3_MGDA-min.pdf"
+        "categoria": "Guía y manual",
+        "titulo": "Guías y manuales de gestión documental",
+        "descripcion": "Material técnico de orientación para organizar, conservar y administrar documentos y archivos.",
+        "estado": "Repositorio oficial de publicaciones",
+        "icono": "bi-book",
+        "web": "https://www.archivogeneral.gov.co/consulte/recursos/publicaciones",
+        "pdf": "",
+        "nivel": 7
+    },
+    {
+        "categoria": "Instrumento archivístico",
+        "titulo": "Instrumentos archivísticos: TRD, TVD, PGD y PINAR",
+        "descripcion": "Referentes y recursos para la elaboración e implementación de instrumentos archivísticos.",
+        "estado": "Portal oficial de instrumentos",
+        "icono": "bi-stack",
+        "web": "https://www.archivogeneral.gov.co/instrumentos-archivisticos",
+        "pdf": "",
+        "nivel": 7
+    },
+    {
+        "categoria": "Referente técnico",
+        "titulo": "MGDA – Modelo de Gestión Documental y Administración de Archivos",
+        "descripcion": "Referente técnico del AGN para diagnóstico, gestión y desarrollo de la función archivística. La copia oficial disponible corresponde a la versión 2.0 (2020).",
+        "estado": "Documento técnico",
+        "icono": "bi-diagram-3",
+        "web": "https://www.archivogeneral.gov.co/",
+        "pdf": "https://www.archivogeneral.gov.co/sites/default/files/Estructura_Web/5_Consulte/Recursos/Publicacionees/V3_MGDA-min.pdf",
+        "nivel": 7
+    },
+    {
+        "categoria": "Documento formativo",
+        "titulo": "Material formativo en gestión documental y archivos",
+        "descripcion": "Recursos de capacitación, cartillas, infografías y materiales pedagógicos para fortalecer conocimientos archivísticos.",
+        "estado": "Repositorio oficial de publicaciones",
+        "icono": "bi-mortarboard",
+        "web": "https://www.archivogeneral.gov.co/consulte/recursos/publicaciones",
+        "pdf": "",
+        "nivel": 7
     }
 ]
 
@@ -255,7 +306,16 @@ def index():
     except Exception:
         db.session.rollback()
         cifras = None
-    return render_template('index.html', cifras=cifras)
+    conteos = {'actas': cifras['actas'] if cifras else 0,
+               'convalidaciones': cifras['convalidaciones'] if cifras else 0,
+               'documentos': 0}
+    try:
+        conteos['documentos'] = PublicacionCDA.query.filter(PublicacionCDA.publicado.is_(True),
+                                                            PublicacionCDA.categoria != 'acta').count()
+    except Exception:
+        db.session.rollback()
+    # La página de inicio es la del Consejo Distrital de Archivos (Sistema Distrital).
+    return render_template('consejo.html', cifras=cifras, conteos=conteos)
 
 
 
@@ -712,7 +772,7 @@ def resultado(censo_id):
     return render_template('resultado.html', censo=registro, conteo=conteo, formulario_actual=actual)
 
 @app.route('/normatividad')
-def normatividad(): return render_template('normatividad.html',normatividad=NORMATIVIDAD)
+def normatividad(): return render_template('normatividad.html',normatividad=NORMATIVIDAD,niveles=NIVELES_NORMATIVOS)
 
 @app.route('/ayuda')
 def ayuda():
@@ -1502,7 +1562,8 @@ def _sda_radicados_sesion():
 
 @app.route('/sistema-distrital')
 def sistema_distrital():
-    return render_template('sistema_distrital.html')
+    # La información del Sistema y del Consejo ahora es la página de inicio.
+    return redirect(url_for('index'), code=301)
 
 
 @app.route('/servicios-en-linea')
