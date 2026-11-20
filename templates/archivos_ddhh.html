@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Archivos de derechos humanos | Consejo Distrital de Archivos{% endblock %}
+{% block description %}Archivos de derechos humanos, derecho internacional humanitario y memoria histórica: qué son, cómo identificarlos, qué deben hacer las entidades y cómo se accede a ellos.{% endblock %}
+{% block content %}
+<style>
+  .dh-hero { position:relative; overflow:hidden; color:#fff; padding:2.6rem 0 2.8rem; background:linear-gradient(150deg, #071f38 0%, #0b2d50 55%, #1d4a5c 140%); }
+  .dh-hero .container { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:2rem; align-items:center; }
+  .dh-hero .k { font-size:.75rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:#e3b64a; }
+  .dh-hero .k a { color:#e3b64a; }
+  .dh-hero h1 { color:#fff; font-weight:800; font-size:clamp(1.9rem, 3.6vw, 2.8rem); line-height:1.1; margin:.6rem 0 .7rem; }
+  .dh-hero p { color:rgba(255,255,255,.86); font-size:1.05rem; margin:0; }
+  .dh-hero .ref { display:inline-block; margin-top:1rem; font-size:.84rem; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.25); border-radius:999px; padding:.3rem .8rem; }
+  .dh-hero svg { width:100%; height:auto; max-height:300px; }
+  .dh-tabs { position:sticky; top:0; z-index:20; background:#fff; border-bottom:1px solid #dce4ec; box-shadow:0 4px 14px rgba(13,42,72,.06); }
+  .dh-tabs [role=tablist] { display:flex; gap:.2rem; overflow-x:auto; }
+  .dh-tabs [role=tab] { white-space:nowrap; padding:.95rem .95rem; font-size:.9rem; font-weight:700; color:#123852; background:none; border:0; border-bottom:3px solid transparent; }
+  .dh-tabs [role=tab]:hover { border-bottom-color:#dce4ec; }
+  .dh-tabs [role=tab][aria-selected=true] { border-bottom-color:#c99a2e; color:#0b2d50; background:#f7f2e4; }
+  .dh-tabs [role=tab]:focus-visible { outline:3px solid #2f7fd1; outline-offset:-3px; }
+  .js-tabs .dh-panel[hidden] { display:none !important; }
+  .dh-sec { padding:2.2rem 0 0; }
+  .dh-sec h2 { font-size:1.5rem; font-weight:800; color:#0b2d50; margin:0 0 .3rem; }
+  .dh-sec .sub { color:#56687a; margin:0 0 1.3rem; max-width:50rem; }
+  .dh-card { background:#fff; border:1px solid #dce4ec; border-radius:18px; padding:1.4rem 1.5rem; height:100%; }
+  .dh-card h3 { font-size:1.05rem; font-weight:800; color:#0b2d50; margin:0 0 .5rem; }
+  .dh-card p:last-child, .dh-card ul:last-child { margin-bottom:0; }
+  .dh-uses { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:.8rem; list-style:none; padding:0; margin:0; }
+  .dh-uses li { background:#fff; border:1px solid #dce4ec; border-radius:16px; padding:1.1rem; text-align:center; }
+  .dh-uses svg { width:56px; height:56px; margin-bottom:.5rem; }
+  .dh-uses b { display:block; color:#0b2d50; font-size:.98rem; margin-bottom:.15rem; }
+  .dh-uses span { font-size:.86rem; color:#56687a; }
+  .dh-flow { list-style:none; padding:0; margin:0; display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:.8rem; counter-reset:f; }
+  .dh-flow li { background:#fff; border:1px solid #dce4ec; border-radius:16px; padding:1.1rem; }
+  .dh-flow li::before { counter-increment:f; content:counter(f); display:grid; place-items:center; width:2.1rem; height:2.1rem; border-radius:50%; background:#0b2d50; color:#fff; font-weight:800; margin-bottom:.6rem; }
+  .dh-flow b { display:block; color:#0b2d50; margin-bottom:.25rem; }
+  .dh-flow span { font-size:.9rem; color:#243447; }
+  .dh-note { font-size:.9rem; background:#eef5fb; border-radius:12px; padding:.8rem 1rem; margin-top:1rem; }
+  .dh-rows { margin:0; }
+  .dh-rows > div { display:grid; grid-template-columns:15rem 1fr; gap:1rem; padding:.9rem 0; border-top:1px solid #eef2f6; }
+  .dh-rows > div:first-child { border-top:0; padding-top:0; }
+  .dh-rows dt { color:#0b2d50; font-weight:800; }
+  .dh-rows dt small { display:block; font-weight:700; color:#7a5a00; font-size:.76rem; margin-top:.15rem; }
+  .dh-rows dd { margin:0; color:#243447; }
+  .dh-end { padding-bottom:3rem; }
+  .dh-src { font-size:.8rem; color:#56687a; margin-top:1.4rem; }
+  @media (max-width: 991.98px) { .dh-hero .container { grid-template-columns:1fr; } .dh-hero svg { max-height:220px; } .dh-flow { grid-template-columns:1fr; } }
+  @media (max-width: 767.98px) { .dh-uses { grid-template-columns:1fr; } }
+  @media (max-width: 575.98px) { .dh-rows > div { grid-template-columns:1fr; gap:.3rem; } }
+</style>
+
+<section class="dh-hero">
+  <div class="container">
+    <div>
+      <div class="k"><a href="{{ url_for('patrimonio_documental') }}">Patrimonio documental</a> · Memoria</div>
+      <h1>Archivos de derechos humanos, DIH y memoria histórica</h1>
+      <p>Los documentos que sirven para probar violaciones, proteger derechos y reconstruir la memoria deben identificarse, conservarse completos y estar disponibles para la verdad, la justicia, la reparación y la no repetición.</p>
+      <span class="ref"><i class="bi bi-journal-text me-1" aria-hidden="true"></i>Acuerdo 001 de 2024 del AGN, título 9, capítulo 1</span>
+    </div>
+    <!-- Ilustración original: caja de archivo abierta con expedientes, paloma y luz de memoria. -->
+    <svg viewBox="0 0 420 300" role="img" aria-label="Ilustración de una caja de archivo abierta con expedientes, una paloma en vuelo y una vela encendida">
+      <defs>
+        <linearGradient id="dhCaja" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c99a5b"/><stop offset="1" stop-color="#9c6f37"/></linearGradient>
+        <radialGradient id="dhLuz" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffe7a3" stop-opacity=".9"/><stop offset="1" stop-color="#ffe7a3" stop-opacity="0"/></radialGradient>
+      </defs>
+      <ellipse cx="210" cy="280" rx="190" ry="13" fill="#000" opacity=".22"/>
+      <!-- expedientes -->
+      <g transform="translate(96 108)">
+        <rect x="8" y="0" width="60" height="96" rx="4" fill="#f6ecd2" transform="rotate(-8 38 48)"/>
+        <rect x="52" y="-6" width="60" height="100" rx="4" fill="#eaf3fb"/>
+        <rect x="96" y="2" width="60" height="96" rx="4" fill="#f6ecd2" transform="rotate(7 126 50)"/>
+        <rect x="140" y="4" width="58" height="94" rx="4" fill="#e7d3a6" transform="rotate(12 169 50)"/>
+        <g stroke="#8a6a3e" stroke-width="3" stroke-linecap="round" opacity=".7">
+          <line x1="62" y1="14" x2="100" y2="14"/><line x1="62" y1="26" x2="94" y2="26"/><line x1="62" y1="38" x2="102" y2="38"/>
+        </g>
+        <rect x="64" y="50" width="36" height="12" rx="6" fill="#c99a2e"/>
+      </g>
+      <!-- caja -->
+      <g transform="translate(80 170)">
+        <path d="M0 0 H260 L248 100 Q247 106 240 106 H20 Q13 106 12 100 Z" fill="url(#dhCaja)"/>
+        <rect x="-6" y="-8" width="272" height="18" rx="5" fill="#b6844a"/>
+        <rect x="98" y="34" width="64" height="32" rx="4" fill="#f6ecd2"/>
+        <rect x="106" y="42" width="48" height="4" rx="2" fill="#9c6f37"/><rect x="106" y="52" width="32" height="4" rx="2" fill="#9c6f37"/>
+      </g>
+      <!-- paloma -->
+      <g transform="translate(250 34)">
+        <path d="M40 46 C 20 40, 6 22, 0 0 C 22 10, 36 20, 48 34 Z" fill="#ffffff" opacity=".92"/>
+        <path d="M44 40 C 60 22, 82 14, 104 16 C 92 26, 78 38, 62 48 Z" fill="#dbeafe"/>
+        <path d="M30 52 C 44 40, 70 40, 86 50 C 96 56, 104 54, 112 48 C 108 62, 94 70, 78 68 L 64 78 L 60 68 C 48 68, 36 62, 30 52 Z" fill="#ffffff"/>
+        <circle cx="96" cy="52" r="2.4" fill="#0b2d50"/>
+        <path d="M110 50 l10 -2 l-8 7 Z" fill="#e3b64a"/>
+        <path d="M112 56 q14 4 22 -4" fill="none" stroke="#7fb36a" stroke-width="3" stroke-linecap="round"/>
+        <ellipse cx="130" cy="50" rx="6" ry="3" fill="#7fb36a" transform="rotate(-30 130 50)"/>
+      </g>
+      <!-- vela -->
+      <g transform="translate(352 196)">
+        <circle cx="0" cy="-22" r="30" fill="url(#dhLuz)"/>
+        <rect x="-9" y="-6" width="18" height="74" rx="4" fill="#f6ecd2"/>
+        <path d="M0 -30 C 7 -20, 7 -12, 0 -8 C -7 -12, -7 -20, 0 -30 Z" fill="#e3b64a"/>
+        <line x1="0" y1="-8" x2="0" y2="-4" stroke="#3b2a12" stroke-width="2"/>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<nav class="dh-tabs" aria-label="Secciones de archivos de derechos humanos">
+  <div class="container"><div role="tablist" aria-label="Información sobre archivos de derechos humanos">
+    <button type="button" role="tab" id="tab-que" aria-controls="p-que" aria-selected="true" tabindex="0" data-tab="que"><i class="bi bi-info-circle" aria-hidden="true"></i> ¿Qué son?</button>
+    <button type="button" role="tab" id="tab-identificar" aria-controls="p-identificar" aria-selected="false" tabindex="-1" data-tab="identificar"><i class="bi bi-search" aria-hidden="true"></i> Cómo identificarlos</button>
+    <button type="button" role="tab" id="tab-obligaciones" aria-controls="p-obligaciones" aria-selected="false" tabindex="-1" data-tab="obligaciones"><i class="bi bi-shield-check" aria-hidden="true"></i> Obligaciones de las entidades</button>
+    <button type="button" role="tab" id="tab-acceso" aria-controls="p-acceso" aria-selected="false" tabindex="-1" data-tab="acceso"><i class="bi bi-unlock" aria-hidden="true"></i> Acceso y memoria</button>
+  </div></div>
+</nav>
+
+<div class="container dh-end">
+
+  <section class="dh-sec dh-panel" id="p-que" role="tabpanel" aria-labelledby="tab-que" data-panel="que">
+    <h2>¿Qué son los archivos de derechos humanos?</h2>
+    <p class="sub">Son los documentos, en cualquier soporte, que por su uso potencial sirven para conocer y probar lo ocurrido frente a los derechos humanos y el derecho internacional humanitario. No forman un archivo aparte: hacen parte de los fondos y las series que ya produce cada entidad.</p>
+    <ul class="dh-uses mb-3">
+      <li><svg viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="26" fill="#eaf3fb"/><circle cx="25" cy="25" r="9" fill="none" stroke="#123b65" stroke-width="3"/><path d="M32 32l8 8" stroke="#c99a2e" stroke-width="3.5" stroke-linecap="round"/></svg><b>Evidenciar</b><span>Dan cuenta de violaciones a los derechos humanos o infracciones al derecho internacional humanitario.</span></li>
+      <li><svg viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="26" fill="#eaf3fb"/><path d="M28 14 l12 5 v9 c0 8 -5 13 -12 16 c-7 -3 -12 -8 -12 -16 v-9 Z" fill="none" stroke="#123b65" stroke-width="3" stroke-linejoin="round"/><path d="M23 29l4 4 7-8" fill="none" stroke="#c99a2e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><b>Proteger derechos</b><span>Respaldan la exigencia y la defensa de los derechos de las personas y de las víctimas.</span></li>
+      <li><svg viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="26" fill="#eaf3fb"/><path d="M17 40V22l11-7 11 7v18" fill="none" stroke="#123b65" stroke-width="3" stroke-linejoin="round"/><path d="M22 40V28M28 40V28M34 40V28M14 40h28" stroke="#c99a2e" stroke-width="3" stroke-linecap="round"/></svg><b>Documentar al Estado</b><span>Muestran cómo el Estado cumplió sus obligaciones de respeto, protección y garantía.</span></li>
+    </ul>
+    <div class="row g-3">
+      <div class="col-md-6"><div class="dh-card"><h3>¿Dónde se encuentran?</h3><p>En cualquier entidad: expedientes de atención a víctimas, quejas y denuncias, actuaciones de inspecciones y comisarías, historias laborales, contratos, registros de salud, educación o gobierno, fotografías, audios y bases de datos. Su valor no depende del soporte sino de su relación con hechos y funciones de derechos humanos.</p></div></div>
+      <div class="col-md-6"><div class="dh-card"><h3>¿Por qué importan?</h3><p>Son la base documental de los derechos a la verdad, la justicia, la reparación y las garantías de no repetición. Perderlos, alterarlos o fragmentarlos puede afectar a víctimas, procesos judiciales y la memoria de la ciudad.</p></div></div>
+    </div>
+  </section>
+
+  <section class="dh-sec dh-panel" id="p-identificar" role="tabpanel" aria-labelledby="tab-identificar" data-panel="identificar">
+    <h2>Cómo identificarlos en la entidad</h2>
+    <p class="sub">La identificación se hace sobre las funciones y los documentos que la entidad ya tiene, con tres criterios complementarios.</p>
+    <ol class="dh-flow">
+      <li><b>Criterio orgánico-funcional</b><span>Identifique las funciones relacionadas con derechos humanos y las dependencias que las cumplen, teniendo en cuenta el contexto en que se produjeron los documentos.</span></li>
+      <li><b>Criterio de contenido</b><span>Analice la información que contienen: su relación con funciones de derechos humanos, con hechos notables y su carácter único para la investigación. Este análisis orienta la asignación de valores primarios y secundarios.</span></li>
+      <li><b>Graves y manifiestas violaciones</b><span>Para los archivos sobre graves violaciones a los derechos humanos e infracciones al DIH, aplique el Protocolo de gestión documental expedido por el Archivo General de la Nación y el Centro Nacional de Memoria Histórica, en el marco de la Ley 1448 de 2011.</span></li>
+    </ol>
+    <p class="dh-note mb-0"><strong>En el inventario:</strong> los servidores públicos y contratistas deben entregar el inventario de sus documentos señalando los que se relacionan con derechos humanos y DIH. Esta obligación debe quedar en los contratos o en los actos que fijan sus funciones.</p>
+  </section>
+
+  <section class="dh-sec dh-panel" id="p-obligaciones" role="tabpanel" aria-labelledby="tab-obligaciones" data-panel="obligaciones">
+    <h2>Obligaciones de las entidades</h2>
+    <p class="sub">Lo que deben garantizar las entidades públicas y los particulares que cumplen funciones públicas que tienen archivos de derechos humanos.</p>
+    <div class="dh-card">
+      <dl class="dh-rows">
+        <div><dt>Conservación permanente<small>Art. 9.1.2.2</small></dt><dd>Los documentos relacionados con acciones imprescriptibles, crímenes de lesa humanidad y graves violaciones a los derechos humanos son de conservación permanente.</dd></div>
+        <div><dt>Ajuste de TRD y TVD<small>Art. 9.1.2.3</small></dt><dd>Los tiempos de retención y la disposición final de las Tablas de Retención Documental y de Valoración Documental deben ajustarse para que estos documentos sigan disponibles para la verdad, la justicia, la reparación y la no repetición.</dd></div>
+        <div><dt>Medidas de protección<small>Art. 9.1.2.4</small></dt><dd>Aplicar las medidas de protección del Protocolo de gestión documental y mantener los expedientes y unidades documentales sin desagregar.</dd></div>
+        <div><dt>Integridad de los expedientes<small>Art. 9.1.2.6</small></dt><dd>Los expedientes deben estar completos para garantizar su integridad, veracidad, autenticidad y fidelidad. Las series conservan su vínculo archivístico: no se crean colecciones de derechos humanos por fuera de las series o subseries establecidas.</dd></div>
+        <div><dt>Convenios y contratos<small>Art. 9.1.2.7</small></dt><dd>Los convenios con terceros nacionales o extranjeros sobre temas de derechos humanos o DIH deben incluir una cláusula para entregar copia de los documentos públicos producidos al Archivo General de la Nación.</dd></div>
+        <div><dt>No destrucción<small>Ley 1448 de 2011, art. 144</small></dt><dd>La Procuraduría General de la Nación vela por que los archivos administrativos relacionados con estas violaciones no sean destruidos ni alterados.</dd></div>
+      </dl>
+    </div>
+    <p class="dh-note mb-0"><strong>En el Consejo:</strong> cuando las Tablas de Retención o de Valoración Documental en estudio lo ameriten, el Consejo Distrital de Archivos puede invitar a sus sesiones a líderes de archivos de derechos humanos, para que estos documentos queden bien valorados en la convalidación.</p>
+  </section>
+
+  <section class="dh-sec dh-panel" id="p-acceso" role="tabpanel" aria-labelledby="tab-acceso" data-panel="acceso">
+    <h2>Acceso y memoria histórica</h2>
+    <p class="sub">El acceso a estos documentos sigue las reglas generales de acceso y consulta, con una garantía reforzada a favor de la verdad y de las víctimas.</p>
+    <div class="row g-3">
+      <div class="col-lg-6"><div class="dh-card">
+        <h3>Acceso a la información</h3>
+        <ul>
+          <li>La consulta se rige por el título 7 del Acuerdo 001 de 2024, «Acceso y consulta de los documentos».</li>
+          <li>Las excepciones de acceso de la Ley de Transparencia <strong>no aplican</strong> en casos de violación de derechos humanos o delitos de lesa humanidad, y en todo caso deben protegerse los derechos de las víctimas (Ley 1712 de 2014, art. 21).</li>
+          <li>Los datos personales y la información sensible de las víctimas se protegen al entregar copias o consultas.</li>
+        </ul>
+      </div></div>
+      <div class="col-lg-6"><div class="dh-card">
+        <h3>Deber de memoria</h3>
+        <ul>
+          <li>El Estado debe garantizar las condiciones para que la sociedad, las víctimas y las organizaciones reconstruyan la memoria como aporte al derecho a la verdad (Ley 1448 de 2011, art. 143).</li>
+          <li>El Centro Nacional de Memoria Histórica administra el Programa de Derechos Humanos y Memoria Histórica para el acopio, la preservación y la custodia de estos materiales (art. 144).</li>
+          <li>Los archivos judiciales son de la Rama Judicial, que puede confiar su custodia al Archivo General de la Nación o a los archivos territoriales.</li>
+        </ul>
+      </div></div>
+    </div>
+    <p class="dh-note">¿Su entidad necesita orientación para identificar o proteger archivos de derechos humanos? Escriba a <a href="mailto:consejodarchivo@medellin.gov.co">consejodarchivo@medellin.gov.co</a> o solicite <a href="{{ url_for('servicios_en_linea', servicio='asistencia') }}">asistencia técnica</a>.</p>
+  </section>
+
+  <p class="dh-src">Fuentes: Acuerdo 001 de 2024 del Archivo General de la Nación, título 9, capítulo 1 (artículos 9.1.1 a 9.1.2.8); Ley 1448 de 2011, artículos 143 a 145; Ley 1712 de 2014, artículo 21; Reglamento interno del Consejo Distrital de Archivos.</p>
+</div>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.dh-tabs [role=tab]'));
+    var panels = Array.prototype.slice.call(document.querySelectorAll('.dh-panel'));
+    document.body.classList.add('js-tabs');
+    var bar = document.querySelector('.dh-tabs');
+    function show(key, focus) {
+      if (!tabs.some(function (t) { return t.dataset.tab === key; })) key = 'que';
+      tabs.forEach(function (t) { var on = t.dataset.tab === key; t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1; if (on && focus) t.focus(); });
+      panels.forEach(function (p) { p.hidden = p.dataset.panel !== key; });
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.dataset.tab); history.replaceState(null, '', '#' + t.dataset.tab); if (window.scrollY > bar.offsetTop) window.scrollTo({ top: bar.offsetTop, behavior: 'smooth' }); });
+      t.addEventListener('keydown', function (e) {
+        var n = null;
+        if (e.key === 'ArrowRight') n = tabs[(i + 1) % tabs.length];
+        if (e.key === 'ArrowLeft') n = tabs[(i - 1 + tabs.length) % tabs.length];
+        if (e.key === 'Home') n = tabs[0];
+        if (e.key === 'End') n = tabs[tabs.length - 1];
+        if (n) { e.preventDefault(); show(n.dataset.tab, true); history.replaceState(null, '', '#' + n.dataset.tab); }
+      });
+    });
+    show(location.hash.replace('#', ''));
+  })();
+</script>
+{% endblock %}

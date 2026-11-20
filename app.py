@@ -783,6 +783,11 @@ def patrimonio_documental():
     return render_template('patrimonio.html')
 
 
+@app.route('/archivos-derechos-humanos')
+def archivos_ddhh():
+    return render_template('archivos_ddhh.html')
+
+
 @app.route('/diagnostico/guia')
 def guia_diagnostico():
     return render_template('guia_diagnostico.html')
