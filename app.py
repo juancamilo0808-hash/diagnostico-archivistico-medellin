@@ -130,28 +130,17 @@ INSTRUMENTO_OPCIONES=[("0","No cuenta"),("0.5","En elaboración, actualización 
 UMBRAL_BAJO = 40
 UMBRAL_MEDIO = 75
 
-# Ordenada por jerarquía normativa (nivel 1 = Constitución) y, dentro de cada nivel, por año.
+# Ordenada por jerarquía normativa (nivel 1 = leyes) y, dentro de cada nivel, por año.
 NIVELES_NORMATIVOS = {
-    1: "Constitución Política",
-    2: "Leyes",
-    3: "Decretos nacionales",
-    4: "Acuerdos y resoluciones de autoridades nacionales",
-    5: "Normas distritales",
-    6: "Circulares y directrices",
-    7: "Guías, instrumentos y referentes técnicos",
+    1: "Leyes",
+    2: "Decretos nacionales",
+    3: "Acuerdos y resoluciones de autoridades nacionales",
+    4: "Normas distritales",
+    5: "Circulares y directrices",
+    6: "Guías, instrumentos y referentes técnicos",
 }
 
 NORMATIVIDAD=[
-    {
-        "categoria": "Constitución",
-        "titulo": "Constitución Política de Colombia de 1991",
-        "descripcion": "Norma superior. Consagra el derecho de acceso a los documentos públicos (artículo 74), el derecho de petición y la protección de los datos personales y del patrimonio cultural.",
-        "estado": "Vigente",
-        "icono": "bi-bank",
-        "web": "http://www.secretariasenado.gov.co/senado/basedoc/constitucion_politica_1991.html",
-        "pdf": "",
-        "nivel": 1
-    },
     {
         "categoria": "Ley",
         "titulo": "Ley 594 de 2000",
@@ -160,7 +149,7 @@ NORMATIVIDAD=[
         "icono": "bi-journal-text",
         "web": "https://normativa.archivogeneral.gov.co/ley-594-de-2000/",
         "pdf": "https://normativa.archivogeneral.gov.co/ley-594-de-2000/?pdf=41",
-        "nivel": 2
+        "nivel": 1
     },
     {
         "categoria": "Ley",
@@ -170,7 +159,7 @@ NORMATIVIDAD=[
         "icono": "bi-person-lock",
         "web": "https://www.funcionpublica.gov.co/eva/gestornormativo/norma.php?i=49981",
         "pdf": "",
-        "nivel": 2
+        "nivel": 1
     },
     {
         "categoria": "Ley",
@@ -180,7 +169,7 @@ NORMATIVIDAD=[
         "icono": "bi-shield-check",
         "web": "https://normativa.archivogeneral.gov.co/ley-1712-de-2014/",
         "pdf": "https://normativa.archivogeneral.gov.co/ley-1712-de-2014/?pdf=418",
-        "nivel": 2
+        "nivel": 1
     },
     {
         "categoria": "Decreto",
@@ -190,7 +179,7 @@ NORMATIVIDAD=[
         "icono": "bi-file-earmark-ruled",
         "web": "https://normativa.archivogeneral.gov.co/decreto-1080-de-2015/",
         "pdf": "https://normativa.archivogeneral.gov.co/decreto-1080-de-2015/?pdf=33",
-        "nivel": 3
+        "nivel": 2
     },
     {
         "categoria": "Resolución",
@@ -200,7 +189,7 @@ NORMATIVIDAD=[
         "icono": "bi-gear",
         "web": "https://normograma.mintic.gov.co/mintic/compilacion/docs/resolucion_mintic_1519_2020.htm",
         "pdf": "",
-        "nivel": 4
+        "nivel": 3
     },
     {
         "categoria": "Acuerdo",
@@ -210,7 +199,7 @@ NORMATIVIDAD=[
         "icono": "bi-file-earmark-medical",
         "web": "https://normativa.archivogeneral.gov.co/acuerdo-no-001-del-2024/",
         "pdf": "https://normativa.archivogeneral.gov.co/wp-content/uploads/2024/04/2024-02_29_AcuerdoAGN-FIRMADO.pdf",
-        "nivel": 4
+        "nivel": 3
     },
     {
         "categoria": "Decreto distrital",
@@ -220,7 +209,7 @@ NORMATIVIDAD=[
         "icono": "bi-buildings",
         "web": "",
         "pdf": "",
-        "nivel": 5
+        "nivel": 4
     },
     {
         "categoria": "Circular",
@@ -230,7 +219,7 @@ NORMATIVIDAD=[
         "icono": "bi-file-earmark",
         "web": "https://normativa.archivogeneral.gov.co/inicio/circulares/",
         "pdf": "",
-        "nivel": 6
+        "nivel": 5
     },
     {
         "categoria": "Guía y manual",
@@ -240,7 +229,7 @@ NORMATIVIDAD=[
         "icono": "bi-book",
         "web": "https://www.archivogeneral.gov.co/consulte/recursos/publicaciones",
         "pdf": "",
-        "nivel": 7
+        "nivel": 6
     },
     {
         "categoria": "Instrumento archivístico",
@@ -250,7 +239,7 @@ NORMATIVIDAD=[
         "icono": "bi-stack",
         "web": "https://www.archivogeneral.gov.co/instrumentos-archivisticos",
         "pdf": "",
-        "nivel": 7
+        "nivel": 6
     },
     {
         "categoria": "Referente técnico",
@@ -260,7 +249,7 @@ NORMATIVIDAD=[
         "icono": "bi-diagram-3",
         "web": "https://www.archivogeneral.gov.co/",
         "pdf": "https://www.archivogeneral.gov.co/sites/default/files/Estructura_Web/5_Consulte/Recursos/Publicacionees/V3_MGDA-min.pdf",
-        "nivel": 7
+        "nivel": 6
     },
     {
         "categoria": "Documento formativo",
@@ -270,7 +259,7 @@ NORMATIVIDAD=[
         "icono": "bi-mortarboard",
         "web": "https://www.archivogeneral.gov.co/consulte/recursos/publicaciones",
         "pdf": "",
-        "nivel": 7
+        "nivel": 6
     }
 ]
 

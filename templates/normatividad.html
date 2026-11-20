@@ -2,11 +2,11 @@
 {% block title %}Normatividad archivística{% endblock %}
 {% block content %}
 <style>
-  .nm-hero { background: linear-gradient(160deg, #071f38, #0b2d50 60%, #0f3a63); color:#fff; padding:2.6rem 0 4.8rem; }
+  .nm-hero { background: linear-gradient(160deg, #071f38, #0b2d50 60%, #0f3a63); color:#fff; padding:2.6rem 0 2.6rem; }
   .nm-hero .k { font-size:.75rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:var(--cda-gold,#d6a62c); }
   .nm-hero h1 { color:#fff; font-weight:800; margin:.4rem 0 .4rem; }
   .nm-hero p { color:rgba(255,255,255,.78); max-width:44rem; margin:0; }
-  .nm-wrap { margin-top:-3rem; padding-bottom:3rem; }
+  .nm-wrap { padding-top:2rem; padding-bottom:3rem; }
   .nm-grid { display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:1rem; }
   .nm-card { background:#fff; border:1px solid var(--cda-border,#dce4ec); border-radius:18px; padding:1.3rem; display:grid; grid-template-columns: 3rem 1fr; gap:1rem; }
   .nm-ico { width:3rem; height:3rem; border-radius:12px; display:grid; place-items:center; background:var(--cda-blue-light,#eaf3fb); color:var(--cda-blue,#123b65); font-size:1.3rem; }
@@ -23,7 +23,7 @@
 <section class="nm-hero"><div class="container">
   <div class="k">Normalización · Sistema Distrital de Archivos</div>
   <h1>Normatividad y referentes técnicos</h1>
-  <p>Normas que orientan la gestión documental y la función archivística, ordenadas de mayor a menor jerarquía: Constitución, leyes, decretos, actos de autoridades nacionales, normas distritales, circulares y referentes técnicos.</p>
+  <p>Normas que orientan la gestión documental y la función archivística, ordenadas de mayor a menor jerarquía: leyes, decretos, actos de autoridades nacionales, normas distritales, circulares y referentes técnicos.</p>
 </div></section>
 <div class="container nm-wrap">
   {% for n, nombre in niveles.items() %}{% set grupo = normatividad|selectattr('nivel', 'equalto', n)|list %}{% if grupo %}
