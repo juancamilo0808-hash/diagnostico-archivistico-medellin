@@ -778,6 +778,11 @@ def ayuda():
     return render_template('ayuda.html')
 
 
+@app.route('/patrimonio-documental')
+def patrimonio_documental():
+    return render_template('patrimonio.html')
+
+
 @app.route('/diagnostico/guia')
 def guia_diagnostico():
     return render_template('guia_diagnostico.html')

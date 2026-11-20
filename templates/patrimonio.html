@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}Patrimonio documental: BIC-CDA | Consejo Distrital de Archivos{% endblock %}
+{% block description %}Bienes de Interés Cultural de Carácter Documental Archivístico (BIC-CDA): qué son, cómo se declaran en Medellín, la lista indicativa, el plan especial de manejo y protección y el régimen especial de protección.{% endblock %}
+{% block content %}
+<style>
+  .pd-hero { position:relative; overflow:hidden; color:#fff; padding:2.6rem 0 2.8rem; background:linear-gradient(150deg, #071f38 0%, #0b2d50 55%, #3a2a12 140%); }
+  .pd-hero .container { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(0,1fr); gap:2rem; align-items:center; }
+  .pd-hero .k { font-size:.75rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:#e3b64a; }
+  .pd-hero h1 { color:#fff; font-weight:800; font-size:clamp(1.9rem, 3.6vw, 2.8rem); line-height:1.1; margin:.6rem 0 .7rem; }
+  .pd-hero p { color:rgba(255,255,255,.86); font-size:1.05rem; margin:0; }
+  .pd-hero .ref { display:inline-block; margin-top:1rem; font-size:.84rem; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.25); border-radius:999px; padding:.3rem .8rem; }
+  .pd-hero svg { width:100%; height:auto; max-height:300px; }
+  .pd-tabs { position:sticky; top:0; z-index:20; background:#fff; border-bottom:1px solid #dce4ec; box-shadow:0 4px 14px rgba(13,42,72,.06); }
+  .pd-tabs [role=tablist] { display:flex; gap:.2rem; overflow-x:auto; }
+  .pd-tabs [role=tab] { white-space:nowrap; padding:.95rem .95rem; font-size:.9rem; font-weight:700; color:#123852; background:none; border:0; border-bottom:3px solid transparent; }
+  .pd-tabs [role=tab]:hover { border-bottom-color:#dce4ec; }
+  .pd-tabs [role=tab][aria-selected=true] { border-bottom-color:#c99a2e; color:#0b2d50; background:#f7f2e4; }
+  .pd-tabs [role=tab]:focus-visible { outline:3px solid #2f7fd1; outline-offset:-3px; }
+  .js-tabs .pd-panel[hidden] { display:none !important; }
+  .pd-sec { padding:2.2rem 0 0; }
+  .pd-sec h2 { font-size:1.5rem; font-weight:800; color:#0b2d50; margin:0 0 .3rem; }
+  .pd-sec .sub { color:#56687a; margin:0 0 1.3rem; max-width:50rem; }
+  .pd-card { background:#fff; border:1px solid #dce4ec; border-radius:18px; padding:1.4rem 1.5rem; height:100%; }
+  .pd-card h3 { font-size:1.05rem; font-weight:800; color:#0b2d50; margin:0 0 .5rem; }
+  .pd-card p:last-child, .pd-card ul:last-child { margin-bottom:0; }
+  .pd-crit { display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:.8rem; list-style:none; padding:0; margin:0; }
+  .pd-crit li { background:#fff; border:1px solid #dce4ec; border-radius:16px; padding:1rem; text-align:center; }
+  .pd-crit svg { width:56px; height:56px; margin-bottom:.5rem; }
+  .pd-crit b { display:block; color:#0b2d50; font-size:.95rem; }
+  .pd-crit span { font-size:.82rem; color:#56687a; }
+  .pd-flow { list-style:none; padding:0; margin:0; display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:.8rem; counter-reset:f; }
+  .pd-flow li { background:#fff; border:1px solid #dce4ec; border-radius:16px; padding:1.1rem; position:relative; }
+  .pd-flow li::before { counter-increment:f; content:counter(f); display:grid; place-items:center; width:2.1rem; height:2.1rem; border-radius:50%; background:#0b2d50; color:#fff; font-weight:800; margin-bottom:.6rem; }
+  .pd-flow b { display:block; color:#0b2d50; margin-bottom:.25rem; }
+  .pd-flow span { font-size:.9rem; color:#243447; }
+  .pd-flow em { display:inline-block; margin-top:.5rem; font-style:normal; font-size:.76rem; font-weight:800; color:#7a5a00; background:#fbf3df; border-radius:999px; padding:.15rem .55rem; }
+  .pd-note { font-size:.9rem; background:#eef5fb; border-radius:12px; padding:.8rem 1rem; margin-top:1rem; }
+  .pd-rows { margin:0; }
+  .pd-rows > div { display:grid; grid-template-columns:14rem 1fr; gap:1rem; padding:.9rem 0; border-top:1px solid #eef2f6; }
+  .pd-rows > div:first-child { border-top:0; padding-top:0; }
+  .pd-rows dt { color:#0b2d50; font-weight:800; }
+  .pd-rows dd { margin:0; color:#243447; }
+  .pd-end { padding-bottom:3rem; }
+  .pd-src { font-size:.8rem; color:#56687a; margin-top:1.4rem; }
+  @media (max-width: 991.98px) { .pd-hero .container { grid-template-columns:1fr; } .pd-hero svg { max-height:220px; } .pd-crit { grid-template-columns:repeat(3, minmax(0,1fr)); } .pd-flow { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+  @media (max-width: 575.98px) { .pd-crit, .pd-flow { grid-template-columns:1fr; } .pd-rows > div { grid-template-columns:1fr; gap:.3rem; } }
+</style>
+
+<section class="pd-hero">
+  <div class="container">
+    <div>
+      <div class="k">Patrimonio documental</div>
+      <h1>Bienes de Interés Cultural de Carácter Documental Archivístico (BIC-CDA)</h1>
+      <p>Documentos y archivos que, por su valor histórico, estético o simbólico, hacen parte del patrimonio cultural de la Nación y reciben una protección especial.</p>
+      <span class="ref"><i class="bi bi-journal-text me-1" aria-hidden="true"></i>Acuerdo 001 de 2024 del AGN, título 8, capítulo 2</span>
+    </div>
+    <!-- Ilustración original: manuscrito antiguo con sello, caja de archivo y lupa. -->
+    <svg viewBox="0 0 420 300" role="img" aria-label="Ilustración de un manuscrito antiguo con sello de lacre, una caja de archivo y una lupa">
+      <defs>
+        <linearGradient id="pdPapel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6ecd2"/><stop offset="1" stop-color="#e7d3a6"/></linearGradient>
+        <linearGradient id="pdCaja" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c99a5b"/><stop offset="1" stop-color="#9c6f37"/></linearGradient>
+      </defs>
+      <ellipse cx="215" cy="278" rx="190" ry="14" fill="#000" opacity=".22"/>
+      <g transform="translate(250 92)">
+        <rect x="0" y="40" width="140" height="146" rx="6" fill="url(#pdCaja)"/>
+        <rect x="-6" y="24" width="152" height="26" rx="5" fill="#b6844a"/>
+        <rect x="38" y="82" width="64" height="34" rx="4" fill="#f6ecd2"/>
+        <rect x="46" y="91" width="48" height="4" rx="2" fill="#9c6f37"/><rect x="46" y="101" width="34" height="4" rx="2" fill="#9c6f37"/>
+        <rect x="58" y="150" width="24" height="10" rx="5" fill="#7d5626"/>
+      </g>
+      <g transform="translate(40 40) rotate(-6 120 120)">
+        <path d="M10 18 Q10 6 22 6 H214 Q226 6 226 18 V214 Q226 228 212 226 L26 232 Q12 232 10 218 Z" fill="url(#pdPapel)" stroke="#c9ad74" stroke-width="2"/>
+        <path d="M40 46 q20 -10 40 0 t40 0 t40 0" fill="none" stroke="#5b3d1a" stroke-width="3" stroke-linecap="round"/>
+        <g stroke="#8a6a3e" stroke-width="3" stroke-linecap="round" opacity=".75">
+          <line x1="36" y1="78" x2="196" y2="78"/><line x1="36" y1="96" x2="186" y2="96"/><line x1="36" y1="114" x2="200" y2="114"/>
+          <line x1="36" y1="132" x2="170" y2="132"/><line x1="36" y1="150" x2="194" y2="150"/><line x1="36" y1="168" x2="150" y2="168"/>
+        </g>
+        <path d="M120 196 q14 -12 30 -2 q12 8 26 -4" fill="none" stroke="#3b2a12" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="62" cy="196" r="22" fill="#a52a2a"/>
+        <circle cx="62" cy="196" r="15" fill="none" stroke="#7d1d1d" stroke-width="2.5"/>
+        <path d="M54 196 l6 6 l10 -12" fill="none" stroke="#f2c7a5" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M50 214 l-6 18 l10 -6 l6 10 l4 -18 Z" fill="#a52a2a"/>
+      </g>
+      <g transform="translate(150 150) rotate(-28)">
+        <circle cx="0" cy="0" r="44" fill="#dbeafe" fill-opacity=".35" stroke="#e3b64a" stroke-width="9"/>
+        <circle cx="0" cy="0" r="44" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2"/>
+        <rect x="-8" y="50" width="16" height="74" rx="8" fill="#0b2d50" stroke="#e3b64a" stroke-width="3"/>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<nav class="pd-tabs" aria-label="Secciones de patrimonio documental">
+  <div class="container"><div role="tablist" aria-label="Información sobre BIC-CDA">
+    <button type="button" role="tab" id="tab-que" aria-controls="p-que" aria-selected="true" tabindex="0" data-tab="que"><i class="bi bi-info-circle" aria-hidden="true"></i> ¿Qué es un BIC-CDA?</button>
+    <button type="button" role="tab" id="tab-declara" aria-controls="p-declara" aria-selected="false" tabindex="-1" data-tab="declara"><i class="bi bi-diagram-3" aria-hidden="true"></i> Cómo se declara</button>
+    <button type="button" role="tab" id="tab-lista" aria-controls="p-lista" aria-selected="false" tabindex="-1" data-tab="lista"><i class="bi bi-list-ol" aria-hidden="true"></i> Lista indicativa y PEMP</button>
+    <button type="button" role="tab" id="tab-proteccion" aria-controls="p-proteccion" aria-selected="false" tabindex="-1" data-tab="proteccion"><i class="bi bi-shield-check" aria-hidden="true"></i> Régimen de protección</button>
+  </div></div>
+</nav>
+
+<div class="container pd-end">
+
+  <section class="pd-sec pd-panel" id="p-que" role="tabpanel" aria-labelledby="tab-que" data-panel="que">
+    <h2>¿Qué es un BIC-CDA?</h2>
+    <p class="sub">Es una categoría legal especial de bienes del patrimonio cultural de la Nación, de naturaleza documental archivística.</p>
+    <div class="row g-3 mb-3">
+      <div class="col-md-6"><div class="pd-card"><h3>¿Qué puede ser declarado?</h3><p>Un documento, un expediente, una serie, una sección o un fondo documental completo, sin importar el soporte en que se haya producido: papel, fotografía, audio, video o formato digital.</p></div></div>
+      <div class="col-md-6"><div class="pd-card"><h3>¿De quién puede ser?</h3><p>Tanto archivos públicos como privados pueden ser declarados. Los documentos que terminaron su trámite antes del 1 de enero de 1911 se presumen BIC-CDA, aunque también requieren la declaratoria formal.</p></div></div>
+    </div>
+    <h3 class="h6 fw-bold mb-2" style="color:#0b2d50">Criterios para valorarlo</h3>
+    <ul class="pd-crit">
+      <li><svg viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="26" fill="#eaf3fb"/><circle cx="28" cy="28" r="14" fill="none" stroke="#123b65" stroke-width="3"/><path d="M28 20v8l6 4" fill="none" stroke="#c99a2e" stroke-width="3" stroke-linecap="round"/></svg><b>Antigüedad</b><span>Época de producción del documento.</span></li>
+      <li><svg viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="26" fill="#eaf3fb"/><path d="M18 38 L34 18 l4 4 L22 42 l-6 2 Z" fill="none" stroke="#123b65" stroke-width="3" stroke-linejoin="round"/><path d="M31 21l4 4" stroke="#c99a2e" stroke-width="3"/></svg><b>Autoría</b><span>Quién lo produjo y su relevancia.</span></li>
+      <li><svg viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="26" fill="#eaf3fb"/><rect x="18" y="14" width="20" height="28" rx="3" fill="none" stroke="#123b65" stroke-width="3"/><path d="M22 22h12M22 28h12M22 34h8" stroke="#c99a2e" stroke-width="2.5" stroke-linecap="round"/></svg><b>Constitución del bien</b><span>Materiales, técnica y soporte.</span></li>
+      <li><svg viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="26" fill="#eaf3fb"/><path d="M28 14 l12 5 v9 c0 8 -5 13 -12 16 c-7 -3 -12 -8 -12 -16 v-9 Z" fill="none" stroke="#123b65" stroke-width="3" stroke-linejoin="round"/><path d="M23 29l4 4 7-8" fill="none" stroke="#c99a2e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><b>Estado de conservación</b><span>Integridad física y legibilidad.</span></li>
+      <li><svg viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="26" fill="#eaf3fb"/><circle cx="22" cy="24" r="5" fill="none" stroke="#123b65" stroke-width="3"/><circle cx="35" cy="24" r="5" fill="none" stroke="#123b65" stroke-width="3"/><path d="M14 40c1-6 5-9 8-9s7 3 8 9M27 40c1-6 5-9 8-9s7 3 8 9" fill="none" stroke="#c99a2e" stroke-width="3" stroke-linecap="round"/></svg><b>Representatividad</b><span>Contexto social y cultural que refleja.</span></li>
+    </ul>
+    <p class="pd-note mb-0">Con estos criterios se le atribuye al bien un valor histórico, estético o simbólico.</p>
+  </section>
+
+  <section class="pd-sec pd-panel" id="p-declara" role="tabpanel" aria-labelledby="tab-declara" data-panel="declara">
+    <h2>Cómo se declara un BIC-CDA en Medellín</h2>
+    <p class="sub">Los BIC-CDA del ámbito distrital los declara el Alcalde de Medellín mediante acto administrativo motivado, previo concepto favorable del Consejo Distrital de Archivos como órgano asesor. Los del ámbito nacional los declara el Archivo General de la Nación.</p>
+    <ol class="pd-flow">
+      <li><b>Solicitud e inclusión en la lista indicativa</b><span>El propietario o tenedor solicita incluir el bien en la Lista Indicativa de Candidatos (LICBIC-CDA). El Consejo emite concepto.</span><em>Hasta 90 días calendario</em></li>
+      <li><b>Plan especial, si se requiere</b><span>Si el bien lo necesita, se formula el Plan Especial de Manejo y Protección (PEMP-CDA) y se presenta para aprobación.</span><em>Hasta 2 años, prorrogables una vez</em></li>
+      <li><b>Concepto del Consejo</b><span>El Consejo Distrital de Archivos evalúa la solicitud y emite concepto de viabilidad de la declaratoria.</span><em>Evaluación en hasta 90 días calendario</em></li>
+      <li><b>Declaratoria y registro</b><span>Con concepto favorable, la autoridad declara el bien por acto administrativo y lo incluye en el registro público de BIC-CDA.</span><em>Acto administrativo motivado</em></li>
+    </ol>
+    <p class="pd-note mb-0"><strong>Segundo concepto:</strong> si el solicitante no está de acuerdo con las objeciones técnicas de una declaratoria territorial, puede pedir un segundo concepto al Archivo General de la Nación dentro de los 10 días hábiles siguientes.</p>
+  </section>
+
+  <section class="pd-sec pd-panel" id="p-lista" role="tabpanel" aria-labelledby="tab-lista" data-panel="lista">
+    <h2>Lista indicativa y plan especial</h2>
+    <p class="sub">Son los dos instrumentos previos a la declaratoria.</p>
+    <div class="row g-3">
+      <div class="col-lg-6"><div class="pd-card">
+        <h3>Lista Indicativa de Candidatos (LICBIC-CDA)</h3>
+        <p>Es el registro de los bienes que están en proceso de ser declarados. Para cada bien indica, entre otros, su nombre, la fecha de inscripción, los criterios de valoración que cumple, si requiere plan especial y el acto de inclusión.</p>
+        <p>Estar en la lista <strong>no obliga</strong> a declarar el bien ni le aplica todavía el régimen especial de protección. Una discusión sobre la propiedad del bien no impide incluirlo.</p>
+      </div></div>
+      <div class="col-lg-6"><div class="pd-card">
+        <h3>Plan Especial de Manejo y Protección (PEMP-CDA)</h3>
+        <p>Es el instrumento de planeación que fija las acciones para proteger el bien: administración, organización, conservación, apropiación social y divulgación.</p>
+        <ul>
+          <li><strong>Contenido:</strong> contexto y valoración del bien, diagnóstico integral de gestión documental y una propuesta con niveles de intervención, condiciones de manejo y plan de divulgación.</li>
+          <li><strong>Aprobación:</strong> en entidades públicas, primero lo aprueba el Comité Institucional de Gestión y Desempeño; luego la autoridad competente, en hasta seis meses y con concepto favorable del Consejo.</li>
+        </ul>
+      </div></div>
+    </div>
+  </section>
+
+  <section class="pd-sec pd-panel" id="p-proteccion" role="tabpanel" aria-labelledby="tab-proteccion" data-panel="proteccion">
+    <h2>Régimen especial de protección</h2>
+    <p class="sub">Una vez declarado, el bien queda sujeto a reglas especiales para garantizar su conservación.</p>
+    <div class="pd-card">
+      <dl class="pd-rows">
+        <div><dt>Intervención y restauración</dt><dd>Requiere autorización de la autoridad competente y solo puede hacerse bajo la dirección de profesionales idóneos en conservación y restauración. Las intervenciones menores o de primeros auxilios no requieren autorización. Al terminar, el propietario informa a la autoridad en 30 días.</dd></div>
+        <div><dt>Salida temporal del país</dt><dd>Solo para fines probatorios, procesos técnicos o exposiciones culturales, mediante acto administrativo y por un máximo de dos años. Las entidades públicas deben constituir una póliza de seguro.</dd></div>
+        <div><dt>Bienes públicos</dt><dd>Los BIC-CDA de entidades públicas y de particulares que cumplen funciones públicas son inalienables, imprescriptibles e inembargables. Su custodia o administración no puede contratarse con terceros.</dd></div>
+        <div><dt>Bienes privados</dt><dd>La declaratoria no limita la propiedad, pero quien vende y quien compra deben informar la venta a la autoridad en seis meses; de lo contrario, el bien pierde la declaratoria.</dd></div>
+      </dl>
+    </div>
+    <p class="pd-note">¿Tiene un archivo o documento que podría tener valor patrimonial? Escriba a <a href="mailto:consejodarchivo@medellin.gov.co">consejodarchivo@medellin.gov.co</a> o solicite <a href="{{ url_for('servicios_en_linea', servicio='asistencia') }}">asistencia técnica</a> para recibir orientación.</p>
+  </section>
+
+  <p class="pd-src">Fuente: Acuerdo 001 de 2024 del Archivo General de la Nación, título 8, capítulo 2 (artículos 8.2.1.1 a 8.2.4.15), y Decreto 1080 de 2015.</p>
+</div>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.pd-tabs [role=tab]'));
+    var panels = Array.prototype.slice.call(document.querySelectorAll('.pd-panel'));
+    document.body.classList.add('js-tabs');
+    var bar = document.querySelector('.pd-tabs');
+    function show(key, focus) {
+      if (!tabs.some(function (t) { return t.dataset.tab === key; })) key = 'que';
+      tabs.forEach(function (t) { var on = t.dataset.tab === key; t.setAttribute('aria-selected', on ? 'true' : 'false'); t.tabIndex = on ? 0 : -1; if (on && focus) t.focus(); });
+      panels.forEach(function (p) { p.hidden = p.dataset.panel !== key; });
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { show(t.dataset.tab); history.replaceState(null, '', '#' + t.dataset.tab); if (window.scrollY > bar.offsetTop) window.scrollTo({ top: bar.offsetTop, behavior: 'smooth' }); });
+      t.addEventListener('keydown', function (e) {
+        var n = null;
+        if (e.key === 'ArrowRight') n = tabs[(i + 1) % tabs.length];
+        if (e.key === 'ArrowLeft') n = tabs[(i - 1 + tabs.length) % tabs.length];
+        if (e.key === 'Home') n = tabs[0];
+        if (e.key === 'End') n = tabs[tabs.length - 1];
+        if (n) { e.preventDefault(); show(n.dataset.tab, true); history.replaceState(null, '', '#' + n.dataset.tab); }
+      });
+    });
+    show(location.hash.replace('#', ''));
+  })();
+</script>
+{% endblock %}
