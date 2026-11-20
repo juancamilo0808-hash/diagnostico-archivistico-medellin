@@ -2098,7 +2098,7 @@ PUB_CATEGORIAS = {
     'acta': {'nombre': 'Actas de sesión', 'singular': 'Acta', 'icono': 'bi-journal-check'},
     'plan_accion': {'nombre': 'Plan de acción anual', 'singular': 'Plan de acción', 'icono': 'bi-calendar2-check'},
     'informe_semestral': {'nombre': 'Informes semestrales al AGN', 'singular': 'Informe semestral', 'icono': 'bi-clipboard-data'},
-    'reglamento': {'nombre': 'Reglamento y actos de creación', 'singular': 'Reglamento', 'icono': 'bi-bank'},
+    'reglamento': {'nombre': 'Reglamento interno y actos de creación', 'singular': 'Reglamento', 'icono': 'bi-bank'},
     'otro': {'nombre': 'Otros documentos', 'singular': 'Documento', 'icono': 'bi-file-earmark-text'},
 }
 PUB_TIPOS_SESION = ['Ordinaria', 'Extraordinaria']
@@ -2306,12 +2306,24 @@ def convalidaciones_publicas():
                            filtro={'instrumento': instrumento, 'estado': estado, 'anio': anio, 'q': texto})
 
 
+def _documentos_de(categorias):
+    docs = (PublicacionCDA.query.filter(PublicacionCDA.categoria.in_(categorias), PublicacionCDA.publicado.is_(True))
+            .order_by(PublicacionCDA.fecha.desc().nullslast(), PublicacionCDA.id.desc()).all())
+    return {k: [d for d in docs if d.categoria == k] for k in categorias}
+
+
 @app.route('/transparencia/documentos')
 def documentos_publicos():
-    docs = (PublicacionCDA.query.filter(PublicacionCDA.categoria != 'acta', PublicacionCDA.publicado.is_(True))
-            .order_by(PublicacionCDA.fecha.desc().nullslast(), PublicacionCDA.id.desc()).all())
-    grupos = {k: [d for d in docs if d.categoria == k] for k in PUB_CATEGORIAS if k != 'acta'}
-    return render_template('documentos_cda.html', grupos=grupos, categorias=PUB_CATEGORIAS)
+    return render_template('documentos_cda.html', grupos=_documentos_de(['plan_accion', 'informe_semestral', 'otro']),
+                           categorias=PUB_CATEGORIAS, titulo='Planes e informes',
+                           descripcion='Plan de acción anual del Consejo, informes semestrales remitidos al Archivo General de la Nación y otros documentos.')
+
+
+@app.route('/transparencia/reglamento')
+def reglamento_publico():
+    return render_template('documentos_cda.html', grupos=_documentos_de(['reglamento']),
+                           categorias=PUB_CATEGORIAS, titulo='Reglamento interno',
+                           descripcion='Reglamento interno de funcionamiento del Consejo Distrital de Archivos de Medellín y actos de creación.')
 
 
 @app.route('/transparencia/documento/<int:pub_id>')

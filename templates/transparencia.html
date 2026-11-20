@@ -31,7 +31,11 @@
     </a>
     <a class="tr-item" href="{{ url_for('documentos_publicos') }}">
       <span class="tr-ico"><i class="bi bi-clipboard-data" aria-hidden="true"></i></span>
-      <span><span class="tr-num">4 · Planeación e informes</span><h2>Planes, informes y reglamento</h2><p>Plan de acción anual, informes semestrales al Archivo General de la Nación y reglamento interno.</p><span class="tr-count d-block">{{ conteos.documentos }} documento{{ 's' if conteos.documentos != 1 }}</span></span>
+      <span><span class="tr-num">4 · Planeación e informes</span><h2>Planes e informes</h2><p>Plan de acción anual e informes semestrales al Archivo General de la Nación.</p></span>
+    </a>
+    <a class="tr-item" href="{{ url_for('reglamento_publico') }}">
+      <span class="tr-ico"><i class="bi bi-bookmark-check" aria-hidden="true"></i></span>
+      <span><span class="tr-num">2 · Normativa</span><h2>Reglamento interno</h2><p>Reglamento interno de funcionamiento del Consejo y actos de creación.</p></span>
     </a>
     <a class="tr-item" href="{{ url_for('actas_publicas') }}">
       <span class="tr-ico"><i class="bi bi-journal-check" aria-hidden="true"></i></span>

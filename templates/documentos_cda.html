@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Planes, informes y reglamento | Consejo Distrital de Archivos{% endblock %}
+{% block title %}{{ titulo }} | Consejo Distrital de Archivos{% endblock %}
 {% block content %}
 <section class="tp-hero"><div class="container">
-  <nav class="tp-crumb" aria-label="Ruta de navegación"><a href="{{ url_for('transparencia') }}">Transparencia</a> › Planes, informes y reglamento</nav>
-  <h1>Planes, informes y reglamento</h1>
-  <p>Documentos de planeación y seguimiento del Consejo: plan de acción anual, informes semestrales remitidos al Archivo General de la Nación, reglamento interno y actos de creación.</p>
+  <nav class="tp-crumb" aria-label="Ruta de navegación"><a href="{{ url_for('transparencia') }}">Transparencia</a> › {{ titulo }}</nav>
+  <h1>{{ titulo }}</h1>
+  <p>{{ descripcion }}</p>
 </div></section>
 <div class="container tp-wrap">
   {% for clave, docs in grupos.items() %}

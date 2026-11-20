@@ -135,7 +135,7 @@
                         <i class="bi bi-journal-text"></i> Normatividad
                     </a>
 
-                    {% set ep_transp = ('transparencia', 'actas_publicas', 'convalidaciones_publicas', 'documentos_publicos', 'datos_abiertos') %}
+                    {% set ep_transp = ('transparencia', 'actas_publicas', 'convalidaciones_publicas', 'documentos_publicos', 'reglamento_publico', 'datos_abiertos') %}
                     <div class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {% if request.endpoint in ep_transp %}active{% endif %}" href="{{ url_for('transparencia') }}"
                            role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -146,7 +146,8 @@
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ url_for('actas_publicas') }}"><i class="bi bi-journal-check"></i> Actas del Consejo</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('convalidaciones_publicas') }}"><i class="bi bi-patch-check"></i> TRD y TVD convalidadas</a></li>
-                            <li><a class="dropdown-item" href="{{ url_for('documentos_publicos') }}"><i class="bi bi-folder2-open"></i> Planes, informes y reglamento</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('reglamento_publico') }}"><i class="bi bi-bookmark-check"></i> Reglamento interno</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('documentos_publicos') }}"><i class="bi bi-folder2-open"></i> Planes e informes</a></li>
                             <li><a class="dropdown-item" href="{{ url_for('datos_abiertos') }}"><i class="bi bi-database"></i> Datos abiertos</a></li>
                         </ul>
                     </div>
