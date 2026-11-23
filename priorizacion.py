@@ -552,6 +552,13 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
         hoja.page_setup.fitToHeight = 0
         hoja.sheet_properties.pageSetUpPr.fitToPage = True
     wb.active = 0
+    # Que Excel calcule todas las fórmulas al abrir el archivo, aunque esté en cálculo manual.
+    wb.calculation.calcMode = 'auto'
+    wb.calculation.fullCalcOnLoad = True
+    wb.calculation.forceFullCalc = True
+
+    # Imprimir la ficha solo con la entidad elegida: área de impresión de la ficha.
+    ficha.print_area = f'B2:F{rt + 20}'
 
     salida = BytesIO()
     wb.save(salida)
