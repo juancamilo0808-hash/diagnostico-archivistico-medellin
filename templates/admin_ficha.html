@@ -25,21 +25,20 @@
   .fx-kpi { background:#fff; border:1px solid #e4ebf1; border-radius:16px; padding:16px 18px; height:100%; }
   .fx-kpi .v { font-size:1.9rem; font-weight:900; line-height:1.1; font-variant-numeric:tabular-nums; }
   .fx-kpi .t { font-size:.8rem; color:#617487; }
-  .dim-row { display:grid; grid-template-columns:minmax(150px,22rem) 1fr 4.6rem 6.5rem; gap:.8rem; align-items:center; padding:.55rem 0; border-bottom:1px solid #eef2f6; }
-  .dim-row:last-child { border-bottom:0; }
-  .dim-row a { color:#123852; font-weight:700; text-decoration:none; }
-  .dim-row a:hover { text-decoration:underline; }
-  .dim-bar { height:12px; background:#e8eef4; border-radius:20px; overflow:hidden; }
-  .dim-bar span { display:block; height:100%; border-radius:20px; }
-  .dim-val { text-align:right; font-weight:800; font-variant-numeric:tabular-nums; }
-  .dim-risk { font-size:.76rem; color:#617487; text-align:right; }
+  .comp-row { display:grid; grid-template-columns:minmax(150px,22rem) 1fr 4.6rem 6.5rem; gap:.8rem; align-items:center; padding:.55rem 0; border-bottom:1px solid #eef2f6; }
+  .comp-row:last-child { border-bottom:0; }
+  .comp-row a { color:#123852; font-weight:700; text-decoration:none; }
+  .comp-row a:hover { text-decoration:underline; }
+  .comp-bar { height:12px; background:#e8eef4; border-radius:20px; overflow:hidden; }
+  .comp-bar span { display:block; height:100%; border-radius:20px; }
+  .comp-val { text-align:right; font-weight:800; font-variant-numeric:tabular-nums; }
   .rk-table th { font-size:.74rem; text-transform:uppercase; letter-spacing:.04em; color:#617487; background:#f5f8fb; white-space:nowrap; }
   .rk-table td { font-size:.88rem; vertical-align:top; }
   .rk-badge { display:inline-block; padding:.2rem .6rem; border-radius:999px; font-size:.74rem; font-weight:800; white-space:nowrap; }
   .rk-Alto { background:#fdecea; color:#b42318; } .rk-Medio { background:#fff4d6; color:#7a5a00; } .rk-Bajo { background:#eef2f6; color:#475569; }
   .rk-det { color:#617487; font-size:.82rem; display:block; margin-top:.15rem; }
   .rk-norma { color:#56687a; font-size:.78rem; display:block; margin-top:.3rem; font-style:italic; }
-  .dim { scroll-margin-top:90px; }
+  .comp { scroll-margin-top:90px; }
   .rc-table th, .rc-table td { font-size:.88rem; vertical-align:middle; }
   .rc-table thead th { font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; color:#56687a; background:#f5f8fb; white-space:nowrap; }
   .rc-table tbody th a { color:#123852; font-weight:700; text-decoration:none; }
@@ -48,9 +47,9 @@
   .rc-pill { border:1px solid #e4ebf1; }
   .q-sub { font-size:.82rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:#8a6510; margin:1.1rem 0 .2rem; }
   .q-pts { display:inline-block; margin-left:.4rem; font-size:.74rem; font-weight:700; color:#56687a; background:#eef2f6; border-radius:999px; padding:.05rem .5rem; font-style:normal; }
-  .dim-head { display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; margin-bottom:.8rem; }
-  .dim-head h2 { margin:0; }
-  .dim-letter { display:inline-grid; place-items:center; width:2rem; height:2rem; border-radius:10px; background:#eaf3fb; color:#123b65; font-weight:900; margin-right:.5rem; }
+  .comp-head { display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; margin-bottom:.8rem; }
+  .comp-head h2 { margin:0; }
+  .comp-letter { display:inline-grid; place-items:center; width:2rem; height:2rem; border-radius:10px; background:#eaf3fb; color:#123b65; font-weight:900; margin-right:.5rem; }
   .q { border-top:1px solid #eef2f6; padding:.85rem 0; }
   .q:first-of-type { border-top:0; }
   .q-t { font-weight:700; color:#123852; font-size:.92rem; }
@@ -62,15 +61,12 @@
   .chk { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.3rem 1rem; font-size:.86rem; margin-top:.5rem; }
   .chk span { display:flex; gap:.45rem; align-items:center; }
   .chk .si { color:#14532d; } .chk .no { color:#b42318; }
-  .dim-risks { margin-top:.6rem; display:grid; gap:.5rem; }
-  .dim-risks div { border-left:4px solid; border-radius:8px; padding:.55rem .8rem; background:#fafbfc; font-size:.86rem; }
   .hist-table td, .hist-table th { font-size:.86rem; }
-  .dim-delta { font-weight:800; color:#617487; } .dim-delta.up { color:#14532d; } .dim-delta.down { color:#b42318; }
+  .comp-delta { font-weight:800; color:#617487; } .comp-delta.up { color:#14532d; } .comp-delta.down { color:#b42318; }
   .cmp-note { color:#123852; background:#eef5fb; border-radius:10px; padding:.55rem .8rem; }
   @media (max-width: 767.98px) {
-    .dim-row { grid-template-columns:1fr 4rem; }
-    .dim-row .dim-bar { grid-column:1 / -1; grid-row:2; }
-    .dim-row .dim-risk { display:none; }
+    .comp-row { grid-template-columns:1fr 4rem; }
+    .comp-row .comp-bar { grid-column:1 / -1; grid-row:2; }
     .q-d { grid-template-columns:1fr; }
     .chk { grid-template-columns:1fr; }
     .fx-hero { padding:20px; }
@@ -81,7 +77,7 @@
     .fx-hero { background:#fff !important; color:#000 !important; box-shadow:none; border:1px solid #ccc; }
     .fx-hero h1, .fx-ima { color:#000 !important; }
     .fx-card, .fx-kpi { box-shadow:none; break-inside:avoid; }
-    .dim { break-inside:avoid-page; }
+    .comp { break-inside:avoid-page; }
   }
 </style>
 <div class="container-fluid px-lg-5 py-4">
@@ -132,31 +128,31 @@
         {% if version == cuestionario_version %}<th scope="col" class="text-end">Preguntas</th><th scope="col" class="text-end">Sí</th><th scope="col" class="text-end">Parcial</th><th scope="col" class="text-end">No</th><th scope="col" class="text-end">N/A</th><th scope="col" class="text-end">Puntos</th>{% endif %}
         <th scope="col" style="min-width:9rem">Resultado</th><th scope="col" class="text-end">%</th><th scope="col">Nivel</th>{% if anterior %}<th scope="col" class="text-end">Cambio</th>{% endif %}</tr></thead>
       <tbody>
-      {% for f in tabla_componentes %}{% set d = dimensiones|selectattr('letra','equalto', f.num|string)|first if version == cuestionario_version else dimensiones[loop.index] %}
-        <tr><th scope="row"><a href="#dim-{{ d.clave }}">{{ f.num }}. {{ f.nombre }}</a></th><td class="text-end">{{ f.peso }} %</td>
+      {% for f in tabla_componentes %}{% set d = componentes_ficha|selectattr('letra','equalto', f.num|string)|first if version == cuestionario_version else componentes_ficha[loop.index] %}
+        <tr><th scope="row"><a href="#comp-{{ d.clave }}">{{ f.num }}. {{ f.nombre }}</a></th><td class="text-end">{{ f.peso }} %</td>
           {% if version == cuestionario_version %}<td class="text-end">{{ f.preguntas }}</td><td class="text-end">{{ f.si }}</td><td class="text-end">{{ f.parcial }}</td><td class="text-end">{{ f.no }}</td><td class="text-end">{{ f.na }}</td><td class="text-end">{{ ('%.1f'|format(f.puntos)).replace('.', ',') }} de {{ f.aplicables }}</td>{% endif %}
-          <td><div class="dim-bar" role="presentation"><span style="width: {{ f.pct or 0 }}%; background: {{ semaforo(f.pct) }}"></span></div></td>
+          <td><div class="comp-bar" role="presentation"><span style="width: {{ f.pct or 0 }}%; background: {{ semaforo(f.pct) }}"></span></div></td>
           <td class="text-end fw-bold" style="color: {{ tinta(f.pct) }}">{{ (('%.1f'|format(f.pct)).replace('.', ',') ~ ' %') if f.pct is not none else '—' }}</td>
           <td><span class="fx-pill rc-pill" style="color: {{ tinta(f.pct) }}"><i style="background: {{ semaforo(f.pct) }}"></i>{{ f.nivel }}</span></td>
-          {% if anterior %}<td class="text-end">{% if d.cambio is not none %}<span class="dim-delta {{ 'up' if d.cambio > 0 else ('down' if d.cambio < 0 else '') }}">{{ ('%+.1f'|format(d.cambio)).replace('.', ',') }} pts</span>{% else %}—{% endif %}</td>{% endif %}
+          {% if anterior %}<td class="text-end">{% if d.cambio is not none %}<span class="comp-delta {{ 'up' if d.cambio > 0 else ('down' if d.cambio < 0 else '') }}">{{ ('%+.1f'|format(d.cambio)).replace('.', ',') }} pts</span>{% else %}—{% endif %}</td>{% endif %}
         </tr>
       {% endfor %}
       </tbody>
       <tfoot><tr><th scope="row">Nivel de madurez</th><td class="text-end">100 %</td>{% if version == cuestionario_version %}<td colspan="6"></td>{% endif %}
-        <td><div class="dim-bar" role="presentation"><span style="width: {{ censo.ima or 0 }}%; background: {{ semaforo(censo.ima or 0) }}"></span></div></td>
+        <td><div class="comp-bar" role="presentation"><span style="width: {{ censo.ima or 0 }}%; background: {{ semaforo(censo.ima or 0) }}"></span></div></td>
         <td class="text-end fw-bold" style="color: {{ tinta(censo.ima or 0) }}">{{ ('%.1f'|format(censo.ima or 0)).replace('.', ',') }} %</td>
         <td><span class="fx-pill rc-pill" style="color: {{ tinta(censo.ima or 0) }}"><i style="background: {{ semaforo(censo.ima or 0) }}"></i>{{ etiqueta(censo.ima or 0) }}</span></td>
-        {% if anterior %}<td class="text-end"><span class="dim-delta {{ 'up' if (censo.ima or 0) > (anterior.ima or 0) else ('down' if (censo.ima or 0) < (anterior.ima or 0) else '') }}">{{ ('%+.1f'|format((censo.ima or 0) - (anterior.ima or 0))).replace('.', ',') }} pts</span></td>{% endif %}</tr></tfoot>
+        {% if anterior %}<td class="text-end"><span class="comp-delta {{ 'up' if (censo.ima or 0) > (anterior.ima or 0) else ('down' if (censo.ima or 0) < (anterior.ima or 0) else '') }}">{{ ('%+.1f'|format((censo.ima or 0) - (anterior.ima or 0))).replace('.', ',') }} pts</span></td>{% endif %}</tr></tfoot>
     </table></div>
     {% if anterior %}<p class="small mt-3 mb-0 cmp-note"><i class="bi bi-arrow-left-right me-1" aria-hidden="true"></i>La columna «Cambio» compara con el diagnóstico anterior de la entidad, del {{ anterior.fecha|hora_col('%d/%m/%Y') }} ({{ ('%.1f'|format(anterior.ima or 0)).replace('.', ',') }} %).</p>{% endif %}
     <p class="small text-secondary mt-3 mb-0">Cada respuesta vale 0 (No), 0,5 (Parcialmente) o 1 (Sí); «N/A – No aplica» no se cuenta. El porcentaje del componente es el promedio de sus preguntas y el nivel de madurez es el promedio de los cinco componentes. Mapa de calor: bajo 0–40 % · medio más de 40–75 % · alto más de 75–100 %.</p>
   </section>
   {% endif %}
 
-  {% for d in dimensiones if formulario_actual or d.clave == 'identificacion' %}
-  <section class="fx-card mb-3 dim" id="dim-{{ d.clave }}">
-    <div class="dim-head">
-      <h2><span class="dim-letter">{{ d.letra }}</span>{{ d.nombre }}</h2>
+  {% for d in componentes_ficha if formulario_actual or d.clave == 'identificacion' %}
+  <section class="fx-card mb-3 comp" id="comp-{{ d.clave }}">
+    <div class="comp-head">
+      <h2><span class="comp-letter">{{ d.letra }}</span>{{ d.nombre }}</h2>
       {% if d.componente and formulario_actual %}<span class="fx-pill" style="border:1px solid #e4ebf1; color: {{ tinta(d.puntaje) }}"><i style="background: {{ semaforo(d.puntaje) }}"></i>{{ (d.puntaje ~ '%') if d.puntaje is not none else '—' }} · {{ etiqueta(d.puntaje) }}</span>{% endif %}
     </div>
     {% for q in d.preguntas %}

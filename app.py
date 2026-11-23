@@ -1070,7 +1070,7 @@ def admin():
     }
     ranking=[{'nombre':_sda_nombre(x),'ima':round(x.ima or 0,2),'nivel':semaforo(x.ima or 0)['label'],'semaforo':semaforo(x.ima or 0)['label']} for x in sorted(registros,key=lambda r:r.ima or 0,reverse=True)]
 
-    # Avance promedio por dimensión, calculado con las respuestas del formulario vigente.
+    # Avance promedio por componente, calculado con las respuestas del formulario vigente.
     # Si no hay respuestas nuevas, se usa el promedio de instrumentos (pregunta 6) de
     # los censos anteriores para no perder esos registros.
     sumas={clave:[0.0,0] for clave,_ in SDA_COMPONENTES}
@@ -1782,8 +1782,8 @@ FICHA_PROCESOS = ['Planeación', 'Producción', 'Gestión y trámite', 'Organiza
 FICHA_PROTECCIONES = ['Copias de seguridad verificadas', 'Controles de acceso', 'Registros de auditoría',
                       'Verificación de integridad', 'Migración de formatos', 'Plan de preservación digital']
 
-# Dimensiones en el mismo orden y con las mismas preguntas del formulario (secciones A–F).
-FICHA_DIMENSIONES = [
+# Componentes de la ficha para los diagnósticos del formulario anterior (secciones A–F).
+FICHA_COMPONENTES_ANTERIOR = [
     {'clave': 'identificacion', 'letra': 'A', 'nombre': 'Identificación y caracterización', 'componente': None,
      'preguntas': [
          ('Responsable de gestión documental', ['responsable_nombre', 'responsable_cargo', 'responsable_correo', 'telefono_responsable']),
@@ -1909,7 +1909,7 @@ def _valor_hija(h, respuestas):
     return valor
 
 
-def _dimensiones_v04(respuestas, componentes, componentes_previos):
+def _componentes_ficha_v04(respuestas, componentes, componentes_previos):
     r = respuestas
     fechas = 'Fecha desconocida' if r.get('fechas_desconocidas') else ' – '.join(
         x for x in [_ficha_valor(r, 'fecha_inicial'), _ficha_valor(r, 'fecha_final')] if x)
@@ -1932,7 +1932,7 @@ def _dimensiones_v04(respuestas, componentes, componentes_previos):
            if anio and int(anio.group(1)) < 1911 else '')]),
         ('Datos corregidos frente al directorio', _ficha_valor(r, 'correcciones_directorio'), []),
     ]
-    dims = [{'clave': 'identificacion', 'letra': 'C', 'nombre': 'Identificación y caracterización institucional',
+    secciones = [{'clave': 'identificacion', 'letra': 'C', 'nombre': 'Identificación y caracterización institucional',
              'componente': None, 'puntaje': None, 'anterior': None, 'cambio': None, 'extra': None,
              'preguntas': [{'titulo': t, 'sub': None, 'valor': v, 'etiqueta_principal': None,
                             'detalles': [{'etiqueta': e, 'valor': x, 'es_evidencia': False} for e, x in det if x]}
@@ -1956,11 +1956,11 @@ def _dimensiones_v04(respuestas, componentes, componentes_previos):
         v, prev = componentes.get(comp['clave']), componentes_previos.get(comp['clave'])
         pct = None if v is None else round(v * 100, 1)
         pct_prev = None if prev is None else round(prev * 100, 1)
-        dims.append({'clave': comp['clave'], 'letra': str(comp['num']), 'nombre': comp['nombre'],
+        secciones.append({'clave': comp['clave'], 'letra': str(comp['num']), 'nombre': comp['nombre'],
                      'componente': comp['clave'], 'puntaje': pct, 'anterior': pct_prev,
                      'cambio': None if pct is None or pct_prev is None else round(pct - pct_prev, 1),
                      'preguntas': preguntas, 'extra': None})
-    return dims
+    return secciones
 
 
 def _contexto_ficha(censo):
@@ -1982,19 +1982,19 @@ def _contexto_ficha(censo):
                 break
 
     if version == cq.VERSION:
-        dimensiones = _dimensiones_v04(respuestas, componentes, componentes_previos)
+        componentes_ficha = _componentes_ficha_v04(respuestas, componentes, componentes_previos)
     else:
-        dimensiones = _dimensiones_anteriores(respuestas, componentes, componentes_previos)
+        componentes_ficha = _componentes_ficha_anteriores(respuestas, componentes, componentes_previos)
     return dict(censo=censo, nombre=_sda_nombre(censo), respuestas=respuestas, version=version,
-                formulario_actual=formulario_actual, dimensiones=dimensiones,
+                formulario_actual=formulario_actual, componentes_ficha=componentes_ficha,
                 tabla_componentes=tabla_componentes(respuestas, componentes) if formulario_actual else [],
                 historial=historial, nombre_de=_sda_nombre, anterior=anterior)
 
 
-def _dimensiones_anteriores(respuestas, componentes, componentes_previos):
+def _componentes_ficha_anteriores(respuestas, componentes, componentes_previos):
     """Ficha de los diagnósticos hechos con el formulario anterior (preguntas 1 a 10)."""
-    dimensiones = []
-    for d in FICHA_DIMENSIONES:
+    componentes_ficha = []
+    for d in FICHA_COMPONENTES_ANTERIOR:
         puntaje = componentes.get(d['componente']) if d['componente'] else None
         previo = componentes_previos.get(d['componente']) if d['componente'] else None
         preguntas = []
@@ -2018,10 +2018,10 @@ def _dimensiones_anteriores(respuestas, componentes, componentes_previos):
             extra = {'tipo': 'checklist', 'titulo': 'Mecanismos', 'elementos': [(p, p in sel) for p in FICHA_PROTECCIONES]}
         pct = None if puntaje is None else round(puntaje * 100, 1)
         pct_prev = None if previo is None else round(previo * 100, 1)
-        dimensiones.append({**d, 'puntaje': pct, 'anterior': pct_prev,
+        componentes_ficha.append({**d, 'puntaje': pct, 'anterior': pct_prev,
                             'cambio': None if pct is None or pct_prev is None else round(pct - pct_prev, 1),
                             'preguntas': preguntas, 'extra': extra})
-    return dimensiones
+    return componentes_ficha
 
 
 def _puede_ver_censo(censo):
