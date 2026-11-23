@@ -2568,10 +2568,6 @@ class EntidadAcceso(db.Model):
     actualizado = db.Column(db.DateTime, default=datetime.utcnow)
 
 
-def _hash_clave(clave, sal):
-    return hashlib.pbkdf2_hmac('sha256', clave.encode(), sal.encode(), 200_000).hex()
-
-
 INTENTOS_NIT_MAX = 5
 BLOQUEO_NIT_MIN = 15
 
@@ -3107,5 +3103,23 @@ with app.app_context():
     except Exception:
         db.session.rollback()
         app.logger.exception('No se pudieron recalcular los diagnósticos con la escala vigente')
+
+    # Calcula la huella SHA-256 de los PDF que se cargaron sin ella, para que todos los
+    # documentos publicados se puedan verificar. Solo completa el campo vacío.
+    try:
+        completados = 0
+        for modelo in (PublicacionCDA, ConvalidacionCDA):
+            for obj in modelo.query.filter(modelo.archivo_nombre.isnot(None), modelo.archivo_hash.is_(None)).all():
+                if obj.archivo:
+                    obj.archivo_hash = hashlib.sha256(obj.archivo).hexdigest()
+                    completados += 1
+        if completados:
+            db.session.commit()
+            app.logger.info('Huellas SHA-256 completadas: %s', completados)
+    except Exception:
+        db.session.rollback()
+        app.logger.exception('No se pudieron completar las huellas SHA-256 de los PDF')
+
+
 if __name__ == "__main__":
     app.run(debug=os.environ.get("FLASK_DEBUG", "false").lower() == "true")

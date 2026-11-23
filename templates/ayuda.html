@@ -77,6 +77,7 @@
         ('q5', '¿Cuándo debo acudir al Consejo?', 'Cuando la entidad necesite presentar sus TRD o TVD para evaluación y convalidación, requiera orientación técnica en gestión documental, o deba diligenciar el diagnóstico territorial cuando el Consejo lo convoque.'),
         ('q6', '¿Las sesiones del Consejo son públicas?', 'Sí, salvo los asuntos con reserva legal o información clasificada. Las actas aprobadas se publican en Transparencia, en «Actas del Consejo».'),
         ('q7', '¿Cómo consulto el estado de una solicitud?', 'En Servicios en línea, pestaña «Consultar solicitud», con el número de solicitud (por ejemplo CDA-AT-…) y el correo con el que la registró.'),
+        ('q8', '¿Cómo sé que un acta o documento descargado no fue modificado?', 'Cada PDF publicado en Transparencia muestra su huella SHA-256, un código único del archivo. Calcule la huella del PDF descargado en su equipo (en Windows: certutil -hashfile archivo.pdf SHA256; en macOS o Linux: shasum -a 256 archivo.pdf) y compárela con la publicada: si coinciden, es el mismo documento que publicó el Consejo.'),
       ] %}
       {% for id, q, a in faq %}
       <div class="accordion-item ca-item">

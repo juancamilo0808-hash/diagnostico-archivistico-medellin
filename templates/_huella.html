@@ -1,0 +1,22 @@
+{# Huella SHA-256 de un PDF publicado: permite comprobar que el archivo descargado no fue modificado. #}
+{% macro huella(valor, etiqueta) -%}
+{% if valor %}<details class="tp-hash"><summary>Huella SHA-256<span class="visually-hidden"> de {{ etiqueta }}</span></summary><code>{{ valor }}</code><button type="button" class="tp-hash-copy" data-copiar="{{ valor }}"><i class="bi bi-clipboard" aria-hidden="true"></i> Copiar</button></details>{% endif %}
+{%- endmacro %}
+
+{% macro ayuda_huella() -%}
+<details class="tp-hash-help">
+  <summary><i class="bi bi-shield-check me-1" aria-hidden="true"></i>¿Cómo comprobar que un PDF no fue modificado?</summary>
+  <p>Cada PDF publicado tiene una huella digital SHA-256: un código único que cambia si el archivo se altera en lo más mínimo. Para comprobarlo, descargue el PDF, calcule su huella en su equipo y compárela con la que aparece aquí. Si son iguales, el archivo es el mismo que publicó el Consejo.</p>
+  <ul class="mb-0">
+    <li><strong>Windows</strong> (símbolo del sistema): <code>certutil -hashfile nombre-del-archivo.pdf SHA256</code></li>
+    <li><strong>macOS o Linux</strong> (terminal): <code>shasum -a 256 nombre-del-archivo.pdf</code></li>
+  </ul>
+</details>
+<script>
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('.tp-hash-copy'); if (!b) return;
+    var listo = function () { b.innerHTML = '<i class="bi bi-check2" aria-hidden="true"></i> Copiada'; setTimeout(function () { b.innerHTML = '<i class="bi bi-clipboard" aria-hidden="true"></i> Copiar'; }, 1800); };
+    if (navigator.clipboard) { navigator.clipboard.writeText(b.dataset.copiar).then(listo, function () {}); }
+  });
+</script>
+{%- endmacro %}

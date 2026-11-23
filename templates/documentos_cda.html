@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ titulo }} | Consejo Distrital de Archivos{% endblock %}
 {% block content %}
+{% from "_huella.html" import huella, ayuda_huella %}
 <section class="tp-hero"><div class="container">
   <nav class="tp-crumb" aria-label="Ruta de navegación"><a href="{{ url_for('transparencia') }}">Transparencia</a> › {{ titulo }}</nav>
   <h1>{{ titulo }}</h1>
@@ -14,7 +15,7 @@
     <ul class="list-unstyled mb-0">
       {% for d in docs %}
       <li class="d-flex justify-content-between align-items-start flex-wrap gap-2 py-2 {{ 'border-top' if not loop.first }}">
-        <div><strong>{{ d.titulo }}</strong>{% if d.resumen %}<div class="small">{{ d.resumen }}</div>{% endif %}<div class="tp-meta">{% if d.fecha %}{{ d.fecha|fecha_larga }} · {% endif %}publicado {{ d.fecha_publicacion|hora_col('%d/%m/%Y') }}</div></div>
+        <div><strong>{{ d.titulo }}</strong>{% if d.resumen %}<div class="small">{{ d.resumen }}</div>{% endif %}<div class="tp-meta">{% if d.fecha %}{{ d.fecha|fecha_larga }} · {% endif %}publicado {{ d.fecha_publicacion|hora_col('%d/%m/%Y') }}</div>{{ huella(d.archivo_hash, d.titulo) if d.archivo_nombre }}</div>
         <div class="d-flex gap-2">
           {% if d.archivo_nombre %}<a class="btn btn-sm btn-outline-primary" href="{{ url_for('documento_publicacion', pub_id=d.id) }}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> PDF · {{ d.archivo_tamano|tamano }}<span class="visually-hidden"> de {{ d.titulo }}</span></a>{% endif %}
           {% if d.enlace %}<a class="btn btn-sm btn-outline-secondary" href="{{ d.enlace }}" target="_blank" rel="noopener">Enlace<span class="visually-hidden"> de {{ d.titulo }}</span></a>{% endif %}
@@ -25,5 +26,6 @@
     {% else %}<p class="tp-meta mb-0">Sin documentos publicados en esta categoría.</p>{% endif %}
   </section>
   {% endfor %}
+  {{ ayuda_huella() }}
 </div>
 {% endblock %}

@@ -670,3 +670,14 @@ a.strip-item:hover, a.strip-item:focus-visible { background: var(--cda-blue-ligh
 .mad-semaforo div { display: flex; align-items: center; gap: 8px; font-size: .9rem; }
 .mad-semaforo span { width: 14px; height: 14px; border-radius: 50%; }
 .mad-semaforo .bajo span { background: #dc3545; } .mad-semaforo .medio span { background: #e0a800; } .mad-semaforo .alto span { background: #198754; }
+
+/* Huella SHA-256 de los PDF publicados */
+.tp-hash { margin-top:.35rem; font-size:.76rem; max-width:16rem; }
+.tp-hash summary { color:#123b65; font-weight:700; cursor:pointer; }
+.tp-hash code { display:block; word-break:break-all; white-space:normal; background:#f5f8fb; border:1px solid #e4ebf1; border-radius:6px; padding:.3rem .45rem; margin:.3rem 0; color:#243447; font-size:.72rem; }
+.tp-hash-copy { border:1px solid #c9d6e2; background:#fff; color:#123b65; border-radius:6px; font-size:.74rem; font-weight:700; padding:.1rem .5rem; }
+.tp-hash-copy:hover, .tp-hash-copy:focus-visible { background:#123b65; color:#fff; }
+.tp-hash-help { font-size:.86rem; background:#eef5fb; border-radius:10px; padding:.6rem .9rem; margin:1rem 0; }
+.tp-hash-help summary { color:#123b65; font-weight:700; cursor:pointer; }
+.tp-hash-help p { margin:.5rem 0; }
+.tp-hash-help code { word-break:break-all; }

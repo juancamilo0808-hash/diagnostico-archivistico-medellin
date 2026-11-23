@@ -2,6 +2,7 @@
 {% block title %}Actas del Consejo | Consejo Distrital de Archivos{% endblock %}
 {% block description %}Actas de las sesiones del Consejo Distrital de Archivos de Medellín.{% endblock %}
 {% block content %}
+{% from "_huella.html" import huella, ayuda_huella %}
 <section class="tp-hero"><div class="container">
   <nav class="tp-crumb" aria-label="Ruta de navegación"><a href="{{ url_for('transparencia') }}">Transparencia</a> › Actas</nav>
   <h1>Actas de sesión del Consejo</h1>
@@ -28,7 +29,7 @@
             <td>{{ a.resumen or '—' }}
               {% if convalidadas.get(a.id) %}<div class="mt-2 tp-meta"><i class="bi bi-patch-check" aria-hidden="true"></i> Convalidó: {% for c in convalidadas[a.id] %}{{ c.instrumento }} de {{ c.entidad }}{{ '; ' if not loop.last }}{% endfor %}</div>{% endif %}</td>
             <td class="text-nowrap">
-              {% if a.archivo_nombre %}<a class="btn btn-sm btn-outline-primary" href="{{ url_for('documento_publicacion', pub_id=a.id) }}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> PDF<span class="visually-hidden"> del {{ a.nombre_acta }}</span></a><div class="tp-meta">{{ a.archivo_tamano|tamano }}</div>{% endif %}
+              {% if a.archivo_nombre %}<a class="btn btn-sm btn-outline-primary" href="{{ url_for('documento_publicacion', pub_id=a.id) }}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> PDF<span class="visually-hidden"> del {{ a.nombre_acta }}</span></a><div class="tp-meta">{{ a.archivo_tamano|tamano }}</div>{{ huella(a.archivo_hash, a.nombre_acta) }}{% endif %}
               {% if a.enlace %}<a class="btn btn-sm btn-outline-secondary mt-1" href="{{ a.enlace }}" target="_blank" rel="noopener">Ver enlace<span class="visually-hidden"> del {{ a.nombre_acta }}</span></a>{% endif %}
             </td>
           </tr>
@@ -40,5 +41,6 @@
     <div class="tp-vacio"><i class="bi bi-journal" style="font-size:2rem" aria-hidden="true"></i><p class="mb-0 mt-2">{% if filtro.q or filtro.anio or filtro.tipo %}No hay actas que coincidan con el filtro.{% else %}Aún no hay actas publicadas.{% endif %}</p></div>
     {% endif %}
   </div>
+  {{ ayuda_huella() }}
 </div>
 {% endblock %}
