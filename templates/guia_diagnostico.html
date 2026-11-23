@@ -55,7 +55,8 @@
     <h2 id="t-antes">Antes de empezar</h2>
     <ul class="mb-2">
       <li><strong>NIT de la entidad,</strong> sin dígito de verificación. Es el usuario de ingreso; la clave son sus últimos 4 dígitos.</li>
-      <li><strong>Datos del responsable de gestión documental:</strong> nombre, cargo, correo y teléfono. Si la entidad está en el directorio, se cargan solos y puede corregirlos.</li>
+      <li><strong>Datos del representante legal y del responsable de gestión documental:</strong> nombre, cargo, correo y teléfono. Si la entidad está en el directorio, algunos se cargan solos y puede corregirlos.</li>
+      <li><strong>Fechas extremas de los documentos que conserva la entidad:</strong> el año del documento más antiguo y del más reciente.</li>
       <li><strong>Documentos de soporte a la mano:</strong> Política de Gestión Documental, Programa de Gestión Documental (PGD), Tablas de Retención Documental (TRD), plan de capacitación y, si existe, información del sistema de gestión de documentos electrónicos.</li>
       <li><strong>Enlaces o referencias a las evidencias,</strong> por ejemplo la carpeta compartida o el número del acto administrativo.</li>
     </ul>
@@ -67,7 +68,7 @@
     <ol class="gd-steps">
       <li><b>Ingrese con el NIT</b><span>Usuario: NIT. Clave: últimos 4 dígitos. Si varias dependencias comparten el NIT, elija la suya en la lista.</span></li>
       <li><b>Revise la identificación</b><span>Confirme los datos de la entidad y del responsable. El nombre y el NIT quedan fijos según el ingreso.</span></li>
-      <li><b>Responda las secciones B a F</b><span>Diez preguntas. Según la respuesta, aparecen preguntas complementarias y un campo para la evidencia.</span></li>
+      <li><b>Complete la caracterización y los cinco componentes</b><span>Primero la caracterización (C1 a C9) y luego {{ cuestionario.TOTAL_PREGUNTAS }} preguntas. Según la respuesta, aparecen preguntas complementarias y un campo para el enlace de la evidencia.</span></li>
       <li><b>Autorice y envíe</b><span>Marque la autorización de tratamiento de datos y pulse «Guardar diagnóstico». El diagnóstico queda registrado a nombre de la entidad.</span></li>
     </ol>
     <p class="gd-tip mb-0"><i class="bi bi-cloud-check me-1" aria-hidden="true"></i><strong>El avance se guarda solo.</strong> Puede cerrar la página y continuar después ingresando de nuevo con el NIT: el borrador queda a nombre de la entidad. La sesión se cierra tras 2 horas sin actividad.</p>
@@ -85,15 +86,12 @@
   </section>
 
   <section class="gd-card" id="secciones" aria-labelledby="t-sec">
-    <h2 id="t-sec">Las seis secciones</h2>
-    <p>Las secciones B a F corresponden a los componentes del Modelo de Gestión Documental y Administración de Archivos (MGDA) del Archivo General de la Nación.</p>
+    <h2 id="t-sec">Las secciones del formulario</h2>
+    <p>Los cinco componentes corresponden al Modelo de Gestión Documental y Administración de Archivos (MGDA) del Archivo General de la Nación. Las preguntas se responden con «Sí», «No», «Parcialmente» o, en algunas, «N/A – No aplica».</p>
     <div class="gd-sec">
-      <div><b>A. Identificación</b><br>Datos de la entidad y del responsable de gestión documental.</div>
-      <div><b>B. Estratégico</b><br>Política de Gestión Documental y seguimiento al PGD (preguntas 1 y 2).</div>
-      <div><b>C. Administración de archivos</b><br>Personal y condiciones de los depósitos (preguntas 3 y 4).</div>
-      <div><b>D. Procesos de gestión documental</b><br>Tablas de Retención Documental y procedimientos (preguntas 5 y 6).</div>
-      <div><b>E. Tecnológico</b><br>Sistema de gestión de documentos electrónicos y preservación digital (preguntas 7 y 8).</div>
-      <div><b>F. Cultural</b><br>Capacitación y acción prioritaria (preguntas 9 y 10).</div>
+      <div><b>C. Caracterización</b><br>Preguntas C1 a C9: datos de la entidad, del representante legal, del responsable de gestión documental y fechas extremas de los documentos.</div>
+      {% for comp in cuestionario.COMPONENTES %}{% set ps = cuestionario.PREGUNTAS|selectattr('componente','equalto',comp.clave)|list %}
+      <div><b>{{ comp.num }}. {{ comp.nombre }}</b><br>Preguntas {{ ps[0].n }} a {{ ps[-1].n }}: {{ comp.subcomponentes|map(attribute='nombre')|join(', ')|lower }}.</div>{% endfor %}
     </div>
   </section>
 

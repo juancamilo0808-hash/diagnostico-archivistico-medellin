@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Ficha de diagnóstico · {{ nombre }}{% endblock %}
 {% block content %}
-{% set color_nivel = {'Alto':'#b42318','Medio':'#9a6700','Bajo':'#475569'} %}
 {% macro semaforo(p) -%}{% if p is none %}#94a3b8{% elif p <= UMBRAL_BAJO %}#dc3545{% elif p <= UMBRAL_MEDIO %}#e0a800{% else %}#198754{% endif %}{%- endmacro %}
 {% macro tinta(p) -%}{% if p is none %}#56687a{% elif p <= UMBRAL_BAJO %}#b42318{% elif p <= UMBRAL_MEDIO %}#7a5a00{% else %}#14532d{% endif %}{%- endmacro %}
 {% macro etiqueta(p) -%}{% if p is none %}Sin respuestas puntuables{% elif p <= UMBRAL_BAJO %}Bajo{% elif p <= UMBRAL_MEDIO %}Medio{% else %}Alto{% endif %}{%- endmacro %}
@@ -41,6 +40,14 @@
   .rk-det { color:#617487; font-size:.82rem; display:block; margin-top:.15rem; }
   .rk-norma { color:#56687a; font-size:.78rem; display:block; margin-top:.3rem; font-style:italic; }
   .dim { scroll-margin-top:90px; }
+  .rc-table th, .rc-table td { font-size:.88rem; vertical-align:middle; }
+  .rc-table thead th { font-size:.72rem; text-transform:uppercase; letter-spacing:.04em; color:#56687a; background:#f5f8fb; white-space:nowrap; }
+  .rc-table tbody th a { color:#123852; font-weight:700; text-decoration:none; }
+  .rc-table tbody th a:hover { text-decoration:underline; }
+  .rc-table tfoot th, .rc-table tfoot td { border-top:2px solid #123852; background:#f7fafc; font-weight:800; }
+  .rc-pill { border:1px solid #e4ebf1; }
+  .q-sub { font-size:.82rem; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:#8a6510; margin:1.1rem 0 .2rem; }
+  .q-pts { display:inline-block; margin-left:.4rem; font-size:.74rem; font-weight:700; color:#56687a; background:#eef2f6; border-radius:999px; padding:.05rem .5rem; font-style:normal; }
   .dim-head { display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; margin-bottom:.8rem; }
   .dim-head h2 { margin:0; }
   .dim-letter { display:inline-grid; place-items:center; width:2rem; height:2rem; border-radius:10px; background:#eaf3fb; color:#123b65; font-weight:900; margin-right:.5rem; }
@@ -114,45 +121,36 @@
   {% if not formulario_actual %}
   <div class="alert alert-warning">Este registro se hizo con una versión anterior del formulario y no tiene respuestas por componente. Se muestran solo los datos generales.</div>
   {% else %}
+  {% if version != cuestionario_version %}<div class="alert alert-secondary small"><i class="bi bi-clock-history me-1" aria-hidden="true"></i>Diagnóstico hecho con el formulario anterior (10 preguntas). Los resultados no son directamente comparables con los del cuestionario {{ cuestionario_version }}.</div>{% endif %}
 
-  <div class="row g-3 mb-4">
-    <div class="col-6 col-lg-3"><div class="fx-kpi"><div class="v" style="color:#b42318">{{ conteo.Alto }}</div><div class="t">Riesgos altos</div></div></div>
-    <div class="col-6 col-lg-3"><div class="fx-kpi"><div class="v" style="color:#9a6700">{{ conteo.Medio }}</div><div class="t">Riesgos medios</div></div></div>
-    <div class="col-6 col-lg-3"><div class="fx-kpi"><div class="v" style="color:#475569">{{ conteo.Bajo }}</div><div class="t">Riesgos bajos</div></div></div>
-    {% set criticas = dimensiones|selectattr('puntaje','ne',none)|selectattr('puntaje','le',50)|list %}
-    <div class="col-6 col-lg-3"><div class="fx-kpi"><div class="v" style="color:#123852">{{ criticas|length }} de 5</div><div class="t">Componentes en 50 % o menos</div></div></div>
-  </div>
-
-  <div class="row g-4 mb-4">
-    <div class="col-12">
-      <section class="fx-card">
-        <h2>Perfil por componente</h2>
-        <p class="fx-sub">Nivel de madurez de cada componente evaluado. Clic en el nombre para ver su detalle.</p>
-        {% for d in dimensiones if d.componente %}
-        <div class="dim-row">
-          <a href="#dim-{{ d.clave }}">{{ d.letra }}. {{ d.nombre }}</a>
-          <div class="dim-bar" role="img" aria-label="{{ d.nombre }}: {{ d.puntaje if d.puntaje is not none else 'sin puntaje' }}"><span style="width: {{ d.puntaje or 0 }}%; background: {{ semaforo(d.puntaje) }}"></span></div>
-          <div class="dim-val" style="color: {{ tinta(d.puntaje) }}">{{ (d.puntaje ~ '%') if d.puntaje is not none else '—' }}</div>
-          <div class="dim-risk">{% if d.cambio is not none %}<span class="dim-delta {{ 'up' if d.cambio > 0 else ('down' if d.cambio < 0 else '') }}" title="Antes: {{ d.anterior }} %">{{ '%+.1f'|format(d.cambio) }} pts</span>{% else %}{{ d.riesgos|length }} riesgo{{ 's' if d.riesgos|length != 1 }}{% endif %}</div>
-        </div>
-        {% endfor %}
-        {% if anterior %}<p class="small mt-3 mb-0 cmp-note"><i class="bi bi-arrow-left-right me-1" aria-hidden="true"></i>La última columna compara cada componente con el diagnóstico anterior de la entidad, del {{ anterior.fecha|hora_col('%d/%m/%Y') }} ({{ '%.1f'|format(anterior.ima or 0) }} % de nivel de madurez; cambio total {{ '%+.1f'|format((censo.ima or 0) - (anterior.ima or 0)) }} pts).</p>{% endif %}
-        <p class="small text-secondary mt-3 mb-0">Mapa de calor: bajo 0–40 % · medio más de 40–75 % · alto más de 75–100 %. Cada respuesta vale 0 (no cumple), 0,5 (avance parcial) o 1 (cumple); las preguntas 3, 6, 8 y 10 son descriptivas y no suman puntaje.</p>
-      </section>
-    </div>
-    <div class="col-12">
-      <section class="fx-card">
-        <h2>Riesgos encontrados</h2>
-        <p class="fx-sub">Derivados de las respuestas de la entidad, ordenados de mayor a menor prioridad. Cada recomendación indica la norma en la que se apoya.</p>
-        {% if riesgos %}
-        <div class="table-responsive"><table class="table rk-table mb-0">
-          <thead><tr><th style="width:6rem">Prioridad</th><th style="width:16rem">Componente</th><th>Riesgo</th><th style="width:38%">Recomendación y soporte normativo</th></tr></thead>
-          <tbody>{% for x in riesgos %}<tr><td><span class="rk-badge rk-{{ x.nivel }}">{{ x.nivel }}</span></td><td class="text-nowrap">{{ nombres_dim[x.dimension] }}</td><td><strong>{{ x.titulo }}</strong>{% if x.detalle %}<span class="rk-det">{{ x.detalle }}</span>{% endif %}</td><td>{{ x.recomendacion }}{% if x.norma %}<span class="rk-norma"><i class="bi bi-journal-text" aria-hidden="true"></i> {{ x.norma }}</span>{% endif %}</td></tr>{% endfor %}</tbody>
-        </table></div>
-        {% else %}<p class="mb-0 text-secondary">No se identificaron riesgos con las reglas actuales.</p>{% endif %}
-      </section>
-    </div>
-  </div>
+  <section class="fx-card mb-4">
+    <h2>Resultados por componente</h2>
+    <p class="fx-sub">Porcentaje alcanzado en cada componente del Modelo de Gestión Documental y Administración de Archivos. Cada componente pesa 20 % en el nivel de madurez.</p>
+    <div class="table-responsive"><table class="table rc-table mb-0">
+      <caption class="visually-hidden">Resultados por componente</caption>
+      <thead><tr><th scope="col">Componente</th><th scope="col" class="text-end">Peso</th>
+        {% if version == cuestionario_version %}<th scope="col" class="text-end">Preguntas</th><th scope="col" class="text-end">Sí</th><th scope="col" class="text-end">Parcial</th><th scope="col" class="text-end">No</th><th scope="col" class="text-end">N/A</th><th scope="col" class="text-end">Puntos</th>{% endif %}
+        <th scope="col" style="min-width:9rem">Resultado</th><th scope="col" class="text-end">%</th><th scope="col">Nivel</th>{% if anterior %}<th scope="col" class="text-end">Cambio</th>{% endif %}</tr></thead>
+      <tbody>
+      {% for f in tabla_componentes %}{% set d = dimensiones|selectattr('letra','equalto', f.num|string)|first if version == cuestionario_version else dimensiones[loop.index] %}
+        <tr><th scope="row"><a href="#dim-{{ d.clave }}">{{ f.num }}. {{ f.nombre }}</a></th><td class="text-end">{{ f.peso }} %</td>
+          {% if version == cuestionario_version %}<td class="text-end">{{ f.preguntas }}</td><td class="text-end">{{ f.si }}</td><td class="text-end">{{ f.parcial }}</td><td class="text-end">{{ f.no }}</td><td class="text-end">{{ f.na }}</td><td class="text-end">{{ ('%.1f'|format(f.puntos)).replace('.', ',') }} de {{ f.aplicables }}</td>{% endif %}
+          <td><div class="dim-bar" role="presentation"><span style="width: {{ f.pct or 0 }}%; background: {{ semaforo(f.pct) }}"></span></div></td>
+          <td class="text-end fw-bold" style="color: {{ tinta(f.pct) }}">{{ (('%.1f'|format(f.pct)).replace('.', ',') ~ ' %') if f.pct is not none else '—' }}</td>
+          <td><span class="fx-pill rc-pill" style="color: {{ tinta(f.pct) }}"><i style="background: {{ semaforo(f.pct) }}"></i>{{ f.nivel }}</span></td>
+          {% if anterior %}<td class="text-end">{% if d.cambio is not none %}<span class="dim-delta {{ 'up' if d.cambio > 0 else ('down' if d.cambio < 0 else '') }}">{{ ('%+.1f'|format(d.cambio)).replace('.', ',') }} pts</span>{% else %}—{% endif %}</td>{% endif %}
+        </tr>
+      {% endfor %}
+      </tbody>
+      <tfoot><tr><th scope="row">Nivel de madurez</th><td class="text-end">100 %</td>{% if version == cuestionario_version %}<td colspan="6"></td>{% endif %}
+        <td><div class="dim-bar" role="presentation"><span style="width: {{ censo.ima or 0 }}%; background: {{ semaforo(censo.ima or 0) }}"></span></div></td>
+        <td class="text-end fw-bold" style="color: {{ tinta(censo.ima or 0) }}">{{ ('%.1f'|format(censo.ima or 0)).replace('.', ',') }} %</td>
+        <td><span class="fx-pill rc-pill" style="color: {{ tinta(censo.ima or 0) }}"><i style="background: {{ semaforo(censo.ima or 0) }}"></i>{{ etiqueta(censo.ima or 0) }}</span></td>
+        {% if anterior %}<td class="text-end"><span class="dim-delta {{ 'up' if (censo.ima or 0) > (anterior.ima or 0) else ('down' if (censo.ima or 0) < (anterior.ima or 0) else '') }}">{{ ('%+.1f'|format((censo.ima or 0) - (anterior.ima or 0))).replace('.', ',') }} pts</span></td>{% endif %}</tr></tfoot>
+    </table></div>
+    {% if anterior %}<p class="small mt-3 mb-0 cmp-note"><i class="bi bi-arrow-left-right me-1" aria-hidden="true"></i>La columna «Cambio» compara con el diagnóstico anterior de la entidad, del {{ anterior.fecha|hora_col('%d/%m/%Y') }} ({{ ('%.1f'|format(anterior.ima or 0)).replace('.', ',') }} %).</p>{% endif %}
+    <p class="small text-secondary mt-3 mb-0">Cada respuesta vale 0 (No), 0,5 (Parcialmente) o 1 (Sí); «N/A – No aplica» no se cuenta. El porcentaje del componente es el promedio de sus preguntas y el nivel de madurez es el promedio de los cinco componentes. Mapa de calor: bajo 0–40 % · medio más de 40–75 % · alto más de 75–100 %.</p>
+  </section>
   {% endif %}
 
   {% for d in dimensiones if formulario_actual or d.clave == 'identificacion' %}
@@ -162,10 +160,11 @@
       {% if d.componente and formulario_actual %}<span class="fx-pill" style="border:1px solid #e4ebf1; color: {{ tinta(d.puntaje) }}"><i style="background: {{ semaforo(d.puntaje) }}"></i>{{ (d.puntaje ~ '%') if d.puntaje is not none else '—' }} · {{ etiqueta(d.puntaje) }}</span>{% endif %}
     </div>
     {% for q in d.preguntas %}
+    {% if q.sub %}<h3 class="q-sub">{{ q.sub }}</h3>{% endif %}
     <div class="q">
       <div class="q-t">{{ q.titulo }}</div>
       {% set v = valor(q.valor) %}
-      <div class="q-v {{ '' if v else 'empty' }}">{{ v if v else 'Sin respuesta' }}</div>
+      <div class="q-v {{ '' if v else 'empty' }}">{{ v if v else 'Sin respuesta' }}{% if d.componente and version == cuestionario_version %} <span class="q-pts">{{ ('%g'|format(q.puntos)).replace('.', ',') ~ ' punto' ~ ('s' if q.puntos != 1 else '') if q.puntos is not none else 'No cuenta en el puntaje' }}</span>{% endif %}</div>
       {% if q.detalles %}
       <dl class="q-d">
         {% for det in q.detalles %}<dt>{{ det.etiqueta }}</dt><dd>{% if det.es_evidencia and (det.valor is string) and det.valor.startswith('http') %}<a href="{{ det.valor }}" target="_blank" rel="noopener noreferrer">{{ det.valor }}</a>{% else %}{{ valor(det.valor) }}{% endif %}</dd>{% endfor %}
@@ -178,20 +177,8 @@
       {% for item, ok in d.extra.elementos %}<span class="{{ 'si' if ok else 'no' }}"><i class="bi {{ 'bi-check-circle-fill' if ok else 'bi-x-circle' }}"></i>{{ item }}</span>{% endfor %}
     </div>
     {% endif %}
-    {% if d.riesgos %}
-    <div class="dim-risks">
-      {% for x in d.riesgos %}<div style="border-color: {{ color_nivel[x.nivel] }}"><span class="rk-badge rk-{{ x.nivel }} me-2">{{ x.nivel }}</span><strong>{{ x.titulo }}</strong>{% if x.detalle %}<span class="rk-det">{{ x.detalle }}</span>{% endif %}<span class="rk-det"><i class="bi bi-arrow-return-right"></i> {{ x.recomendacion }}</span>{% if x.norma %}<span class="rk-norma"><i class="bi bi-journal-text" aria-hidden="true"></i> {{ x.norma }}</span>{% endif %}</div>{% endfor %}
-    </div>
-    {% endif %}
   </section>
   {% endfor %}
-
-  {% if transversales %}
-  <section class="fx-card mb-3">
-    <h2>Evidencias</h2>
-    {% for x in transversales %}<p class="mb-1"><span class="rk-badge rk-{{ x.nivel }} me-2">{{ x.nivel }}</span><strong>{{ x.titulo }}</strong>. {{ x.detalle }}. {{ x.recomendacion }}{% if x.norma %} <span class="rk-norma d-inline">({{ x.norma }})</span>{% endif %}</p>{% endfor %}
-  </section>
-  {% endif %}
 
   <section class="fx-card mb-3">
     <h2>Historial de la entidad</h2>
@@ -207,6 +194,6 @@
     {% endif %}
   </section>
 
-  <p class="small text-secondary"><i class="bi bi-info-circle me-1"></i>Los riesgos se generan automáticamente con reglas sobre las respuestas y orientan el acompañamiento; no constituyen certificación de cumplimiento normativo y deben validarse en la revisión técnica.</p>
+  <p class="small text-secondary"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>Los resultados se calculan automáticamente con las respuestas de la entidad; no constituyen certificación de cumplimiento normativo y deben validarse con las evidencias en la revisión técnica.</p>
 </div>
 {% endblock %}

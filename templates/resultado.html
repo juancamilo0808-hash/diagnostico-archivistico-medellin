@@ -2,6 +2,11 @@
 {% block title %}Resultado del Diagnóstico Archivístico{% endblock %}
 {% block body_class %}result-page{% endblock %}
 {% block content %}
+<style>
+  .rs-table { text-align:left; font-size:.92rem; }
+  .rs-table thead th { font-size:.74rem; text-transform:uppercase; letter-spacing:.04em; color:#56687a; background:#f5f8fb; }
+  .rs-table tfoot th, .rs-table tfoot td { border-top:2px solid #123852; font-weight:800; }
+</style>
 <div class="container py-5">
   <div class="result-card">
     <p class="eyebrow">RESULTADO DEL DIAGNÓSTICO</p>
@@ -18,16 +23,19 @@
     <p>Resultado calculado automáticamente con las respuestas de la entidad.</p>
 
     {% if formulario_actual %}
-    <div class="row g-3 mt-4">
-      <div class="col-4"><div class="metric"><strong style="color:#b42318">{{ conteo.Alto }}</strong><span>Riesgos altos</span></div></div>
-      <div class="col-4"><div class="metric"><strong style="color:#9a6700">{{ conteo.Medio }}</strong><span>Riesgos medios</span></div></div>
-      <div class="col-4"><div class="metric"><strong style="color:#475569">{{ conteo.Bajo }}</strong><span>Riesgos bajos</span></div></div>
+    <div class="table-responsive mt-4">
+      <table class="table rs-table mb-0">
+        <caption class="visually-hidden">Resultados por componente</caption>
+        <thead><tr><th scope="col">Componente</th><th scope="col" class="text-end">Peso</th><th scope="col" class="text-end">Resultado</th><th scope="col">Nivel</th></tr></thead>
+        <tbody>{% for f in tabla_componentes %}<tr><th scope="row">{{ f.num }}. {{ f.nombre }}</th><td class="text-end">{{ f.peso }} %</td><td class="text-end fw-bold">{{ (('%.1f'|format(f.pct)).replace('.', ',') ~ ' %') if f.pct is not none else '—' }}</td><td>{{ f.nivel }}</td></tr>{% endfor %}</tbody>
+        <tfoot><tr><th scope="row">Nivel de madurez</th><td class="text-end">100 %</td><td class="text-end fw-bold">{{ ('%.1f'|format(censo.ima or 0)).replace('.', ',') }} %</td><td>{% if (censo.ima or 0) <= UMBRAL_BAJO %}Bajo{% elif (censo.ima or 0) <= UMBRAL_MEDIO %}Medio{% else %}Alto{% endif %}</td></tr></tfoot>
+      </table>
     </div>
-    <p class="mt-3 mb-0">En la ficha completa encontrará el perfil por componente, cada riesgo con su recomendación y la norma en la que se apoya. Puede imprimirla o guardarla en PDF.</p>
+    <p class="mt-3 mb-0">En la ficha completa encontrará el detalle de cada componente con sus respuestas y evidencias. Puede imprimirla o guardarla en PDF.</p>
     {% endif %}
 
     <div class="mt-4 d-flex flex-wrap gap-2 justify-content-center">
-      {% if formulario_actual %}<a href="{{ url_for('ficha_entidad', censo_id=censo.id) }}" class="btn btn-primary"><i class="bi bi-clipboard2-pulse me-1" aria-hidden="true"></i>Ver ficha con riesgos y recomendaciones</a>{% endif %}
+      {% if formulario_actual %}<a href="{{ url_for('ficha_entidad', censo_id=censo.id) }}" class="btn btn-primary"><i class="bi bi-clipboard2-pulse me-1" aria-hidden="true"></i>Ver ficha completa</a>{% endif %}
       {% if session.get('entidad') %}<a href="{{ url_for('mi_entidad') }}" class="btn btn-outline-primary">Ir a Mi entidad</a>{% endif %}
       {% if session.get('admin_authenticated') %}<a href="{{ url_for('admin') }}" class="btn btn-outline-primary">Ver panel</a>{% endif %}
     </div>

@@ -19,6 +19,7 @@ import os
 import csv
 import unicodedata
 import re
+import cuestionario as cq
 
 BASE_DIR = Path(__file__).resolve().parent
 app = Flask(__name__)
@@ -288,7 +289,7 @@ def calcular(form):
 
 @app.context_processor
 def _umbrales():
-    return {'UMBRAL_BAJO': UMBRAL_BAJO, 'UMBRAL_MEDIO': UMBRAL_MEDIO}
+    return {'UMBRAL_BAJO': UMBRAL_BAJO, 'UMBRAL_MEDIO': UMBRAL_MEDIO, 'cuestionario_version': cq.VERSION}
 
 
 @app.route('/')
@@ -582,16 +583,24 @@ def censo():
             return redirect(url_for('acceso_entidad', next=url_for('censo')))
 
     def render_template(plantilla, **kw):  # noqa: F811 - añade el contexto de la entidad
-        return flask_render_template(plantilla, **_contexto_diagnostico(entidad), **kw)
+        return flask_render_template(plantilla, **_contexto_diagnostico(entidad), cuestionario=cq, **kw)
 
     if request.method == 'POST':
-        obligatorios = ['nombre_entidad', 'nit_entidad', 'naturaleza', 'sector',
-                        'responsable_nombre', 'responsable_cargo', 'responsable_correo',
-                        'q1_politica', 'q2_seguimiento', 'q3_personal', 'q4_depositos',
-                        'q5_trd', 'q6_procesos', 'q7_sgdea', 'q8_protecciones',
-                        'q9_capacitacion', 'q10_prioridad']
+        obligatorios = ['nombre_entidad', 'nit_entidad', 'naturaleza', 'sector', 'direccion_entidad',
+                        'responsable_nombre', 'responsable_cargo', 'responsable_correo']
         if any(not request.form.get(k, '').strip() for k in obligatorios):
-            flash('Complete los campos obligatorios de identificación y las 10 preguntas principales.', 'danger')
+            flash('Complete los campos obligatorios de la caracterización (C1 a C8).', 'danger')
+            return render_template('diagnostico.html')
+        sin_responder = [str(p['n']) for p in cq.PREGUNTAS
+                         if request.form.get(p['campo'], '') not in dict(p['opciones'])]
+        if sin_responder:
+            flash(f'Faltan respuestas en las preguntas: {", ".join(sin_responder)}.', 'danger')
+            return render_template('diagnostico.html')
+        sin_justificar = [str(p['n']) for p in cq.PREGUNTAS for h in p['hijas']
+                          if h.get('requerido') and cq.hija_visible(h, request.form, p)
+                          and not request.form.get(h['campo'], '').strip()]
+        if sin_justificar:
+            flash(f'Falta la justificación en las preguntas: {", ".join(sin_justificar)}.', 'danger')
             return render_template('diagnostico.html')
         if not request.form.get('autoriza_datos'):
             flash('Debe autorizar el tratamiento de los datos personales para guardar el diagnóstico.', 'danger')
@@ -625,50 +634,37 @@ def censo():
             fila_vinculo = fila_nombre
         codigo_entidad = str(fila_vinculo.get('Código', '')).strip() if fila_vinculo else ''
 
-        # Las respuestas condicionales y los campos adicionales se conservan en JSON.
-        respuestas = {k: request.form.getlist(k) if len(request.form.getlist(k)) > 1 else request.form.get(k, '')
-                      for k in request.form.keys() if k.startswith('q') or k.startswith('evidencia_')}
+        # Todas las respuestas del cuestionario (principales, hijas y caracterización) se
+        # conservan en JSON. Las hijas que quedaron ocultas no se envían (campos deshabilitados).
+        excluir = {'borrador_id', 'autoriza_datos', 'campos_corregidos'}
+        respuestas = {k: (request.form.getlist(k) if len(request.form.getlist(k)) > 1 else request.form.get(k, ''))
+                      for k in request.form.keys() if k not in excluir}
+        for p in cq.PREGUNTAS:  # las selecciones múltiples se guardan siempre como lista
+            for h in p['hijas']:
+                if h['tipo'] == 'multi' and h['campo'] in respuestas and not isinstance(respuestas[h['campo']], list):
+                    respuestas[h['campo']] = [respuestas[h['campo']]] if respuestas[h['campo']] else []
+        sector = request.form.get('sector', '')
+        if sector == 'Otro' and request.form.get('sector_otro', '').strip():
+            sector = f"Otro: {request.form.get('sector_otro', '').strip()}"
         respuestas.update({
+            'version': cq.VERSION,
             'codigo_entidad': codigo_entidad,
             'correo_acceso': entidad['correo'] if entidad else '',
-            'sigla_entidad': request.form.get('sigla_entidad', ''),
-            'grupo_relacion': request.form.get('grupo_relacion', ''),
-            'clasificacion_preliminar': request.form.get('clasificacion_preliminar', ''),
-            'ambito': request.form.get('ambito', ''),
-            'telefono_responsable': request.form.get('telefono_responsable', ''),
-            'sitio_web': request.form.get('sitio_web', ''),
-            'direccion_entidad': request.form.get('direccion_entidad', ''),
             'nit_entidad': nit_entidad,
+            'nombre_entidad': nombre,
             'correcciones_directorio': ', '.join(CAMPOS_CORREGIBLES[c] for c in request.form.get('campos_corregidos', '').split(',')
                                                  if c in CAMPOS_CORREGIBLES),
-            'responsable_nombre': request.form.get('responsable_nombre', ''),
-            'responsable_cargo': request.form.get('responsable_cargo', ''),
             'responsable_correo': correo,
-            'naturaleza': request.form.get('naturaleza', ''),
-            'sector': request.form.get('sector', ''),
         })
-        total, aplicables, ima, nivel = calcular_diagnostico_nuevo(request.form)
+        total, aplicables, ima, nivel = calcular_diagnostico_nuevo(respuestas)
         nombre_y_nit = f"{nombre} | NIT: {nit_entidad}"
         responsable = ' | '.join([request.form.get('responsable_nombre','').strip(),
                                   request.form.get('responsable_cargo','').strip(), correo])
-        # Se rellenan las columnas antiguas con valores compatibles y el formulario nuevo
-        # queda guardado íntegramente en respuestas_json.
         r = Censo(
             nombre_entidad=nombre_y_nit,
             codigo_entidad=codigo_entidad or None,
-            naturaleza=request.form.get('naturaleza',''),
-            sector=request.form.get('sector',''), responsable=responsable,
-            q5=request.form.get('q1_politica','')[:200],
-            q6_json=json.dumps(request.form.getlist('q6_procesos'), ensure_ascii=False),
-            q7=request.form.get('q5_trd','')[:250], q8=request.form.get('q7_sgdea','')[:200],
-            q9=request.form.get('q2_seguimiento','')[:250], q10=request.form.get('q9_capacitacion','')[:250],
-            q11='; '.join(request.form.getlist('q6_procesos')),
-            q12='; '.join(request.form.getlist('q8_protecciones')),
-            q13=request.form.get('q10_prioridad',''), q14=request.form.get('q4_depositos','')[:250],
-            q15=request.form.get('q2_seguimiento','')[:100], q16=request.form.get('q4_depositos','')[:200],
-            q17='; '.join(request.form.getlist('q8_protecciones')), q18=request.form.get('q7_sgdea','')[:100],
-            q19=request.form.get('q1_politica','')[:200], q20=request.form.get('q10_prioridad',''),
-            q21=request.form.get('q9_capacitacion','')[:100],
+            naturaleza=request.form.get('naturaleza','')[:200],
+            sector=sector[:150], responsable=responsable[:300],
             respuestas_json=json.dumps(respuestas, ensure_ascii=False),
             puntaje_obtenido=total, variables_aplicables=aplicables, ima=ima, nivel=nivel)
         try:
@@ -731,7 +727,13 @@ MAPAS_COMPONENTES = {
 
 
 def puntajes_componentes(form):
-    """Puntaje de 0 a 1 de cada componente (None si no hay respuestas puntuables)."""
+    """Puntaje de 0 a 1 de cada componente (None si no hay respuestas puntuables).
+
+    Los diagnósticos con el cuestionario V04 se calculan con cuestionario.py; los
+    anteriores, con las equivalencias de MAPAS_COMPONENTES.
+    """
+    if cq.es_v04(form):
+        return cq.puntajes_componentes(form)
     componentes = {}
     for componente, preguntas in MAPAS_COMPONENTES.items():
         valores = []
@@ -744,10 +746,11 @@ def puntajes_componentes(form):
 
 
 def calcular_diagnostico_nuevo(form):
-    """Calcula un índice piloto con cinco componentes de igual peso (20 % c/u).
+    """Nivel de madurez: promedio de los cinco componentes (20 % cada uno).
 
-    Esta fórmula es una propuesta técnica preliminar, no una escala oficial del AGN.
-    Las preguntas descriptivas no suman puntaje automáticamente.
+    Cada componente es el promedio de sus preguntas (No = 0, Parcialmente = 0,5,
+    Sí = 1); «N/A – No aplica» no se cuenta. Las preguntas de caracterización y las
+    hijas son informativas y no suman puntaje.
     """
     componentes = puntajes_componentes(form)
     puntajes = [v for v in componentes.values() if v is not None]
@@ -765,10 +768,9 @@ def resultado(censo_id):
     registro = Censo.query.get_or_404(censo_id)
     if not _puede_ver_censo(registro):
         abort(404)
-    respuestas, actual, _ = _puntajes_de(registro)
-    riesgos = evaluar_riesgos(respuestas) if actual else []
-    conteo = {n: sum(1 for x in riesgos if x['nivel'] == n) for n in ('Alto', 'Medio', 'Bajo')}
-    return render_template('resultado.html', censo=registro, conteo=conteo, formulario_actual=actual)
+    respuestas, actual, componentes = _puntajes_de(registro)
+    return render_template('resultado.html', censo=registro, formulario_actual=actual,
+                           tabla_componentes=tabla_componentes(respuestas, componentes) if actual else [])
 
 @app.route('/normatividad')
 def normatividad(): return render_template('normatividad.html',normatividad=NORMATIVIDAD,niveles=NIVELES_NORMATIVOS)
@@ -790,7 +792,7 @@ def archivos_ddhh():
 
 @app.route('/diagnostico/guia')
 def guia_diagnostico():
-    return render_template('guia_diagnostico.html')
+    return render_template('guia_diagnostico.html', cuestionario=cq)
 
 
 
@@ -1277,6 +1279,57 @@ def exportar_excel():
         max_length = min(max(len(str(cell.value or '')) for cell in column_cells) + 2, 42)
         respuestas_ws.column_dimensions[get_column_letter(column_cells[0].column)].width = max(max_length, 14)
 
+    # Hoja principal con el cuestionario vigente: una fila por diagnóstico V04, con el
+    # resultado por componente y todas las respuestas en el orden del formulario.
+    v04 = wb.create_sheet(f'Diagnóstico {cq.VERSION}', 0)
+    caracterizacion = [('naturaleza', 'C1. Naturaleza jurídica'), ('nombre_entidad', 'C2. Nombre de la entidad'),
+                       ('nit_entidad', 'NIT'), ('sector', 'C3. Sector'), ('sector_otro', 'C3. Otro sector'),
+                       ('direccion_entidad', 'C4. Dirección'), ('telefono_entidad', 'C5. Teléfono institucional'),
+                       ('sitio_web', 'C6. Sitio web'), ('rep_nombre', 'C7. Representante legal'), ('rep_cargo', 'C7. Cargo'),
+                       ('rep_correo', 'C7. Correo'), ('rep_telefono', 'C7. Teléfono'),
+                       ('responsable_nombre', 'C8. Responsable de gestión documental'), ('responsable_cargo', 'C8. Cargo'),
+                       ('responsable_dependencia', 'C8. Dependencia'), ('responsable_correo', 'C8. Correo'),
+                       ('telefono_responsable', 'C8. Teléfono'), ('fecha_inicial', 'C9. Fecha inicial'),
+                       ('fecha_final', 'C9. Fecha final'), ('fechas_desconocidas', 'C9. Fecha desconocida'),
+                       ('fechas_observaciones', 'C9. Observaciones'), ('codigo_entidad', 'Código en el directorio'),
+                       ('correcciones_directorio', 'Datos corregidos frente al directorio')]
+    campos_v04 = cq.campos_formulario()
+    v04.append(['ID de registro', 'Fecha de registro', *[e for _, e in caracterizacion],
+                *[f"Componente {c['num']}. {c['nombre']} (%)" for c in cq.COMPONENTES],
+                'Nivel de madurez (%)', 'Clasificación', *[e for _, e in campos_v04]])
+    for registro, respuestas in respuestas_registros:
+        if not cq.es_v04(respuestas):
+            continue
+        comps = cq.puntajes_componentes(respuestas)
+        fila = [registro.id, registro.fecha.strftime('%Y-%m-%d %H:%M:%S') if registro.fecha else '']
+        for campo, _ in caracterizacion:
+            fila.append('Sí' if campo == 'fechas_desconocidas' and respuestas.get(campo) else respuestas.get(campo, ''))
+        fila.extend(round(comps[c['clave']] * 100, 1) if comps.get(c['clave']) is not None else ''
+                    for c in cq.COMPONENTES)
+        fila.extend([registro.ima, registro.nivel])
+        for campo, _ in campos_v04:
+            valor = respuestas.get(campo, '')
+            if campo in cq.POR_CAMPO:
+                valor = cq.etiqueta_opcion(cq.POR_CAMPO[campo], valor)
+            elif campo.endswith('_nd'):
+                valor = 'Sí' if valor else ''
+            if isinstance(valor, (list, tuple)):
+                valor = '; '.join(str(x) for x in valor)
+            fila.append(valor)
+        v04.append(fila)
+    for cell in v04[1]:
+        cell.font = Font(bold=True, color='FFFFFF')
+        cell.fill = PatternFill('solid', fgColor='17365D')
+        cell.alignment = Alignment(wrap_text=True, vertical='center')
+    v04.freeze_panes = 'C2'
+    v04.auto_filter.ref = v04.dimensions
+    v04.row_dimensions[1].height = 60
+    for column_cells in v04.columns:
+        max_length = min(max(len(str(cell.value or '')) for cell in column_cells) + 2, 42)
+        v04.column_dimensions[get_column_letter(column_cells[0].column)].width = max(max_length, 12)
+    wb.active = 0
+    ws.title = 'Formulario anterior'
+
     output = BytesIO()
     wb.save(output)
     output.seek(0)
@@ -1305,36 +1358,33 @@ SDA_COMPONENTES = [
     ('cultural', 'Cultural'),
 ]
 
-# Etapas de las TRD en el orden del ciclo que acompaña el Consejo.
+# Estado de las TRD en el orden del ciclo que acompaña el Consejo (pregunta 25, hija «Estado de la TRD»).
 SDA_ETAPAS_TRD = [
-    ('No elaboradas', 'Sin TRD'),
-    ('En elaboración', 'En elaboración'),
-    ('En evaluación', 'En evaluación'),
-    ('Convalidadas', 'Convalidadas'),
-    ('En implementación', 'En implementación'),
-    ('Implementadas', 'Implementadas'),
+    ('No cuenta', 'Sin TRD'),
+    ('Elaborada', 'Elaborada'),
+    ('Aprobada', 'Aprobada'),
+    ('Convalidada', 'Convalidada'),
+    ('Implementada', 'Implementada'),
 ]
 
-# Temas de normalización: (clave, tema, instrumento o lineamiento sugerido, regla de brecha).
+# Temas de normalización: (clave, tema, instrumento o lineamiento sugerido, pregunta del cuestionario).
+# Hay brecha cuando la entidad responde «No» a la pregunta.
 SDA_TEMAS_NORMALIZACION = [
-    ('politica', 'Política de Gestión Documental', 'Guía para formular, aprobar y hacer seguimiento a la PGD',
-     lambda r: r.get('q1_politica') in ('No existe', 'En desarrollo')),
-    ('seguimiento', 'Seguimiento al PGD', 'Lineamiento de seguimiento y planes de mejora del PGD',
-     lambda r: r.get('q2_seguimiento') == 'No'),
-    ('depositos', 'Depósitos y conservación', 'Lineamiento de condiciones de depósitos y SIC',
-     lambda r: r.get('q4_depositos') == 'No'),
-    ('trd', 'Tablas de Retención Documental', 'Guía de elaboración y presentación de TRD',
-     lambda r: r.get('q5_trd') in ('No elaboradas', 'Requieren actualización')),
-    ('sgdea', 'Documento electrónico y SGDEA', 'Lineamiento de requisitos para SGDEA',
-     lambda r: r.get('q7_sgdea') == 'No'),
-    ('preservacion', 'Preservación digital', 'Guía del Plan de Preservación Digital a Largo Plazo',
-     lambda r: 'Plan de preservación digital' not in _sda_lista(r.get('q8_protecciones'))),
-    ('capacitacion', 'Capacitación y cultura archivística', 'Plan distrital de capacitación en gestión documental',
-     lambda r: r.get('q9_capacitacion') == 'No se realiza'),
+    ('politica', 'Política de Gestión Documental', 'Guía para formular, aprobar y hacer seguimiento a la política', 'p2'),
+    ('pgd', 'Programa de Gestión Documental', 'Lineamiento para elaborar y ejecutar el PGD', 'p5'),
+    ('pinar', 'Plan Institucional de Archivos', 'Modelo de PINAR y su actualización anual', 'p6'),
+    ('depositos', 'Depósitos y condiciones de almacenamiento', 'Lineamiento de condiciones de depósitos', 'p16'),
+    ('trd', 'Tablas de Retención y Valoración Documental', 'Guía de elaboración y presentación de TRD y TVD', 'p25'),
+    ('sic', 'Sistema Integrado de Conservación', 'Guía del Plan de Conservación y del Plan de Preservación Digital', 'p40'),
+    ('sgdea', 'Documento electrónico y SGDEA', 'Lineamiento de requisitos para SGDEA', 'p44'),
+    ('preservacion', 'Preservación digital', 'Guía del Plan de Preservación Digital a Largo Plazo', 'p50'),
+    ('capacitacion', 'Capacitación en gestión documental', 'Plan distrital de capacitación en gestión documental', 'p21'),
+    ('patrimonio', 'Patrimonio documental y archivos de DDHH', 'Lineamiento de identificación de fondos patrimoniales y de DDHH', 'p57'),
 ]
 
-SDA_PROCESOS = ['Planeación', 'Producción', 'Gestión y trámite', 'Organización',
-                'Transferencias', 'Disposición final', 'Preservación a largo plazo', 'Valoración']
+# Procesos de la gestión documental: subcomponentes del componente 3 del cuestionario.
+SDA_PROCESOS = [sub for comp in cq.COMPONENTES if comp['clave'] == 'procesos_documentales'
+                for sub in comp['subcomponentes']]
 
 
 def _sda_lista(valor):
@@ -1418,32 +1468,33 @@ def indicadores_sistema_distrital():
     focos = sorted([c for c in componentes if c['brecha_critica']], key=lambda c: -c['brecha_pct'])
 
     # NORMALIZACIÓN: temas con mayor proporción de entidades con brecha.
-    # Solo cuentan los diagnósticos del formulario actual (versiones antiguas no tienen estas preguntas).
-    con_dato = [e for e in entidades if e['respuestas'].get('q1_politica')]
+    # Solo cuentan los diagnósticos del cuestionario vigente (V04).
+    con_dato = [e for e in entidades if cq.es_v04(e['respuestas'])]
     temas = []
-    for clave, tema, instrumento, regla in SDA_TEMAS_NORMALIZACION:
-        brecha = sum(1 for e in con_dato if regla(e['respuestas']))
+    for clave, tema, instrumento, campo in SDA_TEMAS_NORMALIZACION:
+        brecha = sum(1 for e in con_dato if e['respuestas'].get(campo) == 'no')
         temas.append({'clave': clave, 'tema': tema, 'instrumento': instrumento,
                       'entidades': brecha, 'pct': _sda_pct(brecha, len(con_dato))})
     temas.sort(key=lambda t: -t['pct'])
     procesos = []
-    for proceso in SDA_PROCESOS:
-        con = sum(1 for e in con_dato if proceso in _sda_lista(e['respuestas'].get('q6_procesos')))
-        procesos.append({'proceso': proceso, 'entidades': con, 'pct': _sda_pct(con, len(con_dato))})
+    for sub in SDA_PROCESOS:
+        valores = [v for e in con_dato for p in sub['preguntas']
+                   for v in [cq.puntaje_pregunta(p, e['respuestas'])] if v is not None]
+        procesos.append({'proceso': sub['nombre'], 'entidades': len(con_dato),
+                         'pct': round(sum(valores) / len(valores) * 100, 1) if valores else 0})
     procesos.sort(key=lambda p: p['pct'])
 
-    # EVALUACIÓN: ciclo de las TRD.
+    # EVALUACIÓN: ciclo de las TRD (pregunta 25).
     estados = {}
-    for e in entidades:
-        estado = e['respuestas'].get('q5_trd') or 'Sin dato'
+    for e in con_dato:
+        estado = e['respuestas'].get('p25_trd') or 'Sin dato'
         estados[estado] = estados.get(estado, 0) + 1
     etapas = [{'estado': est, 'etiqueta': et, 'entidades': estados.get(est, 0),
-               'pct': _sda_pct(estados.get(est, 0), n)} for est, et in SDA_ETAPAS_TRD]
+               'pct': _sda_pct(estados.get(est, 0), len(con_dato))} for est, et in SDA_ETAPAS_TRD]
     otros_trd = {k: v for k, v in estados.items() if k not in dict(SDA_ETAPAS_TRD)}
-    con_trd_avanzada = [e for e in entidades if e['respuestas'].get('q5_trd') in
-                        ('Convalidadas', 'En implementación', 'Implementadas')]
-    con_evidencia = sum(1 for e in con_trd_avanzada if e['respuestas'].get('q5_evidencia_estado') == 'Sí, ambas')
-    requieren_actualizacion = estados.get('Requieren actualización', 0)
+    con_trd_avanzada = [e for e in con_dato if e['respuestas'].get('p25_trd') in ('Convalidada', 'Implementada')]
+    con_evidencia = sum(1 for e in con_trd_avanzada if str(e['respuestas'].get('p25_url', '')).startswith('http'))
+    requieren_actualizacion = sum(1 for e in con_dato if e['respuestas'].get('p25') in ('no', 'parcial'))
 
     return {
         'n': n, 'en_curso': en_curso, 'diagnosticos_totales': len(registros),
@@ -1722,9 +1773,9 @@ def admin_actualizar_solicitud(solicitud_id):
                             estado=request.args.get('estado', '')) + f'#sol-{s.id}')
 
 # ---------------------------------------------------------------------------
-# MÓDULO NUEVO: ficha de diagnóstico por entidad (solo administración).
-# Muestra cada dimensión con sus respuestas, evidencias y los riesgos que se
-# derivan de ellas. Solo lee datos; no modifica registros.
+# Ficha de diagnóstico por entidad (administración y la propia entidad).
+# Muestra el resultado por componente y cada respuesta con sus preguntas hijas y
+# evidencias. Solo lee datos; no modifica registros.
 # ---------------------------------------------------------------------------
 FICHA_PROCESOS = ['Planeación', 'Producción', 'Gestión y trámite', 'Organización', 'Transferencias',
                   'Disposición final', 'Preservación a largo plazo', 'Valoración']
@@ -1779,212 +1830,11 @@ FICHA_ETIQUETAS = {
     'q7_limitacion': 'Principal limitación', 'q9_detalle': 'Temas, población y frecuencia', 'q9_barreras': 'Barreras',
 }
 
-FICHA_ORDEN_RIESGO = {'Alto': 0, 'Medio': 1, 'Bajo': 2}
-
-# Soporte normativo de cada recomendación de la ficha. Se asigna por palabras del
-# título del riesgo, en este orden (gana la primera coincidencia). Para cambiar la
-# norma de un riesgo basta con editar esta lista.
-NORMAS_RIESGO = [
-    (('sin evidencia',), 'Criterio de verificación del Consejo: toda respuesta favorable debe tener soporte.'),
-    (('convalidación',), 'Decreto 1080 de 2015 (funciones de los consejos territoriales de archivos); Acuerdo 001 de 2024 del AGN.'),
-    (('PGD', 'Programa de Gestión Documental'), 'Ley 594 de 2000, art. 21; Decreto 1080 de 2015 (Programa de Gestión Documental).'),
-    (('olítica',), 'Decreto 1080 de 2015 (Política de Gestión Documental); Modelo Integrado de Planeación y Gestión (MIPG).'),
-    (('personas asignadas',), 'Ley 594 de 2000; Ley 1409 de 2010 (ejercicio de la profesión de archivística).'),
-    (('una sola persona',), 'Ley 594 de 2000 (responsabilidad de la entidad sobre sus archivos); criterio técnico de continuidad.'),
-    (('depósitos',), 'Ley 594 de 2000 (instalaciones y conservación de archivos); Acuerdo 001 de 2024 del AGN (Sistema Integrado de Conservación).'),
-    (('procedimientos documentados',), 'Decreto 1080 de 2015 (procesos de la gestión documental).'),
-    (('TRD', 'Tablas de Retención'), 'Ley 594 de 2000, art. 24; Acuerdo 001 de 2024 del AGN.'),
-    (('Plan de Preservación',), 'Acuerdo 001 de 2024 del AGN (Sistema Integrado de Conservación y preservación digital).'),
-    (('SGDEA', 'sistema documental'), 'Decreto 1080 de 2015 (documento electrónico de archivo); Acuerdo 001 de 2024 del AGN.'),
-    (('seguridad', 'copias', 'controles de acceso', 'trazabilidad'), 'Acuerdo 001 de 2024 del AGN (preservación digital); Modelo de Seguridad y Privacidad de la Información de MinTIC.'),
-    (('capacita',), 'Decreto 1083 de 2015 (Plan Institucional de Capacitación).'),
-]
-
-
-def norma_de_riesgo(titulo):
-    for palabras, norma in NORMAS_RIESGO:
-        if any(p.lower() in titulo.lower() for p in palabras):
-            return norma
-    return ''
-
-
 def _ficha_valor(r, campo):
     valor = r.get(campo, '')
     if isinstance(valor, list):
         return [str(v).strip() for v in valor if str(v).strip()]
     return str(valor or '').strip()
-
-
-def evaluar_riesgos(r):
-    """Riesgos derivados de las respuestas del formulario. Reglas explícitas y revisables."""
-    riesgos = []
-
-    def add(dim, nivel, titulo, recomendacion, detalle=''):
-        riesgos.append({'dimension': dim, 'nivel': nivel, 'titulo': titulo,
-                        'detalle': detalle, 'recomendacion': recomendacion,
-                        'norma': norma_de_riesgo(titulo)})
-
-    g = lambda c: _ficha_valor(r, c) if not isinstance(_ficha_valor(r, c), list) else ', '.join(_ficha_valor(r, c))
-
-    # B. Estratégico
-    q1 = g('q1_politica')
-    if q1 == 'No existe':
-        add('estrategico', 'Alto', 'No existe Política de Gestión Documental',
-            'Formular la Política de Gestión Documental y adoptarla mediante acto administrativo.',
-            g('q1_razon') and f'Razón informada: {g("q1_razon")}')
-    elif q1 == 'En desarrollo':
-        add('estrategico', 'Medio', 'La Política de Gestión Documental está en desarrollo',
-            'Fijar fecha de aprobación y responsable para culminar la política.',
-            g('q1_etapa') and f'Etapa: {g("q1_etapa")}')
-    elif q1 == 'No se tiene información':
-        add('estrategico', 'Medio', 'No hay información sobre la Política de Gestión Documental',
-            'Verificar con la Secretaría General o el área de planeación si existe y en qué estado está.')
-    if q1 in ('Aprobada', 'En implementación', 'Implementada y con seguimiento') and g('q1_acto') in ('No', 'En trámite'):
-        add('estrategico', 'Medio', 'La política no está adoptada mediante acto administrativo',
-            'Expedir el acto administrativo de adopción de la política.', f'Acto administrativo: {g("q1_acto")}')
-
-    q2 = g('q2_seguimiento')
-    if q2 == 'No':
-        sin_pgd = g('q2_pgd_formulado') in ('No', 'No se sabe')
-        add('estrategico', 'Alto' if sin_pgd else 'Medio',
-            'No hay PGD formulado ni seguimiento' if sin_pgd else 'No se hace seguimiento al Programa de Gestión Documental',
-            'Formular el PGD y definir indicadores, responsables y periodicidad de seguimiento.' if sin_pgd
-            else 'Definir indicadores, responsables y periodicidad de seguimiento del PGD.',
-            g('q2_pgd_formulado') and f'PGD formulado: {g("q2_pgd_formulado")}')
-    elif q2 == 'Parcialmente':
-        add('estrategico', 'Bajo', 'El seguimiento al PGD es parcial',
-            'Formalizar el seguimiento y registrar las acciones de mejora.')
-    elif q2 == 'No se tiene información':
-        add('estrategico', 'Bajo', 'No hay información sobre el seguimiento al PGD',
-            'Confirmar si existe seguimiento y dónde se registra.')
-
-    # C. Administración de archivos
-    try:
-        personas = int(float(g('q3_personal').replace(',', '.')))
-    except ValueError:
-        personas = None
-    if personas == 0:
-        add('administracion_archivos', 'Alto', 'No hay personas asignadas a la gestión documental',
-            'Asignar personal con perfil en archivística y definir sus funciones.', g('q3_observaciones'))
-    elif personas == 1:
-        add('administracion_archivos', 'Medio', 'La gestión documental depende de una sola persona',
-            'Respaldar la función con al menos otra persona capacitada para asegurar continuidad.', g('q3_observaciones'))
-
-    q4 = g('q4_depositos')
-    if q4 == 'No':
-        add('administracion_archivos', 'Alto', 'Los depósitos no tienen condiciones adecuadas de almacenamiento y protección',
-            'Priorizar adecuaciones del depósito dentro del Sistema Integrado de Conservación.',
-            g('q4_riesgos') and f'Deficiencias informadas: {g("q4_riesgos")}')
-    elif q4 == 'Parcialmente':
-        add('administracion_archivos', 'Medio', 'Los depósitos cumplen parcialmente las condiciones requeridas',
-            'Diagnosticar condiciones ambientales, de seguridad y de acceso y planear las mejoras.',
-            g('q4_riesgos') and f'Deficiencias informadas: {g("q4_riesgos")}')
-    elif q4 == 'No se tiene información':
-        add('administracion_archivos', 'Medio', 'No hay información sobre las condiciones de los depósitos',
-            'Realizar una visita de verificación a los depósitos de archivo.')
-
-    # D. Procesos de gestión documental
-    q5 = g('q5_trd')
-    if q5 == 'No elaboradas':
-        add('procesos_documentales', 'Alto', 'La entidad no tiene Tablas de Retención Documental',
-            'Iniciar la elaboración de las TRD con base en el Cuadro de Clasificación Documental.')
-    elif q5 == 'En elaboración':
-        add('procesos_documentales', 'Medio', 'Las TRD están en elaboración',
-            'Fijar un cronograma para terminarlas y presentarlas a evaluación del Consejo.',
-            g('q5_avance') and f'Pendiente: {g("q5_avance")}')
-    elif q5 == 'Requieren actualización':
-        add('procesos_documentales', 'Medio', 'Las TRD están desactualizadas',
-            'Actualizar las TRD según los cambios de estructura y funciones, y presentarlas a evaluación.',
-            g('q5_actualizacion') and f'Motivo: {g("q5_actualizacion")}')
-    elif q5 == 'En evaluación':
-        add('procesos_documentales', 'Bajo', 'Las TRD están en evaluación, pendientes de convalidación',
-            'Hacer seguimiento al concepto y atender los ajustes solicitados.',
-            g('q5_evaluacion') and f'Instancia: {g("q5_evaluacion")}')
-    elif q5 == 'No se tiene información':
-        add('procesos_documentales', 'Medio', 'No hay información sobre el estado de las TRD',
-            'Confirmar si existen TRD convalidadas y su fecha.')
-    if q5 in ('Convalidadas', 'En implementación', 'Implementadas'):
-        ev = g('q5_evidencia_estado')
-        if ev == 'No se dispone de evidencia':
-            add('procesos_documentales', 'Medio', 'No hay soporte de la convalidación ni de la implementación de las TRD',
-                'Reunir el acto de convalidación y la evidencia de aplicación (inventarios, transferencias).')
-        elif ev == 'Solo implementación':
-            add('procesos_documentales', 'Medio', 'Las TRD se aplican sin constancia de convalidación',
-                'Verificar la convalidación ante el Consejo Distrital de Archivos.')
-        elif ev == 'Solo convalidación' and q5 == 'Implementadas':
-            add('procesos_documentales', 'Bajo', 'No hay evidencia de la implementación de las TRD',
-                'Documentar la aplicación de las TRD (inventarios, transferencias, eliminaciones).')
-
-    procesos = set(_sda_lista(r.get('q6_procesos')))
-    faltan = [p for p in FICHA_PROCESOS if p not in procesos]
-    if faltan:
-        nivel = 'Alto' if len(faltan) >= 5 else ('Medio' if len(faltan) >= 3 else 'Bajo')
-        add('procesos_documentales', nivel,
-            f'{len(faltan)} de {len(FICHA_PROCESOS)} procesos sin procedimientos documentados',
-            'Documentar los procedimientos faltantes en el Programa de Gestión Documental.',
-            'Sin procedimiento: ' + ', '.join(faltan))
-
-    # E. Tecnológico
-    q7 = g('q7_sgdea')
-    if q7 == 'No':
-        add('tecnologico', 'Medio', 'No hay SGDEA para controlar el ciclo de vida de los documentos electrónicos',
-            'Definir requisitos y una hoja de ruta para un SGDEA.',
-            g('q7_limitacion') and f'Limitación: {g("q7_limitacion")}')
-    elif q7 == 'Parcialmente':
-        add('tecnologico', 'Bajo', 'El SGDEA cubre solo parte de los procesos',
-            'Ampliar la cobertura del sistema a los demás procesos documentales.', g('q7_sistema_detalle'))
-    if q7 in ('Sí', 'Parcialmente') and g('q7_soporte') == 'No':
-        add('tecnologico', 'Bajo', 'El sistema documental no tiene documentación ni soporte',
-            'Documentar el sistema y asegurar su soporte técnico.')
-
-    protecciones = set(_sda_lista(r.get('q8_protecciones')))
-    if 'Ninguno' in protecciones:
-        add('tecnologico', 'Alto', 'No hay mecanismos de seguridad ni de preservación digital',
-            'Implementar copias de seguridad verificadas y controles de acceso como mínimo.')
-    elif 'No se tiene información' in protecciones:
-        add('tecnologico', 'Medio', 'No hay información sobre la seguridad de los documentos digitales',
-            'Verificar con el área de tecnología los mecanismos existentes.')
-    elif protecciones:
-        if 'Copias de seguridad verificadas' not in protecciones:
-            add('tecnologico', 'Alto', 'No hay copias de seguridad verificadas',
-                'Programar copias de seguridad y pruebas periódicas de restauración.')
-        if 'Controles de acceso' not in protecciones:
-            add('tecnologico', 'Medio', 'No hay controles de acceso a los documentos digitales',
-                'Definir permisos por rol para consultar y modificar documentos.')
-        if 'Plan de preservación digital' not in protecciones:
-            add('tecnologico', 'Medio', 'No hay Plan de Preservación Digital a Largo Plazo',
-                'Formular el plan de preservación digital.')
-        if 'Registros de auditoría' not in protecciones and 'Verificación de integridad' not in protecciones:
-            add('tecnologico', 'Bajo', 'No hay trazabilidad ni verificación de integridad',
-                'Activar registros de auditoría y verificación de integridad en los sistemas.')
-
-    # F. Cultural
-    q9 = g('q9_capacitacion')
-    if q9 == 'No se realiza':
-        add('cultural', 'Medio', 'No se capacita en gestión documental',
-            'Incluir la gestión documental en el Plan Institucional de Capacitación.',
-            g('q9_barreras') and f'Barreras: {g("q9_barreras")}')
-    elif q9 == 'Ocasional':
-        add('cultural', 'Bajo', 'La capacitación en gestión documental es ocasional',
-            'Programar capacitaciones periódicas con población objetivo definida.')
-    elif q9 == 'No se tiene información':
-        add('cultural', 'Bajo', 'No hay información sobre la capacitación en gestión documental',
-            'Consultar con talento humano el plan de capacitación.')
-
-    # Transversal: respuestas favorables sin evidencia.
-    favorables = {
-        1: q1 in ('Aprobada', 'En implementación', 'Implementada y con seguimiento'),
-        2: q2 == 'Sí', 4: q4 == 'Sí', 5: q5 in ('Convalidadas', 'En implementación', 'Implementadas'),
-        7: q7 == 'Sí', 9: q9 == 'Planificada y periódica',
-    }
-    sin_evidencia = [str(n) for n, ok in favorables.items() if ok and not g(f'evidencia_q{n}')]
-    if sin_evidencia:
-        add('transversal', 'Bajo', 'Respuestas favorables sin evidencia',
-            'Solicitar a la entidad los enlaces o referencias documentales que las soporten.',
-            'Preguntas sin evidencia: ' + ', '.join(sin_evidencia))
-
-    riesgos.sort(key=lambda x: FICHA_ORDEN_RIESGO[x['nivel']])
-    return riesgos
 
 
 def _ficha_clave(registro):
@@ -1999,28 +1849,150 @@ def _puntajes_de(censo):
         respuestas = {}
     if not isinstance(respuestas, dict):
         respuestas = {}
-    actual = bool(respuestas.get('q1_politica'))
+    actual = cq.es_v04(respuestas) or bool(respuestas.get('q1_politica'))
     return respuestas, actual, (puntajes_componentes(respuestas) if actual else {})
+
+
+def _version_de(respuestas):
+    return cq.VERSION if cq.es_v04(respuestas) else 'anterior'
+
+
+def _nivel_de(pct):
+    if pct is None:
+        return 'Sin respuestas puntuables'
+    return 'Bajo' if pct <= UMBRAL_BAJO else ('Medio' if pct <= UMBRAL_MEDIO else 'Alto')
+
+
+def tabla_componentes(respuestas, componentes):
+    """Filas de la tabla de resultados: una por componente con su porcentaje."""
+    filas = []
+    if cq.es_v04(respuestas):
+        for comp in cq.COMPONENTES:
+            preguntas = [p for p in cq.PREGUNTAS if p['componente'] == comp['clave']]
+            puntos = [v for p in preguntas for v in [cq.puntaje_pregunta(p, respuestas)] if v is not None]
+            v = componentes.get(comp['clave'])
+            pct = None if v is None else round(v * 100, 1)
+            filas.append({'num': comp['num'], 'nombre': comp['nombre'], 'peso': comp['peso'],
+                          'preguntas': len(preguntas), 'aplicables': len(puntos),
+                          'puntos': round(sum(puntos), 1), 'pct': pct, 'nivel': _nivel_de(pct),
+                          'si': sum(1 for p in preguntas if respuestas.get(p['campo']) == 'si'),
+                          'parcial': sum(1 for p in preguntas if respuestas.get(p['campo']) == 'parcial'),
+                          'no': sum(1 for p in preguntas if respuestas.get(p['campo']) == 'no'),
+                          'na': len(preguntas) - len(puntos) - 0})
+        for f in filas:  # N/A y excluidas = preguntas que no cuentan en el puntaje
+            f['na'] = f['preguntas'] - f['aplicables']
+    else:
+        for n, (clave, nombre) in enumerate(SDA_COMPONENTES, start=1):
+            v = componentes.get(clave)
+            pct = None if v is None else round(v * 100, 1)
+            filas.append({'num': n, 'nombre': nombre, 'peso': 20, 'preguntas': None, 'aplicables': None,
+                          'puntos': None, 'pct': pct, 'nivel': _nivel_de(pct),
+                          'si': None, 'parcial': None, 'no': None, 'na': None})
+    return filas
+
+
+def _valor_hija(h, respuestas):
+    """Valor legible de una pregunta hija para la ficha."""
+    if h['tipo'] == 'matriz':
+        base = h['campo']
+        filas = [f"{fila}: {respuestas.get(base + '_' + str(i))}" for i, fila in enumerate(h['filas'])
+                 if respuestas.get(base + '_' + str(i))]
+        return '\n'.join(filas)
+    valor = _ficha_valor(respuestas, h['campo'])
+    if h['tipo'] == 'multi':
+        valor = valor if isinstance(valor, list) else ([valor] if valor else [])
+        otro = _ficha_valor(respuestas, f"{h['campo']}_otro")
+        if otro:
+            valor = [f"{v}: {otro}" if v == h.get('otro') else v for v in valor]
+    if h['tipo'] == 'url' and not valor and respuestas.get(f"{h['campo']}_nd"):
+        valor = 'Enlace no disponible (para revisión)'
+    return valor
+
+
+def _dimensiones_v04(respuestas, componentes, componentes_previos):
+    r = respuestas
+    fechas = 'Fecha desconocida' if r.get('fechas_desconocidas') else ' – '.join(
+        x for x in [_ficha_valor(r, 'fecha_inicial'), _ficha_valor(r, 'fecha_final')] if x)
+    anio = re.search(r'(\d{4})', _ficha_valor(r, 'fecha_inicial'))
+    caracterizacion = [
+        ('C1. Naturaleza jurídica', _ficha_valor(r, 'naturaleza'), []),
+        ('C2. Nombre de la entidad', _ficha_valor(r, 'nombre_entidad'), [('NIT', _ficha_valor(r, 'nit_entidad'))]),
+        ('C3. Sector administrativo', _ficha_valor(r, 'sector'), [('¿Cuál?', _ficha_valor(r, 'sector_otro'))]),
+        ('C4. Dirección de la sede principal', _ficha_valor(r, 'direccion_entidad'), []),
+        ('C5. Teléfono institucional', _ficha_valor(r, 'telefono_entidad'), []),
+        ('C6. Sitio web institucional', _ficha_valor(r, 'sitio_web'), []),
+        ('C7. Representante legal', _ficha_valor(r, 'rep_nombre'),
+         [('Cargo', _ficha_valor(r, 'rep_cargo')), ('Correo', _ficha_valor(r, 'rep_correo')), ('Teléfono', _ficha_valor(r, 'rep_telefono'))]),
+        ('C8. Responsable de gestión documental y archivos', _ficha_valor(r, 'responsable_nombre'),
+         [('Cargo', _ficha_valor(r, 'responsable_cargo')), ('Dependencia', _ficha_valor(r, 'responsable_dependencia')),
+          ('Correo', _ficha_valor(r, 'responsable_correo')), ('Teléfono', _ficha_valor(r, 'telefono_responsable'))]),
+        ('C9. Fechas extremas de los documentos', fechas,
+         [('Observaciones', _ficha_valor(r, 'fechas_observaciones')),
+          ('Alerta', 'Documentos anteriores a 1911: revisar posible interés patrimonial (BIC-CDA).'
+           if anio and int(anio.group(1)) < 1911 else '')]),
+        ('Datos corregidos frente al directorio', _ficha_valor(r, 'correcciones_directorio'), []),
+    ]
+    dims = [{'clave': 'identificacion', 'letra': 'C', 'nombre': 'Identificación y caracterización institucional',
+             'componente': None, 'puntaje': None, 'anterior': None, 'cambio': None, 'extra': None,
+             'preguntas': [{'titulo': t, 'sub': None, 'valor': v, 'etiqueta_principal': None,
+                            'detalles': [{'etiqueta': e, 'valor': x, 'es_evidencia': False} for e, x in det if x]}
+                           for t, v, det in caracterizacion]}]
+    for comp in cq.COMPONENTES:
+        preguntas = []
+        for sub in comp['subcomponentes']:
+            for n, p in enumerate(sub['preguntas']):
+                detalles = []
+                for h in p['hijas']:
+                    if not cq.hija_visible(h, r, p):
+                        continue
+                    v = _valor_hija(h, r)
+                    if v:
+                        detalles.append({'etiqueta': 'Evidencia' if h['tipo'] == 'url' else h['etiqueta'],
+                                         'valor': v, 'es_evidencia': h['tipo'] == 'url'})
+                puntos = cq.puntaje_pregunta(p, r)
+                preguntas.append({'titulo': f"{p['n']}. {p['texto']}", 'sub': sub['nombre'] if n == 0 else None,
+                                  'valor': cq.etiqueta_opcion(p, r.get(p['campo'], '')),
+                                  'puntos': puntos, 'etiqueta_principal': None, 'detalles': detalles})
+        v, prev = componentes.get(comp['clave']), componentes_previos.get(comp['clave'])
+        pct = None if v is None else round(v * 100, 1)
+        pct_prev = None if prev is None else round(prev * 100, 1)
+        dims.append({'clave': comp['clave'], 'letra': str(comp['num']), 'nombre': comp['nombre'],
+                     'componente': comp['clave'], 'puntaje': pct, 'anterior': pct_prev,
+                     'cambio': None if pct is None or pct_prev is None else round(pct - pct_prev, 1),
+                     'preguntas': preguntas, 'extra': None})
+    return dims
 
 
 def _contexto_ficha(censo):
     """Datos de la ficha que comparten la vista del Consejo y la de la entidad."""
     respuestas, formulario_actual, componentes = _puntajes_de(censo)
-    riesgos = evaluar_riesgos(respuestas) if formulario_actual else []
+    version = _version_de(respuestas)
 
     todos = Censo.query.order_by(Censo.fecha.desc(), Censo.id.desc()).all()
     clave = _ficha_clave(censo)
     historial = [x for x in todos if _ficha_clave(x) == clave]
-    # Diagnóstico anterior con el formulario vigente, para comparar dimensión por dimensión.
+    # Diagnóstico anterior con la misma versión del formulario, para comparar por componente.
     anterior, componentes_previos = None, {}
     posicion = next((n for n, x in enumerate(historial) if x.id == censo.id), None)
     if posicion is not None:
         for x in historial[posicion + 1:]:
-            _, actual_x, comp_x = _puntajes_de(x)
-            if actual_x:
+            resp_x, actual_x, comp_x = _puntajes_de(x)
+            if actual_x and _version_de(resp_x) == version:
                 anterior, componentes_previos = x, comp_x
                 break
 
+    if version == cq.VERSION:
+        dimensiones = _dimensiones_v04(respuestas, componentes, componentes_previos)
+    else:
+        dimensiones = _dimensiones_anteriores(respuestas, componentes, componentes_previos)
+    return dict(censo=censo, nombre=_sda_nombre(censo), respuestas=respuestas, version=version,
+                formulario_actual=formulario_actual, dimensiones=dimensiones,
+                tabla_componentes=tabla_componentes(respuestas, componentes) if formulario_actual else [],
+                historial=historial, nombre_de=_sda_nombre, anterior=anterior)
+
+
+def _dimensiones_anteriores(respuestas, componentes, componentes_previos):
+    """Ficha de los diagnósticos hechos con el formulario anterior (preguntas 1 a 10)."""
     dimensiones = []
     for d in FICHA_DIMENSIONES:
         puntaje = componentes.get(d['componente']) if d['componente'] else None
@@ -2034,9 +2006,7 @@ def _contexto_ficha(censo):
                 if v:
                     detalles.append({'campo': c, 'etiqueta': 'Evidencia' if c.startswith('evidencia_') else FICHA_ETIQUETAS.get(c, c),
                                      'valor': v, 'es_evidencia': c.startswith('evidencia_')})
-            if d['clave'] == 'identificacion' and campos[0] == 'responsable_nombre':
-                principal = _ficha_valor(respuestas, 'responsable_nombre')
-            preguntas.append({'titulo': titulo, 'campo': campos[0],
+            preguntas.append({'titulo': titulo, 'campo': campos[0], 'sub': None,
                               'etiqueta_principal': FICHA_ETIQUETAS.get(campos[0]) if d['clave'] == 'identificacion' and len(campos) > 1 else None,
                               'valor': principal, 'detalles': detalles})
         extra = None
@@ -2050,17 +2020,8 @@ def _contexto_ficha(censo):
         pct_prev = None if previo is None else round(previo * 100, 1)
         dimensiones.append({**d, 'puntaje': pct, 'anterior': pct_prev,
                             'cambio': None if pct is None or pct_prev is None else round(pct - pct_prev, 1),
-                            'preguntas': preguntas, 'extra': extra,
-                            'riesgos': [x for x in riesgos if x['dimension'] == d['clave']]})
-
-    conteo = {n: sum(1 for x in riesgos if x['nivel'] == n) for n in ('Alto', 'Medio', 'Bajo')}
-    nombres_dim = {d['clave']: f"{d['letra']}. {d['nombre']}" for d in FICHA_DIMENSIONES}
-    nombres_dim['transversal'] = 'Transversal'
-    return dict(censo=censo, nombre=_sda_nombre(censo), respuestas=respuestas,
-                formulario_actual=formulario_actual, dimensiones=dimensiones, riesgos=riesgos,
-                conteo=conteo, nombres_dim=nombres_dim, historial=historial, nombre_de=_sda_nombre,
-                anterior=anterior,
-                transversales=[x for x in riesgos if x['dimension'] == 'transversal'])
+                            'preguntas': preguntas, 'extra': extra})
+    return dimensiones
 
 
 def _puede_ver_censo(censo):

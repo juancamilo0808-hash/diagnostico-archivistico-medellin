@@ -5,7 +5,7 @@
 <div class="container py-4">
 <style>
   /* ------------------------------------------------------------------
-     Navegación por secciones (A–F).
+     Navegación por secciones (caracterización y componentes 1 a 5).
      - Sin JavaScript: el formulario se muestra completo, con un único
        botón de envío al final (modo de respaldo, sin botones duplicados).
      - Con JavaScript: el formulario recibe la clase .is-wizard y solo la
@@ -53,12 +53,71 @@
     .wizard-counter { order: -1; width: 100%; text-align: center; }
     .wizard-nav-end { margin-left: 0; flex: 1 1 auto; }
   }
+  /* Preguntas del cuestionario V04 */
+  .dq { border:0; border-top:1px solid #e6edf3; padding:1.1rem 0 .9rem; margin:0; min-width:0; }
+  .dq:first-of-type { border-top:0; padding-top:.3rem; }
+  .dq-t { float:none; width:100%; font-size:1rem; font-weight:700; color:#0b2d50; line-height:1.4; margin-bottom:.6rem; display:flex; gap:.6rem; }
+  .dq-n { flex:0 0 auto; min-width:2rem; height:2rem; padding:0 .4rem; display:grid; place-items:center; border-radius:10px; background:#eaf3fb; color:#123b65; font-weight:800; font-size:.9rem; }
+  .dq-opts { display:flex; flex-wrap:wrap; gap:.4rem; margin-left:2.6rem; }
+  .dq-opts .btn { border-radius:999px; font-weight:700; padding:.35rem 1rem; }
+  .dq .child, .dq-help, .dq-crit { margin-left:2.6rem; }
+  .dq .child { background:#f7fafc; border-left:3px solid #c99a2e; border-radius:0 10px 10px 0; padding:.7rem .9rem; }
+  .dq-help { font-size:.86rem; color:#334155; margin-bottom:.6rem; }
+  .dq-help summary { color:#123b65; font-weight:700; cursor:pointer; }
+  .dq-varias { font-size:.82rem; font-weight:400; color:#4b5b6b; }
+  .dq-crit { font-size:.8rem; color:#56687a; margin:.6rem 0 0; }
+  .dq-sub { font-size:1.05rem; font-weight:800; color:#8a6510; text-transform:uppercase; letter-spacing:.04em; margin-bottom:.6rem; }
+  .dq-peso { font-size:.8rem; font-weight:800; background:#f7f2e4; color:#7a5a00; border-radius:999px; padding:.15rem .6rem; vertical-align:middle; margin-left:.4rem; }
+  .dq-nota { font-size:.88rem; background:#eef5fb; border-radius:10px; padding:.7rem .9rem; color:#243447; }
+  .dq-matriz { display:grid; grid-template-columns:minmax(0,1fr) 16rem; gap:.4rem .8rem; align-items:center; font-size:.88rem; }
+  .dq.is-invalid-group .dq-opts .btn { border-color:#dc3545; }
+  @media (max-width: 767.98px) { .dq-opts, .dq .child, .dq-help, .dq-crit { margin-left:0; } .dq-matriz { grid-template-columns:1fr; } }
 </style>
 
+{% macro control_hija(p, h) -%}
+  <div class="conditional child mt-3" data-show="{{ h.show }}">
+  {%- if h.tipo == 'select' %}
+    <label class="form-label" for="{{ h.campo }}">{{ h.etiqueta }}</label>
+    <select class="form-select" id="{{ h.campo }}" name="{{ h.campo }}"><option value="">Seleccione</option>{% for o in h.opciones %}<option>{{ o }}</option>{% endfor %}</select>
+  {%- elif h.tipo == 'multi' %}
+    <fieldset><legend class="form-label fs-6">{{ h.etiqueta }} <span class="dq-varias">(puede marcar varias)</span></legend>
+    <div class="row g-1">{% for o in h.opciones %}<div class="col-md-6"><div class="form-check"><input class="form-check-input" type="checkbox" name="{{ h.campo }}" value="{{ o }}" id="{{ h.campo }}_{{ loop.index }}"><label class="form-check-label" for="{{ h.campo }}_{{ loop.index }}">{{ o }}</label></div></div>{% endfor %}</div>
+    {%- if h.otro %}<div class="conditional mt-2" data-show="{{ h.campo }}={{ h.otro }}"><label class="form-label small" for="{{ h.campo }}_otro">¿Cuál?</label><input class="form-control" id="{{ h.campo }}_otro" name="{{ h.campo }}_otro" maxlength="250"></div>{% endif %}
+    </fieldset>
+  {%- elif h.tipo == 'matriz' %}
+    <fieldset><legend class="form-label fs-6">{{ h.etiqueta }}</legend>
+    <div class="dq-matriz">{% for f in h.filas %}<label for="{{ h.campo }}_{{ loop.index0 }}">{{ f }}</label><select class="form-select form-select-sm" id="{{ h.campo }}_{{ loop.index0 }}" name="{{ h.campo }}_{{ loop.index0 }}"><option value="">Seleccione</option>{% for o in h.opciones %}<option>{{ o }}</option>{% endfor %}</select>{% endfor %}</div>
+    </fieldset>
+  {%- elif h.tipo == 'url' %}
+    <label class="form-label" for="{{ h.campo }}">{{ h.etiqueta }}</label>
+    <input class="form-control dq-url" type="url" inputmode="url" id="{{ h.campo }}" name="{{ h.campo }}" placeholder="https://" aria-describedby="{{ h.campo }}_ayuda">
+    <div class="form-check mt-1"><input class="form-check-input dq-nd" type="checkbox" name="{{ h.campo }}_nd" value="1" id="{{ h.campo }}_nd" data-url="{{ h.campo }}"><label class="form-check-label small" for="{{ h.campo }}_nd">Enlace no disponible (queda para revisión)</label></div>
+    <div class="form-text" id="{{ h.campo }}_ayuda">Debe comenzar por https:// o http://. Puede ser una URL institucional con acceso autorizado. No se adjuntan archivos.</div>
+  {%- else %}
+    <label class="form-label" for="{{ h.campo }}">{{ h.etiqueta }}{% if h.requerido %} *{% endif %}</label>
+    <textarea class="form-control" id="{{ h.campo }}" name="{{ h.campo }}" rows="2" maxlength="{{ h.max or 500 }}" {% if h.requerido %}data-req="1"{% endif %}></textarea>
+    <div class="form-text">Máximo {{ h.max or 500 }} caracteres.</div>
+  {%- endif %}
+  </div>
+{%- endmacro %}
+
+{% macro pregunta(p) -%}
+  <fieldset class="dq" id="q-{{ p.campo }}">
+    <legend class="dq-t"><span class="dq-n">{{ p.n }}</span><span>{{ p.texto }} <span class="text-danger" aria-hidden="true">*</span></span></legend>
+    {% if p.ayuda %}
+      {% if p.ayuda is string %}<p class="dq-help">{{ p.ayuda }}</p>
+      {% else %}<details class="dq-help"><summary>Ver los instrumentos incluidos</summary><ul class="mb-0">{% for a in p.ayuda %}<li>{{ a }}</li>{% endfor %}</ul></details>{% endif %}
+    {% endif %}
+    <div class="dq-opts">{% for cod, txt in p.opciones %}<input class="btn-check" type="radio" name="{{ p.campo }}" id="{{ p.campo }}_{{ cod }}" value="{{ cod }}" required autocomplete="off"><label class="btn btn-outline-primary" for="{{ p.campo }}_{{ cod }}">{{ txt }}</label>{% endfor %}</div>
+    {% for h in p.hijas %}{{ control_hija(p, h) }}{% endfor %}
+    <p class="dq-crit"><i class="bi bi-search me-1" aria-hidden="true"></i>Criterio de verificación: {{ p.criterio }}</p>
+  </fieldset>
+{%- endmacro %}
+
   <div class="mb-4">
-    <span class="badge bg-primary mb-2">Instrumento diagnóstico</span>
+    <span class="badge bg-primary mb-2">Instrumento diagnóstico · versión {{ cuestionario.VERSION }}</span>
     <h1 class="h2">Diagnóstico Territorial Archivístico</h1>
-    <p class="text-muted">Complete la identificación de la entidad y responda las 10 preguntas estratégicas. Algunas preguntas complementarias aparecerán según sus respuestas.</p>
+    <p class="text-muted">Complete la caracterización de la entidad (C1 a C9) y responda las {{ cuestionario.TOTAL_PREGUNTAS }} preguntas de los cinco componentes del Modelo de Gestión Documental y Administración de Archivos (MGDA). Según la respuesta, aparecen preguntas complementarias y campos para el enlace de la evidencia.</p>
     <a class="btn btn-sm btn-outline-primary" href="{{ url_for('guia_diagnostico') }}" target="_blank" rel="noopener"><i class="bi bi-book me-1" aria-hidden="true"></i>Guía para diligenciar el diagnóstico<span class="visually-hidden"> (abre en una pestaña nueva)</span></a>
   </div>
   <form id="censoForm" method="POST" novalidate>
@@ -66,68 +125,72 @@
 
     <div class="wizard-progress wizard-js-only" aria-hidden="true">
       <ol class="wizard-pills">
-        <li class="wizard-pill is-current" data-pill="1"><span class="wizard-pill-letter">A</span><span class="wizard-pill-text">Identificación</span></li>
-        <li class="wizard-pill" data-pill="2"><span class="wizard-pill-letter">B</span><span class="wizard-pill-text">Estratégico</span></li>
-        <li class="wizard-pill" data-pill="3"><span class="wizard-pill-letter">C</span><span class="wizard-pill-text">Administración de archivos</span></li>
-        <li class="wizard-pill" data-pill="4"><span class="wizard-pill-letter">D</span><span class="wizard-pill-text">Procesos de gestión documental</span></li>
-        <li class="wizard-pill" data-pill="5"><span class="wizard-pill-letter">E</span><span class="wizard-pill-text">Tecnológico</span></li>
-        <li class="wizard-pill" data-pill="6"><span class="wizard-pill-letter">F</span><span class="wizard-pill-text">Cultural</span></li>
+        <li class="wizard-pill is-current" data-pill="1"><span class="wizard-pill-letter">C</span><span class="wizard-pill-text">Caracterización</span></li>
+        {% for comp in cuestionario.COMPONENTES %}<li class="wizard-pill" data-pill="{{ loop.index + 1 }}"><span class="wizard-pill-letter">{{ comp.num }}</span><span class="wizard-pill-text">{{ comp.nombre }}</span></li>{% endfor %}
       </ol>
       <div class="wizard-bar"><span id="wizardBar"></span></div>
     </div>
     <div id="autosaveStatus" class="autosave-status wizard-js-only" role="status" aria-live="polite" data-state="idle">Los cambios se guardarán automáticamente mientras diligencia el formulario.</div>
     <noscript><div class="alert alert-warning small">Su navegador tiene JavaScript desactivado: el formulario se muestra completo y el avance no se guarda automáticamente.</div></noscript>
 
-    <div class="wizard-step is-active" data-step="1" data-step-label="A. Identificación">
-    <div class="section-header mt-4" data-step-header="1"><div><h2>A. IDENTIFICACIÓN Y CARACTERIZACIÓN</h2></div></div><section class="card form-card mb-4" data-step-panel="1"><div class="card-body"><div class="row g-3">
-      <div class="col-md-8"><label class="form-label" for="nombre_entidad">Nombre oficial de la entidad *</label><input class="form-control" id="nombre_entidad" name="nombre_entidad" autocomplete="off" required><div id="sugerencias" class="list-group position-relative"></div></div>
-      <div class="col-md-4"><label class="form-label" for="nit_entidad">NIT *</label><input class="form-control" id="nit_entidad" name="nit_entidad" required></div>
-      <input type="hidden" id="codigo_entidad" name="codigo_entidad"><input type="hidden" id="sigla_entidad" name="sigla_entidad"><input type="hidden" id="campos_corregidos" name="campos_corregidos">
-      <div class="col-md-4"><label class="form-label" for="naturaleza">Naturaleza jurídica *</label><select id="naturaleza" class="form-select" name="naturaleza" required><option value="">Seleccione</option><option>Pública</option><option>Privada con funciones públicas</option><option>Mixta</option><option>Otra / por verificar</option></select></div>
-      <div class="col-md-4"><label class="form-label" for="sector">Sector *</label><input id="sector" class="form-control" name="sector" required></div>
-      <div class="col-md-4"><label class="form-label" for="grupo_relacion">Grupo / relación con el Distrito</label><input class="form-control" name="grupo_relacion" id="grupo_relacion"></div>
-      <div class="col-md-4"><label class="form-label" for="clasificacion_preliminar">Clasificación preliminar</label><input class="form-control" name="clasificacion_preliminar" id="clasificacion_preliminar"></div>
-      <div class="col-md-4"><label class="form-label" for="ambito">Ámbito</label><input class="form-control" name="ambito" id="ambito"></div>
-      <div class="col-md-4"><label class="form-label" for="responsable_nombre">Responsable de gestión documental *</label><input class="form-control" name="responsable_nombre" id="responsable_nombre" required></div>
-      <div class="col-md-4"><label class="form-label" for="responsable_cargo">Cargo *</label><input class="form-control" name="responsable_cargo" id="responsable_cargo" required></div>
-      <div class="col-md-4"><label class="form-label" for="responsable_correo">Correo institucional *</label><input class="form-control" type="email" name="responsable_correo" id="responsable_correo" required></div>
-      <div class="col-md-4"><label class="form-label" for="telefono_responsable">Teléfono</label><input class="form-control" name="telefono_responsable" id="telefono_responsable"></div>
-      <div class="col-md-4"><label class="form-label" for="sitio_web">Sitio web</label><input class="form-control" name="sitio_web" id="sitio_web"></div>
-      <div class="col-md-8"><label class="form-label" for="direccion_entidad">Dirección</label><input class="form-control" name="direccion_entidad" id="direccion_entidad"></div>
-    </div><small class="text-muted d-block mt-3">Escriba el nombre de la entidad y selecciónela de la lista para cargar sus datos. Verifíquelos y corrija los que estén desactualizados.</small></div></section>
-    </div>
-    <div class="wizard-step" data-step="2" data-step-label="B. Estratégico">
-    <div class="section-header mt-4" data-step-header="2"><div><h2>B. ESTRATÉGICO</h2></div></div><section class="card form-card mb-4" data-step-panel="2"><div class="card-body">
-      <div class="mb-4"><label class="form-label fw-semibold">1. ¿Cuál es el estado de la Política de Gestión Documental de la entidad? *</label><select class="form-select" name="q1_politica" id="q1_politica" required><option value="">Seleccione</option><option>No existe</option><option>En desarrollo</option><option>Aprobada</option><option>En implementación</option><option>Implementada y con seguimiento</option><option>No se tiene información</option></select>
-      <div class="conditional mt-3" data-show="q1_politica=Aprobada,q1_politica=En implementación,q1_politica=Implementada y con seguimiento"><label class="form-label" for="q1_acto">¿Está aprobada mediante acto administrativo?</label><select id="q1_acto" class="form-select" name="q1_acto"><option value="">Seleccione</option><option>Sí</option><option>No</option><option>En trámite</option></select><div class="conditional mt-2" data-show="q1_acto=Sí"><label class="form-label" for="q1_acto_detalle">Número y fecha del acto administrativo</label><input id="q1_acto_detalle" class="form-control" name="q1_acto_detalle"></div></div>
-      <div class="conditional mt-3" data-show="q1_politica=En desarrollo"><label class="form-label" for="q1_etapa">¿En qué etapa se encuentra?</label><textarea id="q1_etapa" class="form-control" name="q1_etapa" rows="2"></textarea></div><div class="conditional mt-3" data-show="q1_politica=No existe"><label class="form-label" for="q1_razon">¿Cuál es la principal razón por la que no existe?</label><textarea id="q1_razon" class="form-control" name="q1_razon" rows="2"></textarea></div><label class="form-label mt-3">Evidencia (enlace o referencia documental)</label><input class="form-control" name="evidencia_q1"></div>
-      <div class="mb-3"><label class="form-label fw-semibold">2. ¿La entidad hace seguimiento al cumplimiento del PGD y establece acciones de mejora? *</label><select class="form-select" name="q2_seguimiento" id="q2_seguimiento" required><option value="">Seleccione</option><option>Sí</option><option>Parcialmente</option><option>No</option><option>No se tiene información</option></select><div class="conditional mt-3" data-show="q2_seguimiento=Sí"><label class="form-label" for="q2_mecanismo">¿Qué mecanismo utiliza y dónde se registra el seguimiento?</label><textarea id="q2_mecanismo" class="form-control" name="q2_mecanismo" rows="2"></textarea></div><div class="conditional mt-3" data-show="q2_seguimiento=No"><label class="form-label" for="q2_pgd_formulado">¿El PGD está formulado aunque no se haga seguimiento?</label><select id="q2_pgd_formulado" class="form-select" name="q2_pgd_formulado"><option value="">Seleccione</option><option>Sí</option><option>No</option><option>En elaboración</option><option>No se sabe</option></select></div><label class="form-label mt-3">Evidencia (enlace o referencia documental)</label><input class="form-control" name="evidencia_q2"></div>
+    <div class="wizard-step is-active" data-step="1" data-step-label="Caracterización">
+    <div class="section-header mt-4" data-step-header="1"><div><h2>IDENTIFICACIÓN Y CARACTERIZACIÓN INSTITUCIONAL</h2></div></div>
+    <section class="card form-card mb-4" data-step-panel="1"><div class="card-body">
+      <p class="dq-nota"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>{{ cuestionario.NOTA_CARACTERIZACION }}</p>
+      <div class="row g-3">
+        <div class="col-md-6"><label class="form-label" for="naturaleza"><b>C1.</b> Naturaleza jurídica de la entidad *</label><select id="naturaleza" class="form-select" name="naturaleza" required><option value="">Seleccione</option>{% for o in cuestionario.NATURALEZAS %}<option>{{ o }}</option>{% endfor %}</select></div>
+        <div class="col-md-6"><label class="form-label" for="sector"><b>C3.</b> Sector administrativo al que pertenece, cuando aplique *</label><select id="sector" class="form-select" name="sector" required><option value="">Seleccione</option>{% for o in cuestionario.SECTORES %}<option>{{ o }}</option>{% endfor %}</select>
+          <div class="conditional mt-2" data-show="sector=Otro"><label class="form-label small" for="sector_otro">¿Cuál?</label><input class="form-control" id="sector_otro" name="sector_otro" maxlength="150"></div></div>
+        <div class="col-md-8"><label class="form-label" for="nombre_entidad"><b>C2.</b> Nombre completo de la entidad u organización *</label><input class="form-control" id="nombre_entidad" name="nombre_entidad" autocomplete="off" maxlength="250" required><div id="sugerencias" class="list-group position-relative"></div></div>
+        <div class="col-md-4"><label class="form-label" for="nit_entidad">NIT *</label><input class="form-control" id="nit_entidad" name="nit_entidad" required></div>
+        <input type="hidden" id="codigo_entidad" name="codigo_entidad"><input type="hidden" id="sigla_entidad" name="sigla_entidad"><input type="hidden" id="campos_corregidos" name="campos_corregidos">
+        <input type="hidden" id="grupo_relacion" name="grupo_relacion"><input type="hidden" id="clasificacion_preliminar" name="clasificacion_preliminar"><input type="hidden" id="ambito" name="ambito">
+        <div class="col-md-8"><label class="form-label" for="direccion_entidad"><b>C4.</b> Dirección de la sede principal *</label><input class="form-control" name="direccion_entidad" id="direccion_entidad" autocomplete="street-address" maxlength="250" required></div>
+        <div class="col-md-4"><label class="form-label" for="telefono_entidad"><b>C5.</b> Teléfono institucional</label><input class="form-control" type="tel" name="telefono_entidad" id="telefono_entidad" maxlength="40" pattern="[0-9+()\s\-–ext.]{7,40}"></div>
+        <div class="col-md-12"><label class="form-label" for="sitio_web"><b>C6.</b> Sitio web institucional</label><input class="form-control" type="url" name="sitio_web" id="sitio_web" placeholder="https://"></div>
+      </div>
+
+      <h3 class="dq-sub mt-4"><b>C7.</b> Representante legal</h3>
+      <div class="row g-3">
+        <div class="col-md-6"><label class="form-label" for="rep_nombre">Nombre</label><input class="form-control" id="rep_nombre" name="rep_nombre" maxlength="150"></div>
+        <div class="col-md-6"><label class="form-label" for="rep_cargo">Cargo</label><input class="form-control" id="rep_cargo" name="rep_cargo" maxlength="150"></div>
+        <div class="col-md-6"><label class="form-label" for="rep_correo">Correo</label><input class="form-control" type="email" id="rep_correo" name="rep_correo" maxlength="150"></div>
+        <div class="col-md-6"><label class="form-label" for="rep_telefono">Teléfono</label><input class="form-control" type="tel" id="rep_telefono" name="rep_telefono" maxlength="40"></div>
+      </div>
+
+      <h3 class="dq-sub mt-4"><b>C8.</b> Responsable de gestión documental y archivos</h3>
+      <div class="row g-3">
+        <div class="col-md-6"><label class="form-label" for="responsable_nombre">Nombre *</label><input class="form-control" name="responsable_nombre" id="responsable_nombre" maxlength="150" required></div>
+        <div class="col-md-6"><label class="form-label" for="responsable_cargo">Cargo *</label><input class="form-control" name="responsable_cargo" id="responsable_cargo" maxlength="150" required></div>
+        <div class="col-md-4"><label class="form-label" for="responsable_dependencia">Dependencia</label><input class="form-control" name="responsable_dependencia" id="responsable_dependencia" maxlength="150"></div>
+        <div class="col-md-4"><label class="form-label" for="responsable_correo">Correo *</label><input class="form-control" type="email" name="responsable_correo" id="responsable_correo" maxlength="150" required></div>
+        <div class="col-md-4"><label class="form-label" for="telefono_responsable">Teléfono</label><input class="form-control" type="tel" name="telefono_responsable" id="telefono_responsable" maxlength="40"></div>
+      </div>
+
+      <h3 class="dq-sub mt-4"><b>C9.</b> Fechas extremas de los documentos conservados por la entidad</h3>
+      <p class="small text-secondary mb-2">Fecha inicial del documento más antiguo y fecha final del más reciente. Puede escribir el año o la fecha completa.</p>
+      <div class="row g-3">
+        <div class="col-md-3"><label class="form-label" for="fecha_inicial">Fecha o año inicial</label><input class="form-control" id="fecha_inicial" name="fecha_inicial" placeholder="Ej.: 1890 o 15/03/1890" maxlength="10"></div>
+        <div class="col-md-3"><label class="form-label" for="fecha_final">Fecha o año final</label><input class="form-control" id="fecha_final" name="fecha_final" placeholder="Ej.: 2026" maxlength="10"></div>
+        <div class="col-md-6 d-flex align-items-end"><div class="form-check mb-2"><input class="form-check-input" type="checkbox" id="fechas_desconocidas" name="fechas_desconocidas" value="1"><label class="form-check-label" for="fechas_desconocidas">Fecha desconocida</label></div></div>
+        <div class="col-12"><label class="form-label" for="fechas_observaciones">Observaciones</label><textarea class="form-control" id="fechas_observaciones" name="fechas_observaciones" rows="2" maxlength="500"></textarea></div>
+      </div>
+      <div id="alerta1911" class="alert alert-info small mt-3 mb-0" role="status" hidden><i class="bi bi-bank me-1" aria-hidden="true"></i>La entidad conserva documentos anteriores a 1911. Quedan marcados para revisar su posible interés patrimonial (BIC-CDA). La antigüedad por sí sola no determina la declaratoria. <a href="{{ url_for('patrimonio_documental') }}" target="_blank" rel="noopener">¿Qué es un BIC-CDA?</a></div>
+      <small class="text-muted d-block mt-3">Escriba el nombre de la entidad y selecciónela de la lista para cargar sus datos del directorio. Verifíquelos y corrija los que estén desactualizados.</small>
     </div></section>
     </div>
-    <div class="wizard-step" data-step="3" data-step-label="C. Administración de archivos">
-    <div class="section-header mt-4" data-step-header="3"><div><h2>C. ADMINISTRACIÓN DE ARCHIVOS</h2></div></div><section class="card form-card mb-4" data-step-panel="3"><div class="card-body">
-      <div class="mb-4"><label class="form-label fw-semibold">3. ¿Cuántas personas participan en las funciones de gestión documental y archivo? *</label><input type="number" min="0" class="form-control" name="q3_personal" required><div class="form-text">Registre el total de personas; esta pregunta es informativa y no suma puntaje por sí sola.</div><label class="form-label mt-2">Observaciones sobre perfiles, dedicación o suficiencia del equipo</label><textarea class="form-control" name="q3_observaciones" rows="2"></textarea></div>
-      <div><label class="form-label fw-semibold">4. ¿Las condiciones de almacenamiento, acceso y protección de los depósitos de archivo son adecuadas? *</label><select class="form-select" name="q4_depositos" id="q4_depositos" required><option value="">Seleccione</option><option>Sí</option><option>Parcialmente</option><option>No</option><option>No se tiene información</option></select><div class="conditional mt-3" data-show="q4_depositos=Parcialmente,q4_depositos=No"><label class="form-label" for="q4_riesgos">Describa las principales deficiencias o riesgos identificados</label><textarea id="q4_riesgos" class="form-control" name="q4_riesgos" rows="2"></textarea></div><label class="form-label mt-3">Evidencia (enlace o referencia documental)</label><input class="form-control" name="evidencia_q4"></div>
+
+    {% for comp in cuestionario.COMPONENTES %}
+    <div class="wizard-step" data-step="{{ loop.index + 1 }}" data-step-label="{{ comp.num }}. {{ comp.nombre }}">
+    <div class="section-header mt-4" data-step-header="{{ loop.index + 1 }}"><div><h2>COMPONENTE {{ comp.num }}. {{ comp.nombre|upper }} <span class="dq-peso">{{ comp.peso }} %</span></h2></div></div>
+    {% for sub in comp.subcomponentes %}
+    <section class="card form-card mb-4"><div class="card-body">
+      <h3 class="dq-sub">{{ sub.nombre }}</h3>
+      {% for p in sub.preguntas %}{{ pregunta(p) }}{% endfor %}
     </div></section>
+    {% endfor %}
     </div>
-    <div class="wizard-step" data-step="4" data-step-label="D. Procesos de gestión documental">
-    <div class="section-header mt-4" data-step-header="4"><div><h2>D. PROCESOS DE GESTIÓN DOCUMENTAL</h2></div></div><section class="card form-card mb-4" data-step-panel="4"><div class="card-body">
-      <div class="mb-4"><label class="form-label fw-semibold">5. ¿Cuál es el estado de las Tablas de Retención Documental (TRD)? *</label><select class="form-select" name="q5_trd" id="q5_trd" required><option value="">Seleccione</option><option>No elaboradas</option><option>En elaboración</option><option>En evaluación</option><option>Convalidadas</option><option>En implementación</option><option>Implementadas</option><option>Requieren actualización</option><option>No aplica</option><option>No se tiene información</option></select><div class="conditional mt-3" data-show="q5_trd=En elaboración"><label class="form-label" for="q5_avance">¿Qué avance o etapa falta completar?</label><textarea id="q5_avance" class="form-control" name="q5_avance" rows="2"></textarea></div><div class="conditional mt-3" data-show="q5_trd=En evaluación"><label class="form-label" for="q5_evaluacion">¿Ante qué instancia se encuentran en evaluación y desde cuándo?</label><textarea id="q5_evaluacion" class="form-control" name="q5_evaluacion" rows="2"></textarea></div><div class="conditional mt-3" data-show="q5_trd=Convalidadas,q5_trd=En implementación,q5_trd=Implementadas"><label class="form-label" for="q5_evidencia_estado">¿Se cuenta con acto/constancia de convalidación y evidencia de implementación?</label><select id="q5_evidencia_estado" class="form-select" name="q5_evidencia_estado"><option value="">Seleccione</option><option>Sí, ambas</option><option>Solo convalidación</option><option>Solo implementación</option><option>No se dispone de evidencia</option></select></div><div class="conditional mt-3" data-show="q5_trd=Requieren actualización"><label class="form-label" for="q5_actualizacion">¿Qué motivó la necesidad de actualización?</label><textarea id="q5_actualizacion" class="form-control" name="q5_actualizacion" rows="2"></textarea></div><label class="form-label mt-3">Evidencia (enlace o referencia documental)</label><input class="form-control" name="evidencia_q5"></div>
-      <div><label class="form-label fw-semibold">6. ¿Cuáles procesos cuentan con procedimientos documentados o evidencias de ejecución? *</label><div class="row g-2">{% for item in ['Planeación','Producción','Gestión y trámite','Organización','Transferencias','Disposición final','Preservación a largo plazo','Valoración'] %}<div class="col-md-6"><div class="form-check"><input class="form-check-input" type="checkbox" name="q6_procesos" value="{{ item }}" id="p{{ loop.index }}"><label class="form-check-label" for="p{{ loop.index }}">{{ item }}</label></div></div>{% endfor %}</div><label class="form-label mt-3">Observaciones / evidencias</label><textarea class="form-control" name="evidencia_q6" rows="2"></textarea><div class="form-text">Selección múltiple. Esta pregunta es descriptiva en el piloto.</div></div>
-    </div></section>
-    </div>
-    <div class="wizard-step" data-step="5" data-step-label="E. Tecnológico">
-    <div class="section-header mt-4" data-step-header="5"><div><h2>E. TECNOLÓGICO</h2></div></div><section class="card form-card mb-4" data-step-panel="5"><div class="card-body">
-      <div class="mb-4"><label class="form-label fw-semibold">7. ¿La entidad utiliza un SGDEA o sistema equivalente para controlar el ciclo de vida y la trazabilidad documental? *</label><select class="form-select" name="q7_sgdea" id="q7_sgdea" required><option value="">Seleccione</option><option>Sí</option><option>Parcialmente</option><option>No</option><option>No se tiene información</option></select><div class="conditional mt-3" data-show="q7_sgdea=Sí,q7_sgdea=Parcialmente"><label class="form-label" for="q7_sistema_detalle">Nombre del sistema y procesos que cubre</label><textarea id="q7_sistema_detalle" class="form-control" name="q7_sistema_detalle" rows="2"></textarea><label class="form-label mt-2">¿Cuenta con documentación, soporte o evidencia de operación?</label><select class="form-select" name="q7_soporte"><option value="">Seleccione</option><option>Sí</option><option>Parcialmente</option><option>No</option></select></div><div class="conditional mt-3" data-show="q7_sgdea=No"><label class="form-label" for="q7_limitacion">¿Cuál es la principal limitación para su implementación?</label><textarea id="q7_limitacion" class="form-control" name="q7_limitacion" rows="2"></textarea></div><label class="form-label mt-3">Evidencia (enlace o referencia documental)</label><input class="form-control" name="evidencia_q7"></div>
-      <div><label class="form-label fw-semibold">8. ¿Qué mecanismos de seguridad y preservación digital utiliza la entidad? *</label><div class="row g-2">{% for item in ['Copias de seguridad verificadas','Controles de acceso','Registros de auditoría','Verificación de integridad','Migración de formatos','Plan de preservación digital','Ninguno','No se tiene información'] %}<div class="col-md-6"><div class="form-check"><input class="form-check-input proteccion" type="checkbox" name="q8_protecciones" value="{{ item }}" id="s{{ loop.index }}"><label class="form-check-label" for="s{{ loop.index }}">{{ item }}</label></div></div>{% endfor %}</div><label class="form-label mt-3">Observaciones / evidencia</label><textarea class="form-control" name="evidencia_q8" rows="2"></textarea><div class="form-text">Selección múltiple; si selecciona “Ninguno” o “No se tiene información”, no seleccione otras opciones.</div></div>
-    </div></section>
-    </div>
-    <div class="wizard-step" data-step="6" data-step-label="F. Cultural">
-    <div class="section-header mt-4" data-step-header="6"><div><h2>F. CULTURAL</h2></div></div><section class="card form-card mb-4" data-step-panel="6"><div class="card-body">
-      <div class="mb-4"><label class="form-label fw-semibold">9. ¿Cómo se desarrollan las actividades de capacitación y sensibilización en gestión documental? *</label><select class="form-select" name="q9_capacitacion" id="q9_capacitacion" required><option value="">Seleccione</option><option>No se realiza</option><option>Ocasional</option><option>Planificada y periódica</option><option>No se tiene información</option></select><div class="conditional mt-3" data-show="q9_capacitacion=Ocasional,q9_capacitacion=Planificada y periódica"><label class="form-label" for="q9_detalle">Temas, población objetivo y frecuencia</label><textarea id="q9_detalle" class="form-control" name="q9_detalle" rows="2"></textarea></div><div class="conditional mt-3" data-show="q9_capacitacion=No se realiza"><label class="form-label" for="q9_barreras">¿Qué dificulta desarrollar estas actividades?</label><textarea id="q9_barreras" class="form-control" name="q9_barreras" rows="2"></textarea></div><label class="form-label mt-3">Evidencia (enlace o referencia documental)</label><input class="form-control" name="evidencia_q9"></div>
-      <div><label class="form-label fw-semibold">10. ¿Cuál considera que es la acción prioritaria para mejorar el acceso, apropiación y uso de la información en la entidad? *</label><textarea class="form-control" name="q10_prioridad" rows="4" required placeholder="Describa la acción prioritaria y, si es posible, el resultado esperado."></textarea><label class="form-label mt-3">Evidencia o documento relacionado (opcional)</label><input class="form-control" name="evidencia_q10"></div>
-    </div></section>
-    </div>
+    {% endfor %}
 
     <div class="form-check wizard-final-only mb-3 p-3 ps-5 border rounded-3 bg-white">
       <input class="form-check-input" type="checkbox" name="autoriza_datos" value="1" id="autoriza_datos" required>
@@ -155,16 +218,24 @@
  if(!form)return;
 
  /* ===== 1. Reglas condicionales y búsqueda de entidades (lógica original) ===== */
+ function reglaActiva(rule){
+  const i=rule.indexOf('='); if(i<0)return false;
+  const key=rule.slice(0,i), val=rule.slice(i+1);
+  const ctrls=[...form.querySelectorAll(`[name="${CSS.escape(key)}"]`)];
+  return ctrls.some(el=>!el.disabled&&((el.type==='radio'||el.type==='checkbox')?(el.checked&&el.value===val):el.value===val));
+ }
  function refreshConditional(){
   document.querySelectorAll('.conditional').forEach(box=>{
    const rules=(box.dataset.show||'').split(',').map(x=>x.trim()).filter(Boolean);
-   const visible=rules.some(rule=>{const i=rule.indexOf('='); if(i<0)return false; const key=rule.slice(0,i); const el=document.getElementById(key)||form.querySelector(`[name="${CSS.escape(key)}"]`); return el && !el.disabled && el.value===rule.slice(i+1)});
+   const visible=rules.some(reglaActiva);
    box.hidden=!visible;
-   box.querySelectorAll('input,select,textarea').forEach(el=>{el.disabled=!visible; if(!visible)el.required=false;});
+   box.querySelectorAll('input,select,textarea').forEach(el=>{el.disabled=!visible; el.required=visible&&el.dataset.req==='1';});
   });
+  const ini=document.getElementById('fecha_inicial'), al=document.getElementById('alerta1911');
+  if(ini&&al){const m=(ini.value.match(/(\d{4})/)||[])[1]; al.hidden=!(m&&Number(m)<1911);}
  }
- document.querySelectorAll('#censoForm select').forEach(el=>el.addEventListener('change',refreshConditional));
- document.querySelectorAll('.proteccion').forEach(el=>el.addEventListener('change',()=>{const checks=[...document.querySelectorAll('.proteccion:checked')];const exclusive=checks.find(x=>['Ninguno','No se tiene información'].includes(x.value));if(exclusive)checks.forEach(x=>{if(x!==exclusive)x.checked=false});else document.querySelectorAll('.proteccion').forEach(x=>{if(['Ninguno','No se tiene información'].includes(x.value))x.checked=false})}));
+ form.addEventListener('change',refreshConditional);
+ form.addEventListener('input',e=>{if(e.target.id==='fecha_inicial')refreshConditional();});
  refreshConditional();
  const name=document.getElementById('nombre_entidad'), box=document.getElementById('sugerencias'); let timer;
  /* Datos precargados del directorio: si la entidad los cambia, la corrección queda
@@ -200,7 +271,7 @@
   ayuda.textContent='Entidad y NIT de la sesión iniciada. Los demás datos se pueden corregir.'; name.after(ayuda);
  }
 
- /* ===== 2. Navegación por secciones A–F =====
+ /* ===== 2. Navegación por secciones =====
     Se activa antes que el autoguardado, de modo que un error de almacenamiento
     o de red nunca deje todas las secciones y botones visibles a la vez. */
  const STEP_COUNT=6;
@@ -212,8 +283,7 @@
  const counter=document.getElementById('wizardCounter');
  const bar=document.getElementById('wizardBar');
  const status=document.getElementById('autosaveStatus');
- // Grupos de casillas que app.py exige como obligatorios (q6_procesos y q8_protecciones).
- const REQUIRED_GROUPS=['q6_procesos','q8_protecciones'];
+ const REQUIRED_GROUPS=[];
  let currentStep=1;
  let autosave={flush:async()=>{},schedule:()=>{},stop:()=>{},rememberStep:()=>{}};
 
@@ -230,7 +300,8 @@
    if(!isText)return;
    let msg='';
    if(el.required&&el.value!==''&&el.value.trim()==='')msg='Este campo no puede quedar en blanco.';
-   else if(el.name==='responsable_correo'&&el.value.trim()!==''){
+   else if(el.classList.contains('dq-url')&&el.value.trim()!==''&&!/^https?:\/\/\S+\.\S+/i.test(el.value.trim()))msg='El enlace debe comenzar por https:// o http://.';
+   else if(['responsable_correo','rep_correo'].includes(el.name)&&el.value.trim()!==''){
     const v=el.value.trim();
     if(!v.includes('@')||!v.split('@').pop().includes('.'))msg='Ingrese un correo institucional válido (ejemplo: nombre@entidad.gov.co).';
    }
@@ -243,13 +314,15 @@
  }
  function markInvalid(list,container){
   fieldsOf(container).forEach(el=>el.classList.remove('is-invalid'));
+  container.querySelectorAll('.is-invalid-group').forEach(f=>f.classList.remove('is-invalid-group'));
+  list.forEach(el=>{if(el.type==='radio'){const f=el.closest('.dq');if(f)f.classList.add('is-invalid-group');}});
   list.forEach(el=>{
    if(el.type==='checkbox')form.querySelectorAll(`input[type="checkbox"][name="${el.name}"]`).forEach(b=>b.classList.add('is-invalid'));
    else el.classList.add('is-invalid');
   });
  }
  function reportFirst(el){
-  el.scrollIntoView({behavior:'smooth',block:'center'});
+  (el.type==='radio'&&el.closest('.dq')?el.closest('.dq'):el).scrollIntoView({behavior:'smooth',block:'center'});
   el.focus({preventScroll:true});
   el.reportValidity();
  }
@@ -259,6 +332,7 @@
    syncCustomValidity();
    form.querySelectorAll(`input[type="checkbox"][name="${el.name}"]`).forEach(b=>b.classList.remove('is-invalid'));
   }else el.classList.remove('is-invalid');
+  if(el.type==='radio'){const f=el.closest('.dq');if(f)f.classList.remove('is-invalid-group');}
  }
  form.addEventListener('input',e=>clearInvalid(e.target));
  form.addEventListener('change',e=>clearInvalid(e.target));

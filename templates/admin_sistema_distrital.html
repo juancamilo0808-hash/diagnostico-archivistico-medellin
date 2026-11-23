@@ -176,7 +176,7 @@
           <div class="hd"><i class="bi bi-search"></i> Evaluación</div>
           <div class="bd">
             <div class="desc">Revisión y evaluación de instrumentos archivísticos (TRD y TVD).</div>
-            <div class="live">{% set ev = d.etapas_trd|selectattr('estado','equalto','En evaluación')|first if ver else none %}<div class="n">{{ ev.entidades if ev else '—' }}</div><div class="t">{{ 'entidad' if ev and ev.entidades == 1 else 'entidades' }} con TRD en evaluación</div></div>
+            <div class="live">{% set ev = d.etapas_trd|selectattr('estado','equalto','Aprobada')|first if ver else none %}<div class="n">{{ ev.entidades if ev else '—' }}</div><div class="t">{{ 'entidad' if ev and ev.entidades == 1 else 'entidades' }} con TRD aprobada, pendiente de convalidación</div></div>
             <span class="more">Ver detalle →</span>
           </div>
         </button>
@@ -222,11 +222,11 @@
       {% for t in d.temas %}
       <div class="tema"><div class="rank">{{ loop.index }}</div><div><div class="nm">{{ t.tema }}</div><div class="ins">Sugerido: {{ t.instrumento }}</div></div><div class="pc">{{ t.pct }} %<small>{{ t.entidades }} de {{ d.n_formulario_actual }}</small></div></div>
       {% endfor %}
-      <h4>Procesos con procedimientos documentados (pregunta 6)</h4>
+      <h4>Procesos de la gestión documental (componente 3)</h4>
       {% for p in d.procesos %}
       <div class="bar-row"><span>{{ p.proceso }}</span><div class="bar"><span style="width: {{ p.pct }}%"></span></div><span class="val">{{ p.pct }} %</span></div>
       {% endfor %}
-      <p class="sda-note mt-2">Los procesos con menor porcentaje son candidatos a guías y modelos de procedimiento. Se calculan sobre {{ d.n_formulario_actual }} diagnósticos del formulario vigente.</p>
+      <p class="sda-note mt-2">Promedio de las respuestas de cada proceso. Los de menor porcentaje son candidatos a guías y modelos de procedimiento. Se calculan sobre {{ d.n_formulario_actual }} diagnósticos del cuestionario vigente.</p>
       {% else %}<p class="sda-note mb-0">Los indicadores aparecerán cuando haya suficientes diagnósticos.</p>{% endif %}
     </div>
 
@@ -260,8 +260,8 @@
         {% for e in d.etapas_trd %}<div><div class="n">{{ e.entidades }}</div><div class="t">{{ e.etiqueta }}</div><div class="p">{{ e.pct }} %</div></div>{% endfor %}
       </div>
       <div class="row g-3 mt-1">
-        <div class="col-md-6"><div class="sda-level h-100"><strong>{{ d.trd_con_evidencia }} de {{ d.trd_avanzada }}</strong>entidades con TRD convalidadas o implementadas {{ 'cuenta' if d.trd_con_evidencia == 1 else 'cuentan' }} con acto de convalidación y evidencia de implementación.</div></div>
-        <div class="col-md-6"><div class="sda-level h-100"><strong>{{ d.trd_actualizacion }}</strong>{{ 'entidad reporta' if d.trd_actualizacion == 1 else 'entidades reportan' }} que sus TRD requieren actualización y podrían llegar a evaluación del Consejo.</div></div>
+        <div class="col-md-6"><div class="sda-level h-100"><strong>{{ d.trd_con_evidencia }} de {{ d.trd_avanzada }}</strong>entidades con TRD convalidadas o implementadas {{ 'tiene' if d.trd_con_evidencia == 1 else 'tienen' }} enlace a las tablas y a sus actos de aprobación y convalidación.</div></div>
+        <div class="col-md-6"><div class="sda-level h-100"><strong>{{ d.trd_actualizacion }}</strong>{{ 'entidad responde' if d.trd_actualizacion == 1 else 'entidades responden' }} «No» o «Parcialmente» sobre TRD/TVD actualizadas y aprobadas, y podrían llegar a evaluación del Consejo.</div></div>
       </div>
       {% if d.otros_trd %}<p class="sda-note mt-2 mb-0">Otras respuestas: {% for k, v in d.otros_trd.items() %}{{ k }} ({{ v }}){{ ', ' if not loop.last }}{% endfor %}.</p>{% endif %}
       {% else %}<p class="sda-note mb-0">Los indicadores aparecerán cuando haya suficientes diagnósticos.</p>{% endif %}
