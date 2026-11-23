@@ -3071,8 +3071,9 @@ with app.app_context():
 
     # Recalcula los diagnósticos guardados con la escala vigente (0 – 0,5 – 1), para
     # que el índice guardado coincida con el de la ficha. Solo cambia puntaje_obtenido,
-    # variables_aplicables, ima y nivel; las respuestas no se tocan. Los registros del
-    # formulario antiguo (sin q1_politica) se dejan como están.
+    # variables_aplicables, ima y nivel; las respuestas no se tocan. Aplica al cuestionario
+    # V04 (si se ajusta cuestionario.py, los resultados se actualizan) y al formulario de
+    # 10 preguntas. Los registros más antiguos (sin q1_politica) se dejan como están.
     try:
         actualizados = 0
         for registro in Censo.query.all():
@@ -3080,7 +3081,7 @@ with app.app_context():
                 datos = json.loads(registro.respuestas_json or '{}')
             except (TypeError, ValueError):
                 continue
-            if not isinstance(datos, dict) or not datos.get('q1_politica'):
+            if not isinstance(datos, dict) or not (cq.es_v04(datos) or datos.get('q1_politica')):
                 continue
             total, aplicables, ima, nivel = calcular_diagnostico_nuevo(datos)
             if (registro.ima, registro.nivel, registro.puntaje_obtenido, registro.variables_aplicables) != (ima, nivel, total, aplicables):
