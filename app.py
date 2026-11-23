@@ -20,6 +20,7 @@ import csv
 import unicodedata
 import re
 import cuestionario as cq
+from priorizacion import generar_matriz_priorizacion
 
 BASE_DIR = Path(__file__).resolve().parent
 app = Flask(__name__)
@@ -1138,6 +1139,39 @@ def eliminar_diagnostico(censo_id):
         app.logger.exception('No se pudo eliminar el diagnóstico %s', censo_id)
         flash('No fue posible eliminar el diagnóstico. No se realizaron cambios.', 'danger')
     return redirect(url_for('admin'))
+
+
+@app.route('/admin/exportar-priorizacion')
+@admin_required
+def exportar_priorizacion():
+    """Matriz de priorización: diagnóstico más reciente de cada entidad, por componente."""
+    vistos, entidades = set(), []
+    for r in Censo.query.order_by(Censo.fecha.desc(), Censo.id.desc()).all():
+        clave = (r.codigo_entidad or '').strip() or clave_entidad(_sda_nombre(r))
+        if clave in vistos:
+            continue
+        vistos.add(clave)
+        respuestas, actual, componentes = _puntajes_de(r)
+        if not actual:
+            continue  # registros muy antiguos sin respuestas por componente
+        conteos = {}
+        if cq.es_v04(respuestas):
+            for fila, (clave_c, _) in zip(tabla_componentes(respuestas, componentes), SDA_COMPONENTES):
+                conteos[clave_c] = {'si': fila['si'], 'parcial': fila['parcial'], 'no': fila['no'], 'na': fila['na']}
+        nit = respuestas.get('nit_entidad') or ''
+        if not nit and '| NIT:' in (r.nombre_entidad or ''):
+            nit = r.nombre_entidad.split('| NIT:')[-1].strip()
+        entidades.append({
+            'nombre': _sda_nombre(r), 'nit': nit, 'codigo': r.codigo_entidad or '',
+            'sector': (r.sector or '').strip() or 'Sin sector',
+            'naturaleza': (r.naturaleza or '').strip() or 'Sin dato',
+            'fecha': r.fecha, 'version': cq.VERSION if cq.es_v04(respuestas) else 'Anterior',
+            'ima': r.ima or 0, 'componentes': componentes, 'conteos': conteos,
+        })
+    salida = generar_matriz_priorizacion(entidades, SDA_COMPONENTES, UMBRAL_BAJO, UMBRAL_MEDIO)
+    nombre = f"Matriz_priorizacion_CDA_{datetime.now():%Y-%m-%d}.xlsx"
+    return send_file(salida, as_attachment=True, download_name=nombre,
+                     mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 
 @app.route('/admin/exportar-excel')

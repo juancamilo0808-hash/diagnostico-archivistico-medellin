@@ -30,7 +30,8 @@
       <div class="col-lg-8"><div class="eyebrow mb-2">CONSEJO DISTRITAL DE ARCHIVOS · MEDELLÍN</div><h1 class="fw-bold mb-2">Panel de resultados archivísticos</h1><p class="mb-0 opacity-75">Vista consolidada del nivel de madurez archivística, distribución por niveles y seguimiento a entidades censadas.</p></div>
       <div class="col-lg-4 text-lg-end">
         <div class="d-flex flex-wrap justify-content-lg-end gap-2">
-          <a href="{{ url_for('exportar_excel') }}" class="btn btn-success fw-bold"><i class="bi bi-file-earmark-excel me-2"></i>Descargar matriz consolidada Excel</a>
+          <a href="{{ url_for('exportar_priorizacion') }}" class="btn btn-success fw-bold"><i class="bi bi-bar-chart-steps me-2" aria-hidden="true"></i>Matriz de priorización (Excel)</a>
+          <a href="{{ url_for('exportar_excel') }}" class="btn btn-outline-success fw-bold"><i class="bi bi-file-earmark-excel me-2"></i>Descargar matriz consolidada Excel</a>
           <a href="{{ url_for('censo') }}" class="btn btn-light fw-bold"><i class="bi bi-plus-circle me-2"></i>Registrar entidad</a>
           <a href="{{ url_for('admin_solicitudes') }}" class="btn btn-light fw-bold"><i class="bi bi-inbox me-2"></i>Solicitudes</a>
           <a href="{{ url_for('admin_publicaciones') }}" class="btn btn-light fw-bold"><i class="bi bi-journal-check me-2"></i>Actas y documentos</a>
