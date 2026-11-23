@@ -2483,6 +2483,19 @@ def admin_eliminar_convalidacion(conv_id):
     return redirect(url_for('admin_convalidaciones'))
 
 
+@app.errorhandler(404)
+def pagina_no_encontrada(_error):
+    return render_template('error.html', codigo=404, icono='signpost-split', titulo='No encontramos esta página',
+                           mensaje='La dirección no existe, cambió o no tiene permiso para verla. Si llegó desde un enlace del micrositio, escríbanos a consejodarchivo@medellin.gov.co.'), 404
+
+
+@app.errorhandler(500)
+def error_interno(_error):
+    db.session.rollback()
+    return render_template('error.html', codigo=500, icono='tools', titulo='Algo salió mal',
+                           mensaje='Ocurrió un error inesperado. Intente de nuevo en unos minutos; si el problema continúa, escríbanos a consejodarchivo@medellin.gov.co.'), 500
+
+
 @app.errorhandler(413)
 def archivo_muy_grande(_error):
     flash('El archivo supera el tamaño permitido (10 MB).', 'danger')

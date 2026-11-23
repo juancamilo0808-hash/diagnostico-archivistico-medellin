@@ -89,7 +89,7 @@
     <div class="svc svc-top">
       <div class="svc-tabs" role="tablist" aria-label="Servicios en línea">
         <button type="button" class="svc-tab" role="tab" id="t-asistencia" aria-controls="s-asistencia" data-svc="asistencia"><i class="bi bi-headset"></i><span>Asistencia técnica<small>Solicitar acompañamiento</small></span></button>
-        <button type="button" class="svc-tab" role="tab" id="t-consulta" aria-controls="s-consulta" data-svc="consulta"><i class="bi bi-search"></i><span>Consultar trámite<small>Con su número de solicitud</small></span></button>
+        <button type="button" class="svc-tab" role="tab" id="t-consulta" aria-controls="s-consulta" data-svc="consulta"><i class="bi bi-search"></i><span>Consultar solicitud<small>Con su número de solicitud</small></span></button>
       </div>
 
       {% for prefijo in ['asistencia'] %}{% set cfg = tipos[prefijo] %}
@@ -109,7 +109,7 @@
             {{ campo(prefijo, 'nit', 'NIT', ph='Sin dígito de verificación') }}
             {{ campo(prefijo, 'contacto_nombre', 'Nombre de contacto') }}
             {{ campo(prefijo, 'contacto_cargo', 'Cargo', requerido=false) }}
-            {{ campo(prefijo, 'correo', 'Correo institucional', tipo='email', ayuda='Lo necesitará para consultar el trámite.') }}
+            {{ campo(prefijo, 'correo', 'Correo institucional', tipo='email', ayuda='Lo necesitará para consultar la solicitud.') }}
             {{ campo(prefijo, 'telefono', 'Teléfono', tipo='tel', requerido=false) }}
             <div class="sda-field">
               <label class="form-label" for="{{ prefijo }}-tema">{{ 'Tema' if prefijo == 'asistencia' else 'Instrumento' }} <span class="req">*</span></label>
@@ -149,7 +149,7 @@
       <div class="svc-pane" role="tabpanel" id="s-consulta" aria-labelledby="t-consulta">
         <div class="track-box">
           <div>
-            <h3>Consulte el estado de su trámite</h3>
+            <h3>Consulte el estado de su solicitud</h3>
             <p class="sda-note mt-1">Ingrese el número de solicitud y el correo con el que hizo la solicitud.</p>
             <form method="post" action="{{ url_for('sistema_distrital_tramite') }}" class="d-grid gap-3 mt-3">
               <div class="sda-field"><label class="form-label" for="c-rad">Número de solicitud</label><input class="form-control form-control-lg" id="c-rad" name="radicado" placeholder="Ej.: CDA-AT-890905211-2026-0001" required></div>
@@ -158,7 +158,7 @@
             </form>
           </div>
           <div class="track-art">
-            <div class="sda-note mb-2">Etapas por las que pasa su trámite</div>
+            <div class="sda-note mb-2">Etapas por las que pasa su solicitud</div>
             <div class="track-cols" style="grid-template-columns:1fr">
               {% for clave in ['asistencia'] %}{% set cfg = tipos[clave] %}
               <div>

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }} | Consejo Distrital de Archivos{% endblock %}
+{% block content %}
+<style>
+  .er-wrap { padding:4rem 0 5rem; }
+  .er-card { max-width:40rem; margin:0 auto; background:#fff; border:1px solid #dce4ec; border-radius:18px; padding:2.2rem 2rem; text-align:center; }
+  .er-code { font-size:.8rem; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:#8a6510; }
+  .er-card h1 { font-size:1.7rem; font-weight:800; color:#0b2d50; margin:.5rem 0 .6rem; }
+  .er-card p { color:#334155; }
+  .er-links { display:flex; flex-wrap:wrap; gap:.5rem; justify-content:center; margin-top:1.4rem; }
+</style>
+<div class="container er-wrap">
+  <div class="er-card">
+    <i class="bi bi-{{ icono }}" style="font-size:2.6rem;color:#123b65" aria-hidden="true"></i>
+    <div class="er-code mt-2">Error {{ codigo }}</div>
+    <h1>{{ titulo }}</h1>
+    <p>{{ mensaje }}</p>
+    <div class="er-links">
+      <a class="btn btn-primary" href="{{ url_for('index') }}"><i class="bi bi-house me-1" aria-hidden="true"></i>Ir al inicio</a>
+      <a class="btn btn-outline-primary" href="{{ url_for('mapa_del_sitio') }}">Mapa del sitio</a>
+      <a class="btn btn-outline-primary" href="{{ url_for('ayuda') }}">Centro de ayuda</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
