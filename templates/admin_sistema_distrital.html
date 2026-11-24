@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Indicadores del Sistema Distrital{% endblock %}
+{% block title %}Indicadores del diagnóstico · Administración{% endblock %}
 {% block body_class %}sda-page{% endblock %}
 {% block content %}
 {% macro num(v) %}{{ ('%.1f'|format(v)).replace('.', ',') }}{% endmacro %}
@@ -102,9 +102,9 @@
 
 <section class="sda-hero">
   <div class="container">
-    <div class="eyebrow">Administración · Indicadores del Sistema Distrital</div>
-    <h1>Indicadores de las funciones del Sistema</h1>
-    <p>Priorización de asistencia técnica, normalización, seguimiento y evaluación a partir de los diagnósticos. Vista reservada a la administración.</p>
+    <div class="eyebrow">Administración · Indicadores</div>
+    <h1>Indicadores del diagnóstico territorial</h1>
+    <p>Resultados agregados de los diagnósticos de las entidades: prioridad de atención, temas rezagados, nivel de madurez y estado de las TRD. Vista reservada a la administración.</p>
     <div class="meta">
       {% if ver %}<span class="sda-live-dot"></span>Datos de {{ d.n }} entidad{{ 'es' if d.n != 1 }} con diagnóstico{% if d.actualizado %} · último registro: {{ d.actualizado.strftime('%d/%m/%Y') }}{% endif %}
       {% else %}Indicadores en construcción: se publican cuando al menos {{ minimo }} entidades completan el diagnóstico.{% endif %}
@@ -130,38 +130,38 @@
 
   <!-- ===================== Estructura ===================== -->
   <section class="sda-section">
-    <h2>Funciones del Sistema</h2>
-    <p class="sub">Indicador de cada función del Sistema. Seleccione una para ver el detalle.</p>
+    <h2>Indicadores por tema</h2>
+    <p class="sub">Seleccione un tema para ver el detalle.</p>
     <div class="sda-org">
-      <div class="sda-funcs" role="tablist" aria-label="Funciones del Sistema">
+      <div class="sda-funcs" role="tablist" aria-label="Temas de indicadores">
         <button type="button" class="sda-func f-asis" role="tab" id="tab-asis" aria-controls="panel-asis" aria-selected="true" data-target="asis">
-          <div class="hd"><i class="bi bi-people-fill"></i> Asistencia técnica</div>
+          <div class="hd"><i class="bi bi-flag-fill" aria-hidden="true"></i> Prioridad de atención</div>
           <div class="bd">
-            <div class="desc">Orientación y acompañamiento técnico a las entidades del Distrito.</div>
+            <div class="desc">Entidades que requieren acompañamiento primero.</div>
             <div class="live">{% if acomp and acomp.prioritarias %}<div class="n">{{ acomp.atendidas }} de {{ acomp.prioritarias }}</div><div class="t">entidades de prioridad alta con acompañamiento</div>{% else %}<div class="n">{{ d.prioridades.Alta|length if ver else '—' }}</div><div class="t">{{ 'entidad' if ver and d.prioridades.Alta|length == 1 else 'entidades' }} con prioridad alta</div>{% endif %}</div>
             <span class="more">Ver detalle →</span>
           </div>
         </button>
         <button type="button" class="sda-func f-norm" role="tab" id="tab-norm" aria-controls="panel-norm" aria-selected="false" data-target="norm">
-          <div class="hd"><i class="bi bi-file-earmark-text-fill"></i> Normalización</div>
+          <div class="hd"><i class="bi bi-file-earmark-text-fill" aria-hidden="true"></i> Temas rezagados</div>
           <div class="bd">
-            <div class="desc">Instrumentos, lineamientos y contenidos para la gestión documental.</div>
+            <div class="desc">Instrumentos y temas en los que más entidades no tienen avance.</div>
             <div class="live">{% if ver and d.temas and d.temas[0].pct %}<div class="n">{{ num(d.temas[0].pct) }} %</div><div class="t">de las entidades no tienen avance en «{{ d.temas[0].tema }}», el tema más rezagado</div>{% else %}<div class="n">—</div><div class="t">tema prioritario para lineamientos</div>{% endif %}</div>
             <span class="more">Ver detalle →</span>
           </div>
         </button>
         <button type="button" class="sda-func f-segu" role="tab" id="tab-segu" aria-controls="panel-segu" aria-selected="false" data-target="segu">
-          <div class="hd"><i class="bi bi-bar-chart-fill"></i> Seguimiento</div>
+          <div class="hd"><i class="bi bi-bar-chart-fill" aria-hidden="true"></i> Nivel de madurez</div>
           <div class="bd">
-            <div class="desc">Seguimiento a la implementación de la gestión documental en las entidades.</div>
+            <div class="desc">Resultado del Distrito por clasificación, componente y sector.</div>
             <div class="live"><div class="n">{{ (num(d.promedio) ~ ' %') if ver and d.promedio is not none else '—' }}</div><div class="t">nivel de madurez promedio</div></div>
             <span class="more">Ver detalle →</span>
           </div>
         </button>
         <button type="button" class="sda-func f-eval" role="tab" id="tab-eval" aria-controls="panel-eval" aria-selected="false" data-target="eval">
-          <div class="hd"><i class="bi bi-search"></i> Evaluación</div>
+          <div class="hd"><i class="bi bi-table" aria-hidden="true"></i> TRD y TVD</div>
           <div class="bd">
-            <div class="desc">Revisión y evaluación de instrumentos archivísticos (TRD y TVD).</div>
+            <div class="desc">Etapa en que están las Tablas de Retención Documental de las entidades.</div>
             <div class="live">{% set ev = d.etapas_trd|selectattr('estado','equalto','Aprobada')|first if ver else none %}<div class="n">{{ ev.entidades if ev else '—' }}</div><div class="t">{{ 'entidad' if ev and ev.entidades == 1 else 'entidades' }} con TRD aprobada, pendiente de convalidación</div></div>
             <span class="more">Ver detalle →</span>
           </div>
@@ -171,7 +171,7 @@
 
     <!-- ===================== Paneles ===================== -->
     <div class="sda-panel f-asis is-active" id="panel-asis" role="tabpanel" aria-labelledby="tab-asis">
-      <h3>Asistencia técnica</h3>
+      <h3>Prioridad de atención</h3>
       <p class="sub">Quiénes necesitan acompañamiento primero y en qué componente concentrarlo.</p>
       {% if ver %}
       <div class="prio">
@@ -197,8 +197,8 @@
     </div>
 
     <div class="sda-panel f-norm" id="panel-norm" role="tabpanel" aria-labelledby="tab-norm">
-      <h3>Normalización</h3>
-      <p class="sub">Qué lineamientos producir primero, según las brechas más frecuentes.</p>
+      <h3>Temas rezagados</h3>
+      <p class="sub">Temas e instrumentos con más entidades sin avance; orientan qué lineamientos producir primero.</p>
       {% if ver %}
       {% for t in d.temas %}
       <div class="tema"><div class="rank">{{ loop.index }}</div><div><div class="nm">{{ t.tema }}</div><div class="ins">Sugerido: {{ t.instrumento }}</div></div><div class="pc">{{ num(t.pct) }} %<small>{{ t.entidades }} de {{ d.n_formulario_actual }}</small></div></div>
@@ -212,8 +212,8 @@
     </div>
 
     <div class="sda-panel f-segu" id="panel-segu" role="tabpanel" aria-labelledby="tab-segu">
-      <h3>Seguimiento</h3>
-      <p class="sub">Cómo está la gestión documental del Distrito por clasificación, componente y sector.</p>
+      <h3>Nivel de madurez</h3>
+      <p class="sub">Resultado de las entidades por clasificación, componente y sector.</p>
       {% if ver %}
       <h4>Distribución por clasificación</h4>
       <div class="stack" role="img" aria-label="Bajo {{ num(d.niveles_pct.Bajo) }} %, Medio {{ num(d.niveles_pct.Medio) }} %, Alto {{ num(d.niveles_pct.Alto) }} %">
@@ -234,7 +234,7 @@
     </div>
 
     <div class="sda-panel f-eval" id="panel-eval" role="tabpanel" aria-labelledby="tab-eval">
-      <h3>Evaluación</h3>
+      <h3>TRD y TVD</h3>
       <p class="sub">En qué punto del ciclo están las Tablas de Retención Documental de las entidades.</p>
       {% if ver %}
       <div class="pipe">
@@ -249,7 +249,7 @@
     </div>
   </section>
 
-  <p class="sda-note mt-4 mb-0"><strong>Nota metodológica:</strong> los indicadores se calculan automáticamente con la escala piloto del diagnóstico y orientan la priorización; no constituyen certificación de cumplimiento normativo. La estructura del Sistema es de referencia y puede ajustarse a la conformación oficial del Distrito.</p>
+  <p class="sda-note mt-4 mb-0"><strong>Nota metodológica:</strong> los indicadores se calculan automáticamente con la escala piloto del diagnóstico y orientan la priorización; no constituyen certificación de cumplimiento normativo.</p>
 </div>
 
 <script>
