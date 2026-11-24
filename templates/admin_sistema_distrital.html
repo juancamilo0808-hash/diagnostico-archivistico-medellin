@@ -188,8 +188,8 @@
       <h4><i class="bi bi-lock-fill"></i> Entidades con prioridad alta (solo administración)</h4>
       {% if d.prioridades.Alta %}
       <div class="table-responsive"><table class="table sda-table align-middle mb-0">
-        <thead><tr><th>Entidad</th><th>Sector</th><th class="text-end">Nivel de madurez</th><th>Componente más débil</th><th></th></tr></thead>
-        <tbody>{% for e in d.prioridades.Alta %}<tr><td>{{ e.nombre }}</td><td>{{ e.sector }}</td><td class="text-end">{{ num(e.ima) }} %</td><td>{{ e.componente_debil }}</td><td><a href="{{ url_for('resultado', censo_id=e.id) }}">Resultado</a></td></tr>{% endfor %}</tbody>
+        <thead><tr><th>Entidad</th><th>Sector</th><th>Fecha del diagnóstico</th><th class="text-end">Nivel de madurez</th><th>Componente más débil</th><th></th></tr></thead>
+        <tbody>{% for e in d.prioridades.Alta %}<tr><td>{{ e.nombre }}</td><td>{{ e.sector }}</td><td class="text-nowrap">{{ e.fecha|hora_col('%d/%m/%Y') if e.fecha else '—' }}</td><td class="text-end">{{ num(e.ima) }} %</td><td>{{ e.componente_debil }}</td><td><a class="accion" href="{{ url_for('ficha_diagnostico', censo_id=e.id) }}">Ver ficha</a></td></tr>{% endfor %}</tbody>
       </table></div>
       {% else %}<p class="sda-note">No hay entidades con clasificación baja.</p>{% endif %}
       {% endif %}

@@ -1498,7 +1498,7 @@ def indicadores_sistema_distrital():
         p = {'Bajo': 'Alta', 'Medio': 'Media', 'Alto': 'Baja'}[nivel(e['ima'])]
         debil = texto_mas_debil([(et, e['componentes'].get(c)) for c, et in SDA_COMPONENTES])
         prioridades[p].append({'id': e['id'], 'nombre': e['nombre'], 'ima': e['ima'],
-                               'sector': e['sector'], 'componente_debil': debil})
+                               'sector': e['sector'], 'componente_debil': debil, 'fecha': e['fecha']})
     for lista in prioridades.values():
         lista.sort(key=lambda x: x['ima'])
     focos = sorted([c for c in componentes if c['brecha_critica']], key=lambda c: -c['brecha_pct'])
