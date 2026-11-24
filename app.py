@@ -1892,10 +1892,9 @@ def texto_mas_debil(valores_por_nombre):
     empatados = [n for n, v in validos if abs(v - minimo) < 1e-9]
     if len(empatados) == 1:
         return empatados[0]
-    pct = f"{minimo * 100:.1f}".replace('.', ',')
     if len(empatados) == len(validos):
-        return f'Todos los componentes en {pct} %'
-    return ' · '.join(empatados) + f' (empatados en {pct} %)'
+        return 'Todos los componentes'
+    return ' · '.join(empatados)
 
 
 def _puntajes_de(censo):
