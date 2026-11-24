@@ -1170,6 +1170,7 @@ def exportar_priorizacion():
             'fecha': r.fecha, 'version': cq.VERSION if cq.es_v04(respuestas) else 'Anterior',
             'ima': r.ima or 0, 'componentes': componentes, 'conteos': conteos,
             'acompanamiento': _estado_acompanamiento(acomp.get(clave)),
+            'componente_debil': texto_mas_debil([(n, componentes.get(c)) for c, n in SDA_COMPONENTES]),
         })
     salida = generar_matriz_priorizacion(entidades, SDA_COMPONENTES, UMBRAL_BAJO, UMBRAL_MEDIO)
     nombre = f"Matriz_priorizacion_CDA_{datetime.now():%Y-%m-%d}.xlsx"
@@ -1495,9 +1496,7 @@ def indicadores_sistema_distrital():
     prioridades = {'Alta': [], 'Media': [], 'Baja': []}
     for e in entidades:
         p = {'Bajo': 'Alta', 'Medio': 'Media', 'Alto': 'Baja'}[nivel(e['ima'])]
-        puntuados = [(v, et) for (c, et) in SDA_COMPONENTES
-                     for v in [e['componentes'].get(c)] if v is not None]
-        debil = min(puntuados)[1] if puntuados else 'Sin información suficiente'
+        debil = texto_mas_debil([(et, e['componentes'].get(c)) for c, et in SDA_COMPONENTES])
         prioridades[p].append({'id': e['id'], 'nombre': e['nombre'], 'ima': e['ima'],
                                'sector': e['sector'], 'componente_debil': debil})
     for lista in prioridades.values():
@@ -1883,6 +1882,22 @@ def _ficha_clave(registro):
     return (registro.codigo_entidad or '').strip() or clave_entidad(_sda_nombre(registro))
 
 
+def texto_mas_debil(valores_por_nombre):
+    """Componente con menor porcentaje. Si varios empatan en el mínimo, los nombra todos;
+    si empatan los cinco, lo dice. valores_por_nombre: lista (nombre, valor 0-1 o None)."""
+    validos = [(n, v) for n, v in valores_por_nombre if v is not None]
+    if not validos:
+        return 'Sin información suficiente'
+    minimo = min(v for _, v in validos)
+    empatados = [n for n, v in validos if abs(v - minimo) < 1e-9]
+    if len(empatados) == 1:
+        return empatados[0]
+    pct = f"{minimo * 100:.1f}".replace('.', ',')
+    if len(empatados) == len(validos):
+        return f'Todos los componentes en {pct} %'
+    return ' · '.join(empatados) + f' (empatados en {pct} %)'
+
+
 def _puntajes_de(censo):
     """Respuestas y puntaje por componente de un diagnóstico guardado."""
     try:
@@ -2082,7 +2097,8 @@ def ficha_diagnostico(censo_id):
     opciones = sorted(Censo.query.all(), key=lambda x: (_sda_nombre(x).lower(), -x.id))
     _, _, componentes = _puntajes_de(censo)
     acomp = {'lista': _acompanamientos_por_entidad().get(_ficha_clave(censo), []),
-             'debil': _componente_mas_debil(componentes), 'tipo': _tipo_acompanamiento(componentes),
+             'debiles': _componentes_mas_debiles(componentes), 'tipo': _tipo_acompanamiento(componentes),
+             'texto_debil': texto_mas_debil([(n, componentes.get(c)) for c, n in SDA_COMPONENTES]),
              'componentes': SDA_COMPONENTES, 'nombres': NOMBRE_COMPONENTE, 'hoy': date.today().isoformat()}
     return render_template('admin_ficha.html', vista='admin', opciones=opciones, acomp=acomp, **contexto)
 
@@ -2582,9 +2598,13 @@ def _tipo_acompanamiento(componentes):
     return 'Integral' if en_bajo >= 3 else 'Puntual'
 
 
-def _componente_mas_debil(componentes):
-    validos = [(v, clave) for clave, _ in SDA_COMPONENTES for v in [componentes.get(clave)] if v is not None]
-    return min(validos, key=lambda x: x[0])[1] if validos else SDA_COMPONENTES[0][0]
+def _componentes_mas_debiles(componentes):
+    """Claves de los componentes con el menor porcentaje (varias si empatan)."""
+    validos = [(clave, v) for clave, _ in SDA_COMPONENTES for v in [componentes.get(clave)] if v is not None]
+    if not validos:
+        return []
+    minimo = min(v for _, v in validos)
+    return [c for c, v in validos if abs(v - minimo) < 1e-9]
 
 
 def _indicadores_acompanamiento():

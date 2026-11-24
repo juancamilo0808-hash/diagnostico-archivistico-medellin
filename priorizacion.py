@@ -95,6 +95,18 @@ def _reglas_porcentaje(ws, rango, primera_celda, umbral_bajo, umbral_medio):
     ws.conditional_formatting.add(rango, FormulaRule(formula=[f'AND(ISNUMBER({c}),{c}>{umbral_medio})'], fill=_relleno(ALTO), font=Font(color=ALTO_TXT)))
 
 
+def _mas_debil(valores, componentes):
+    validos = [(nm, valores.get(k)) for k, nm in componentes if valores.get(k) is not None]
+    if not validos:
+        return 'Sin dato'
+    minimo = min(v for _, v in validos)
+    emp = [nm for nm, v in validos if abs(v - minimo) < 1e-9]
+    pct = f"{minimo * 100:.1f}".replace('.', ',')
+    if len(emp) == 1:
+        return emp[0]
+    return f'Todos los componentes en {pct} %' if len(emp) == len(validos) else ' · '.join(emp) + f' (empatados en {pct} %)'
+
+
 def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_medio=75):
     """Devuelve un BytesIO con el libro Excel.
 
@@ -171,9 +183,8 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
         letra_clas = get_column_letter(col + 1)
         m.cell(row=r, column=col + 2, value=f'=IF({letra_clas}{r}="Bajo","Alta",IF({letra_clas}{r}="Medio","Media","Baja"))')
         letras_pct = [col_comp[k][0] for k, _ in componentes]
-        # Componente más débil: el de menor porcentaje (si hay empate, el primero en el orden del modelo).
-        validos = [(e['componentes'].get(k), nm) for k, nm in componentes if e['componentes'].get(k) is not None]
-        m.cell(row=r, column=col + 3, value=min(validos, key=lambda x: x[0])[1] if validos else 'Sin dato')
+        # Componente más débil: el de menor porcentaje; si varios empatan, se nombran todos.
+        m.cell(row=r, column=col + 3, value=e.get('componente_debil') or _mas_debil(e['componentes'], componentes))
         m.cell(row=r, column=col + 4, value='=' + '+'.join(f'({l}{r}<={ub})*ISNUMBER({l}{r})' for l in letras_pct))
         bc = m.cell(row=r, column=col + 5, value=f'=1-{letra_ima}{r}')
         bc.number_format = '0.0%'
@@ -208,7 +219,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
     anchos = {2: 10, 3: 42, 4: 14, 5: 24, 6: 22, 7: 13, 8: 12}
     for j in range(2, total_cols + 2):
         m.column_dimensions[get_column_letter(j)].width = anchos.get(j, 13)
-    m.column_dimensions[col_debil].width = 26
+    m.column_dimensions[col_debil].width = 34
     m.column_dimensions[get_column_letter(total_cols + 1)].width = 16
     m.column_dimensions['A'].width = 2
     m.freeze_panes = f'D{fila0 + 1}'
@@ -540,7 +551,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
         ('Prioridad de atención', 'Alta para las entidades en nivel bajo, media para las de nivel medio y baja para las de nivel alto. La columna «Prioridad» ordena a las entidades de menor a mayor nivel de madurez.'),
         ('Acompañamiento', 'Estado del acompañamiento técnico registrado en la herramienta: sin iniciar, en curso o cerrado.'),
         ('Desempate', 'Si dos entidades tienen el mismo nivel de madurez, va primero la que tenga más componentes en nivel bajo; si siguen empatadas, la que tenga el componente más débil con menor porcentaje.'),
-        ('Componente más débil', 'El componente con menor porcentaje en la entidad. Si hay empate, se toma el primero en el orden del modelo.'),
+        ('Componente más débil', 'El componente con menor porcentaje en la entidad. Si varios empatan en el mínimo, se nombran todos; si empatan los cinco, se indica «Todos los componentes en …».'),
         ('Componentes en nivel bajo', f'Cuántos componentes de la entidad están en {umbral_bajo} % o menos.'),
         ('Formulario', 'V04 corresponde al cuestionario vigente (72 preguntas). «Anterior» corresponde al formulario de 10 preguntas; sus resultados no son directamente comparables con los del V04.'),
         ('Tablas dinámicas', 'La matriz está en formato de tabla de Excel («TablaPriorizacion»): para crear una tabla dinámica propia, ubíquese en la matriz y use Insertar > Tabla dinámica. Las hojas «Resumen», «Ficha por entidad» y «Por sector y naturaleza» se recalculan solas con fórmulas.'),
