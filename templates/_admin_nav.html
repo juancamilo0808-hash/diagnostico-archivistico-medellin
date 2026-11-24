@@ -3,7 +3,6 @@
   <div class="adm-nav-links">
     <a href="{{ url_for('admin') }}" {% if activa=='diagnosticos' %}aria-current="page"{% endif %}>Diagnósticos</a>
     <a href="{{ url_for('admin_acompanamiento') }}" {% if activa=='acompanamiento' %}aria-current="page"{% endif %}>Acompañamiento</a>
-    <a href="{{ url_for('admin_sistema_distrital') }}" {% if activa=='indicadores' %}aria-current="page"{% endif %}>Indicadores</a>
     <a href="{{ url_for('mapa_entidades') }}" {% if activa=='mapa' %}aria-current="page"{% endif %}>Mapa</a>
     <div class="dropdown">
       <button class="adm-nav-drop dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" {% if activa in ('publicaciones','convalidaciones') %}aria-current="page"{% endif %}>Publicaciones</button>

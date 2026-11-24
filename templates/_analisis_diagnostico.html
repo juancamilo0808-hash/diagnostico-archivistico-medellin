@@ -1,0 +1,70 @@
+{# Análisis del diagnóstico: indicadores que no aparecen en el resto del panel. d = indicadores_sistema_distrital() #}
+{% macro num(v) %}{{ ('%.1f'|format(v)).replace('.', ',') }}{% endmacro %}
+<style>
+  .an-kpis { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.9rem; margin-bottom:1.25rem; }
+  .an-kpi { background:#f5f8fb; border-radius:14px; padding:14px 16px; }
+  .an-kpi .v { font-size:1.6rem; font-weight:800; color:#0b3a5c; line-height:1.1; font-variant-numeric:tabular-nums; }
+  .an-kpi .l { font-size:.85rem; color:#4b5d70; }
+  .an-h { font-size:1rem; font-weight:700; color:#123852; margin:0 0 .2rem; }
+  .an-sub { font-size:.82rem; color:#55657a; margin-bottom:.7rem; }
+  .an-tema { display:grid; grid-template-columns:2rem 1fr auto; gap:.7rem; align-items:center; padding:.55rem 0; border-bottom:1px solid #edf1f5; }
+  .an-tema:last-child { border-bottom:0; }
+  .an-tema .rk { width:2rem; height:2rem; border-radius:50%; display:grid; place-items:center; background:#e8eef6; color:#17365d; font-weight:800; font-size:.85rem; }
+  .an-tema .nm { font-weight:700; font-size:.88rem; color:#0f2f4b; }
+  .an-tema .ins { font-size:.78rem; color:#55657a; }
+  .an-tema .pc { font-weight:800; color:#17365d; text-align:right; font-variant-numeric:tabular-nums; }
+  .an-tema .pc small { display:block; font-weight:400; font-size:.72rem; color:#55657a; }
+  .an-bar { display:grid; grid-template-columns:minmax(120px,42%) 1fr 3.4rem; gap:.6rem; align-items:center; margin-bottom:.5rem; font-size:.85rem; }
+  .an-bar .b { height:10px; background:#e8eef4; border-radius:20px; overflow:hidden; }
+  .an-bar .b > span { display:block; height:100%; background:#0b6a8f; border-radius:20px; }
+  .an-bar .val { text-align:right; font-weight:700; font-variant-numeric:tabular-nums; }
+  .an-pipe { display:grid; grid-template-columns:repeat({{ d.etapas_trd|length if d else 5 }},minmax(0,1fr)); gap:.4rem; }
+  .an-pipe > div { background:#f5f8fb; border:1px solid #e1e8ef; border-radius:10px; padding:.65rem .5rem; text-align:center; }
+  .an-pipe .n { font-size:1.35rem; font-weight:800; color:#17365d; font-variant-numeric:tabular-nums; }
+  .an-pipe .t { font-size:.75rem; color:#243447; line-height:1.2; }
+  .an-pipe .p { font-size:.72rem; color:#55657a; }
+  .an-nota { background:#f5f8fb; border-radius:12px; padding:.7rem .9rem; font-size:.83rem; color:#243447; height:100%; }
+  .an-nota strong { display:block; color:#0f2f4b; }
+  @media (max-width: 991.98px) { .an-pipe { grid-template-columns:repeat(3,minmax(0,1fr)); } }
+  @media (max-width: 575.98px) { .an-kpis, .an-pipe { grid-template-columns:repeat(2,minmax(0,1fr)); } .an-bar { grid-template-columns:1fr 3.2rem; } .an-bar .b { grid-column:1 / -1; grid-row:2; } }
+</style>
+<section class="results-card p-3 p-lg-4 mb-4" id="analisis" aria-labelledby="t-analisis">
+  <h2 id="t-analisis">Análisis del diagnóstico</h2>
+  <p class="small text-secondary">Con el diagnóstico más reciente de cada entidad. Orienta qué lineamientos producir y qué instrumentos revisar.</p>
+  {% if not d %}
+  <p class="small text-secondary mb-0">No fue posible calcular el análisis en este momento.</p>
+  {% else %}
+  <div class="an-kpis">
+    <div class="an-kpi"><div class="v">{{ d.n }}{% if total_directorio %} de {{ total_directorio }}{% endif %}</div><div class="l">Cobertura: entidades del directorio con diagnóstico{% if total_directorio %} ({{ num(d.n / total_directorio * 100) }} %){% endif %}</div></div>
+    <div class="an-kpi"><div class="v">{{ d.en_curso }}</div><div class="l">Diagnósticos en curso (iniciados y aún no enviados)</div></div>
+  </div>
+  {% if d.n %}
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <h3 class="an-h">Temas rezagados</h3>
+      <p class="an-sub">Temas con más entidades que responden «No»; orientan qué lineamientos producir primero.</p>
+      {% for t in d.temas %}
+      <div class="an-tema"><div class="rk">{{ loop.index }}</div><div><div class="nm">{{ t.tema }}</div><div class="ins">Sugerido: {{ t.instrumento }}</div></div><div class="pc">{{ num(t.pct) }} %<small>{{ t.entidades }} de {{ d.n_formulario_actual }}</small></div></div>
+      {% endfor %}
+    </div>
+    <div class="col-lg-6">
+      <h3 class="an-h">Procesos de la gestión documental</h3>
+      <p class="an-sub">Avance promedio de cada proceso del componente 3; los más bajos son candidatos a guías y modelos de procedimiento.</p>
+      {% for p in d.procesos %}
+      <div class="an-bar"><span>{{ p.proceso }}</span><div class="b" role="presentation"><span style="width: {{ p.pct }}%"></span></div><span class="val">{{ num(p.pct) }} %</span></div>
+      {% endfor %}
+    </div>
+    <div class="col-12">
+      <h3 class="an-h">TRD y TVD</h3>
+      <p class="an-sub">En qué etapa están las Tablas de Retención Documental de las entidades.</p>
+      <div class="an-pipe">{% for e in d.etapas_trd %}<div><div class="n">{{ e.entidades }}</div><div class="t">{{ e.etiqueta }}</div><div class="p">{{ num(e.pct) }} %</div></div>{% endfor %}</div>
+      <div class="row g-3 mt-1">
+        <div class="col-md-6"><div class="an-nota"><strong>{{ d.trd_con_evidencia }} de {{ d.trd_avanzada }}</strong>entidades con TRD convalidadas o implementadas {{ 'tiene' if d.trd_con_evidencia == 1 else 'tienen' }} enlace a las tablas y a sus actos de aprobación y convalidación.</div></div>
+        <div class="col-md-6"><div class="an-nota"><strong>{{ d.trd_actualizacion }}</strong>{{ 'entidad responde' if d.trd_actualizacion == 1 else 'entidades responden' }} «No» o «Parcialmente» sobre TRD/TVD actualizadas y aprobadas, y podrían llegar a evaluación del Consejo.</div></div>
+      </div>
+      {% if d.otros_trd %}<p class="small text-secondary mt-2 mb-0">Otras respuestas: {% for k, v in d.otros_trd.items() %}{{ k }} ({{ v }}){{ ', ' if not loop.last }}{% endfor %}.</p>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+  {% endif %}
+</section>

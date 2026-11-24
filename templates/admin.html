@@ -79,6 +79,8 @@
   </div>
   <style>.pm-empty{display:flex;gap:.6rem;align-items:center;color:#56687a;background:#f5f8fb;border-radius:12px;padding:1rem;font-size:.9rem}.pm-empty i{font-size:1.4rem}</style>
 
+  {% with d=analisis %}{% include '_analisis_diagnostico.html' %}{% endwith %}
+
   <section class="results-card p-3 p-lg-4">
     <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3"><div><h2 class="mb-1">Seguimiento de entidades</h2><p class="small text-secondary mb-0">Busca, filtra por sector o clasificación y consulta los resultados registrados.</p></div><span class="badge text-bg-light">{{ registros|length }} registro(s)</span></div>
     <div class="row g-2 mb-3"><div class="col-md-5"><label class="form-label small fw-bold" for="searchEntity">Buscar entidad</label><input id="searchEntity" class="filter-control" placeholder="Nombre de entidad o NIT…"></div><div class="col-md-4"><label class="form-label small fw-bold" for="filterSector">Sector</label><select id="filterSector" class="filter-control"><option value="">Todos los sectores</option>{% for sector in sectores %}<option value="{{ sector }}">{{ sector }}</option>{% endfor %}</select></div><div class="col-md-3"><label class="form-label small fw-bold" for="filterLevel">Clasificación</label><select id="filterLevel" class="filter-control"><option value="">Todas las clasificaciones</option><option>Bajo</option><option>Medio</option><option>Alto</option></select></div></div>

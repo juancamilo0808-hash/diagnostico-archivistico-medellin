@@ -1118,6 +1118,7 @@ def admin():
         sectores=sectores,semaforos=semaforos,ranking=ranking,instrumentos_labels=instrumentos_labels,
         instrumentos_valores=instrumentos_valores,semaforo_fn=semaforo,evolucion=evolucion,
         resumen_evolucion=resumen_evolucion, clave_de=_ficha_clave,
+        analisis=_analisis_seguro(), total_directorio=len(obtener_directorio()),
         estados_acomp={k: _estado_acompanamiento(v) for k, v in _acompanamientos_por_entidad().items()})
 
 
@@ -1547,21 +1548,19 @@ def indicadores_sistema_distrital():
 
 
 # ----- Indicadores del Sistema: solo administración -----
+def _analisis_seguro():
+    try:
+        return indicadores_sistema_distrital()
+    except Exception:
+        app.logger.exception('No fue posible calcular el análisis del diagnóstico')
+        return None
+
+
 @app.route('/admin/sistema-distrital')
 @admin_required
 def admin_sistema_distrital():
-    try:
-        datos = indicadores_sistema_distrital()
-    except Exception:
-        app.logger.exception('No fue posible calcular los indicadores del Sistema Distrital')
-        datos = None
-    try:
-        acomp = _indicadores_acompanamiento()
-    except Exception:
-        app.logger.exception('No fue posible calcular los indicadores de acompañamiento')
-        acomp = None
-    return render_template('admin_sistema_distrital.html', datos=datos, publicable=bool(datos),
-                           es_admin=True, minimo=0, acomp=acomp, total_directorio=len(obtener_directorio()))
+    """Los indicadores se integraron al panel de Diagnósticos (sección «Análisis del diagnóstico»)."""
+    return redirect(url_for('admin') + '#analisis')
 
 
 @app.route('/api/admin/sistema-distrital/indicadores')
