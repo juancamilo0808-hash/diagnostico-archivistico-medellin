@@ -190,6 +190,7 @@
           <td><span class="acomp-pill acomp-{{ 'curso' if a.estado == 'En curso' else 'cerrado' }}">{{ a.estado }}</span></td>
           <td>{{ a.fecha_cierre.strftime('%d/%m/%Y') if a.fecha_cierre else '—' }}</td>
           <td class="text-end d-print-none"><div class="accion-grupo">
+            {% set av = acomp.avances.get(a.id) %}<a class="accion" href="{{ url_for('plan_acompanamiento', aid=a.id) }}">Plan de trabajo{% if av and av.pct is not none %} · {{ ('%.0f'|format(av.pct)) }} %{% endif %}</a>
             {% if a.estado == 'En curso' %}<button class="accion" type="button" data-bs-toggle="collapse" data-bs-target="#cerrar{{ a.id }}" aria-expanded="false" aria-controls="cerrar{{ a.id }}">Cerrar</button>{% endif %}
             {% call menu_acciones('el acompañamiento') %}<li><form method="post" action="{{ url_for('eliminar_acompanamiento', aid=a.id) }}" onsubmit="return confirm('¿Eliminar este registro de acompañamiento?')"><input type="hidden" name="volver" value="{{ url_for('ficha_diagnostico', censo_id=censo.id) }}#acompanamiento"><button class="dropdown-item text-danger" type="submit"><i class="bi bi-trash me-2" aria-hidden="true"></i>Eliminar</button></form></li>{% endcall %}
           </div></td></tr>

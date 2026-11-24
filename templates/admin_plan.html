@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% block title %}Plan de trabajo · {{ a.entidad_nombre }}{% endblock %}
+{% block content %}
+<style>
+  .ad-hero { background: linear-gradient(125deg,#062d4e,#0b527c 68%,#167d91); color:#fff; border-radius:22px; padding:26px 30px; }
+  .ad-hero .k { letter-spacing:.14em; font-size:.75rem; font-weight:800; opacity:.8; }
+  .pl-meta { display:flex; flex-wrap:wrap; gap:.4rem 1.4rem; font-size:.9rem; opacity:.9; margin-top:.4rem; }
+  .pl-card { background:#fff; border:1px solid #e4ebf1; border-radius:16px; padding:20px 22px; }
+  .pl-card h2 { font-size:1.05rem; font-weight:700; color:#123852; margin:0; }
+  .pl-avance { display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
+  .pl-avance .v { font-size:1.8rem; font-weight:800; color:#0b3a5c; line-height:1; }
+  .pl-bar { flex:1; min-width:180px; height:10px; border-radius:6px; background:#e8eef4; overflow:hidden; }
+  .pl-bar span { display:block; height:100%; background:#0b6a8f; }
+  .pl-table th { font-size:.78rem; color:#3d4f63; background:#f5f8fb; white-space:nowrap; }
+  .pl-table td { vertical-align:top; font-size:.88rem; }
+  .pl-table .q { font-weight:600; color:#0f2f4b; }
+  .pl-table .r { font-size:.78rem; color:#55657a; margin-top:.2rem; }
+  .pl-table textarea { min-width:16rem; }
+  .pl-table tr.no-aplica td { opacity:.55; }
+  .pl-guardar { position:sticky; bottom:0; background:rgba(255,255,255,.96); border-top:1px solid #e4ebf1; padding:.75rem 0; z-index:5; }
+  .pl-firmas { display:none; }
+  @media print {
+    .adm-nav, .pl-guardar, .pl-tools, .cda-nav, .govco-bar { display:none !important; }
+    .ad-hero { background:none; color:#000; padding:0; border-radius:0; }
+    .pl-card { border:0; padding:0; }
+    .pl-table textarea, .pl-table input, .pl-table select { border:0; padding:0; resize:none; appearance:none; background:none; }
+    .pl-firmas { display:grid; grid-template-columns:1fr 1fr; gap:3rem; margin-top:3rem; }
+    .pl-firmas div { border-top:1px solid #000; padding-top:.4rem; font-size:.85rem; }
+  }
+</style>
+<div class="container-fluid px-lg-5 py-4">
+  <section class="ad-hero mb-4">
+    <div class="k">ADMINISTRACIÓN · PLAN DE TRABAJO</div>
+    <h1 class="h3 fw-bold mb-1">{{ a.entidad_nombre }}</h1>
+    <div class="pl-meta">
+      <span><i class="bi bi-diagram-3 me-1" aria-hidden="true"></i>{{ a.componente|componentes_acomp }}</span>
+      <span><i class="bi bi-person me-1" aria-hidden="true"></i>{{ a.responsable }}</span>
+      <span><i class="bi bi-calendar3 me-1" aria-hidden="true"></i>Inicio {{ a.fecha_inicio.strftime('%d/%m/%Y') }}</span>
+      <span>Acompañamiento {{ a.tipo|lower }} · {{ a.estado|lower }}</span>
+    </div>
+  </section>
+  {% from '_admin_nav.html' import admin_nav %}
+  {% call admin_nav('acompanamiento') %}<a class="accion" href="{{ url_for('ficha_diagnostico', censo_id=a.censo_id) }}#acompanamiento">Volver a la ficha</a>{% endcall %}
+
+  {% if sin_plan %}
+  <section class="pl-card">
+    <h2>No hay puntos para el plan</h2>
+    <p class="small text-secondary mb-0 mt-1">El diagnóstico con el que se inició este acompañamiento no tiene respuestas «No» ni «Parcialmente» en los componentes elegidos, o se hizo con el formulario anterior, que no tiene preguntas por componente.</p>
+  </section>
+  {% else %}
+  <section class="pl-card mb-4">
+    <div class="pl-avance">
+      <div><div class="v">{{ (('%.1f'|format(avance.pct)).replace('.', ',') ~ ' %') if avance.pct is not none else '—' }}</div><div class="small text-secondary">Avance del plan</div></div>
+      <div class="pl-bar" role="presentation"><span style="width: {{ avance.pct or 0 }}%"></span></div>
+      <div class="small text-secondary">{{ avance.cumplidas }} de {{ avance.aplican }} acciones cumplidas{% if avance.total != avance.aplican %} · {{ avance.total - avance.aplican }} no se trabajan ahora{% endif %}</div>
+    </div>
+    <p class="small text-secondary mt-3 mb-0">Cada fila es una pregunta que la entidad respondió «No» o «Parcialmente» en el diagnóstico con el que se inició el acompañamiento. Escriba la acción acordada con la entidad, quién la ejecuta y para cuándo. Marque «No se trabaja ahora» los puntos que se dejan para otra etapa.</p>
+    <div class="pl-tools mt-3"><button type="button" class="btn btn-secundario btn-sm" onclick="window.print()"><i class="bi bi-printer me-1" aria-hidden="true"></i>Imprimir o guardar PDF</button></div>
+  </section>
+
+  <form method="post">
+    {% for g in grupos %}
+    <section class="pl-card mb-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-2">
+        <h2>{{ g.nombre }}</h2>
+        <span class="small text-secondary">{{ g.avance.cumplidas }} de {{ g.avance.aplican }} cumplidas</span>
+      </div>
+      <div class="table-responsive"><table class="table pl-table mb-0">
+        <caption class="visually-hidden">Acciones del componente {{ g.nombre }}</caption>
+        <thead><tr><th scope="col">N.º</th><th scope="col" style="width:30%">Punto a mejorar</th><th scope="col">Acción acordada</th><th scope="col">Responsable en la entidad</th><th scope="col">Fecha de compromiso</th><th scope="col">Estado</th></tr></thead>
+        <tbody>{% for x in g.acciones %}
+          <tr {% if x.estado == 'No se trabaja ahora' %}class="no-aplica"{% endif %}>
+            <td>{{ x.pregunta }}</td>
+            <td><div class="q">{{ x.texto_pregunta }}</div><div class="r">Respuesta: {{ x.respuesta }}</div></td>
+            <td><label class="visually-hidden" for="a{{ x.id }}_accion">Acción acordada para la pregunta {{ x.pregunta }}</label><textarea class="form-control form-control-sm" id="a{{ x.id }}_accion" name="a{{ x.id }}_accion" rows="2" maxlength="2000">{{ x.accion or '' }}</textarea></td>
+            <td><label class="visually-hidden" for="a{{ x.id }}_responsable">Responsable de la pregunta {{ x.pregunta }}</label><input class="form-control form-control-sm" id="a{{ x.id }}_responsable" name="a{{ x.id }}_responsable" maxlength="200" value="{{ x.responsable or '' }}"></td>
+            <td><label class="visually-hidden" for="a{{ x.id }}_fecha">Fecha de compromiso de la pregunta {{ x.pregunta }}</label><input class="form-control form-control-sm" type="date" id="a{{ x.id }}_fecha" name="a{{ x.id }}_fecha" value="{{ x.fecha_compromiso.isoformat() if x.fecha_compromiso else '' }}"></td>
+            <td><label class="visually-hidden" for="a{{ x.id }}_estado">Estado de la pregunta {{ x.pregunta }}</label><select class="form-select form-select-sm" id="a{{ x.id }}_estado" name="a{{ x.id }}_estado">{% for e in estados %}<option {% if e == x.estado %}selected{% endif %}>{{ e }}</option>{% endfor %}</select></td>
+          </tr>{% endfor %}</tbody>
+      </table></div>
+    </section>
+    {% endfor %}
+    <div class="pl-firmas"><div>Responsable de la entidad</div><div>Archivista del Consejo · {{ a.responsable }}</div></div>
+    <div class="pl-guardar d-flex justify-content-end gap-2"><button class="btn btn-primary" type="submit">Guardar plan de trabajo</button></div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

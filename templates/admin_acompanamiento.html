@@ -60,13 +60,14 @@
     {% if filas %}
     <div class="table-responsive"><table class="table ac-table mb-0">
       <caption class="visually-hidden">Acompañamientos registrados</caption>
-      <thead><tr><th scope="col">Entidad</th><th scope="col">Componentes</th><th scope="col">Tipo</th><th scope="col">Responsable</th><th scope="col">Inicio</th><th scope="col">Estado</th><th scope="col" class="text-end">Nivel inicial</th><th scope="col" class="text-end">Mejora</th><th scope="col" class="text-end"><span class="visually-hidden">Acciones</span></th></tr></thead>
+      <thead><tr><th scope="col">Entidad</th><th scope="col">Componentes</th><th scope="col">Tipo</th><th scope="col">Responsable</th><th scope="col">Inicio</th><th scope="col">Estado</th><th scope="col" class="text-end">Nivel inicial</th><th scope="col" class="text-end">Avance del plan</th><th scope="col" class="text-end">Mejora</th><th scope="col" class="text-end"><span class="visually-hidden">Acciones</span></th></tr></thead>
       <tbody>{% for f in filas %}{% set a = f.a %}
         <tr><td class="fw-semibold">{{ a.entidad_nombre }}</td><td>{{ f.componente }}</td><td>{{ a.tipo }}</td><td>{{ a.responsable }}</td><td>{{ a.fecha_inicio.strftime('%d/%m/%Y') }}</td>
           <td><span class="acomp-pill acomp-{{ 'curso' if a.estado == 'En curso' else 'cerrado' }}">{{ a.estado }}</span>{% if a.fecha_cierre %}<div class="small text-secondary">{{ a.fecha_cierre.strftime('%d/%m/%Y') }}</div>{% endif %}</td>
           <td class="text-end">{{ ('%.1f'|format(a.nivel_inicial or 0)).replace('.', ',') }} %</td>
+          <td class="text-end">{% set av = avances.get(a.id) %}{% if av and av.pct is not none %}{{ ('%.1f'|format(av.pct)).replace('.', ',') }} %<div class="small text-secondary">{{ av.cumplidas }} de {{ av.aplican }}</div>{% else %}—{% endif %}</td>
           <td class="text-end">{% if f.mejora is not none %}<span style="color: {{ '#14532d' if f.mejora > 0 else ('#b42318' if f.mejora < 0 else '#526273') }}">{{ ('%+.1f'|format(f.mejora)).replace('.', ',') }} pts</span>{% elif a.estado == 'Cerrado' %}<span class="small text-secondary">Falta nuevo diagnóstico</span>{% else %}—{% endif %}</td>
-          <td class="text-end"><div class="accion-grupo"><a class="accion" href="{{ url_for('ficha_diagnostico', censo_id=f.ficha) }}#acompanamiento">Ver ficha</a>{% call menu_acciones(a.entidad_nombre) %}<li><form method="post" action="{{ url_for('eliminar_acompanamiento', aid=a.id) }}" onsubmit="return confirm('¿Eliminar este registro de acompañamiento?')"><button class="dropdown-item text-danger" type="submit"><i class="bi bi-trash me-2" aria-hidden="true"></i>Eliminar</button></form></li>{% endcall %}</div></td></tr>
+          <td class="text-end"><div class="accion-grupo"><a class="accion" href="{{ url_for('plan_acompanamiento', aid=a.id) }}">Plan</a><a class="accion" href="{{ url_for('ficha_diagnostico', censo_id=f.ficha) }}#acompanamiento">Ver ficha</a>{% call menu_acciones(a.entidad_nombre) %}<li><form method="post" action="{{ url_for('eliminar_acompanamiento', aid=a.id) }}" onsubmit="return confirm('¿Eliminar este registro de acompañamiento?')"><button class="dropdown-item text-danger" type="submit"><i class="bi bi-trash me-2" aria-hidden="true"></i>Eliminar</button></form></li>{% endcall %}</div></td></tr>
       {% endfor %}</tbody>
     </table></div>
     {% else %}

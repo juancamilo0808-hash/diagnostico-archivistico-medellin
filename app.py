@@ -2097,7 +2097,8 @@ def ficha_diagnostico(censo_id):
     acomp = {'lista': _acompanamientos_por_entidad().get(_ficha_clave(censo), []),
              'debiles': _componentes_mas_debiles(componentes), 'tipo': _tipo_acompanamiento(componentes),
              'texto_debil': texto_mas_debil([(n, componentes.get(c)) for c, n in SDA_COMPONENTES]),
-             'componentes': SDA_COMPONENTES, 'nombres': NOMBRE_COMPONENTE, 'hoy': date.today().isoformat()}
+             'componentes': SDA_COMPONENTES, 'nombres': NOMBRE_COMPONENTE, 'hoy': date.today().isoformat(),
+             'avances': _avances_por_acompanamiento()}
     return render_template('admin_ficha.html', vista='admin', opciones=opciones, acomp=acomp, **contexto)
 
 
@@ -2208,6 +2209,21 @@ class AcompanamientoEntidad(db.Model):
     observacion_cierre = db.Column(db.Text)
     creado = db.Column(db.DateTime, default=datetime.utcnow)
 
+
+class AccionPlan(db.Model):
+    """Acción del plan de trabajo de un acompañamiento, ligada a una pregunta con respuesta «No» o «Parcialmente»."""
+    __tablename__ = 'accion_plan'
+    id = db.Column(db.Integer, primary_key=True)
+    acompanamiento_id = db.Column(db.Integer, nullable=False, index=True)
+    pregunta = db.Column(db.Integer, nullable=False)
+    componente = db.Column(db.String(60), nullable=False)
+    texto_pregunta = db.Column(db.Text, nullable=False)
+    respuesta = db.Column(db.String(60))
+    accion = db.Column(db.Text)
+    responsable = db.Column(db.String(200))
+    fecha_compromiso = db.Column(db.Date)
+    estado = db.Column(db.String(30), nullable=False, default='Pendiente')
+    actualizado = db.Column(db.DateTime, default=datetime.utcnow)
 
 def _fecha_form(valor):
     try:
@@ -2660,7 +2676,7 @@ def admin_acompanamiento():
                   for k, r in sorted(vigentes.items(), key=lambda kv: kv[1].ima or 0)
                   if (r.ima or 0) <= UMBRAL_BAJO and _estado_acompanamiento(por_clave.get(k)) == 'Sin iniciar']
     return render_template('admin_acompanamiento.html', filas=filas, pendientes=pendientes,
-                           ind=_indicadores_acompanamiento())
+                           ind=_indicadores_acompanamiento(), avances=_avances_por_acompanamiento())
 
 
 @app.route('/admin/diagnostico/<int:censo_id>/acompanamiento', methods=['POST'])
@@ -2682,6 +2698,81 @@ def registrar_acompanamiento(censo_id):
     db.session.commit()
     flash('Acompañamiento registrado.', 'success')
     return redirect(url_for('ficha_diagnostico', censo_id=censo_id) + '#acompanamiento')
+
+
+ESTADOS_ACCION = ['Pendiente', 'En curso', 'Cumplida', 'No se trabaja ahora']
+
+
+def _claves_acompanamiento(a):
+    claves = []
+    for parte in (a.componente or '').split(','):
+        parte = parte.strip()
+        clave = NUM_COMPONENTE.get(parte, parte)
+        if clave in NOMBRE_COMPONENTE:
+            claves.append(clave)
+    return claves
+
+
+def _crear_plan(a):
+    """Crea las acciones del plan con las preguntas respondidas «No» o «Parcialmente»
+    en los componentes del acompañamiento (diagnóstico con el que se inició)."""
+    censo = db.session.get(Censo, a.censo_id)
+    if not censo:
+        return False
+    respuestas, _, _ = _puntajes_de(censo)
+    if not cq.es_v04(respuestas):
+        return False
+    claves = _claves_acompanamiento(a)
+    for p in cq.PREGUNTAS:
+        if p['componente'] in claves and cq.puntaje_pregunta(p, respuestas) in (0.0, 0.5):
+            db.session.add(AccionPlan(acompanamiento_id=a.id, pregunta=p['n'], componente=p['componente'],
+                                      texto_pregunta=p['texto'], respuesta=cq.etiqueta_opcion(p, respuestas.get(p['campo']))))
+    db.session.commit()
+    return True
+
+
+def _avance_plan(acciones):
+    aplican = [x for x in acciones if x.estado != 'No se trabaja ahora']
+    cumplidas = sum(1 for x in aplican if x.estado == 'Cumplida')
+    return {'total': len(acciones), 'aplican': len(aplican), 'cumplidas': cumplidas,
+            'pct': round(cumplidas / len(aplican) * 100, 1) if aplican else None}
+
+
+def _avances_por_acompanamiento():
+    por = {}
+    for x in AccionPlan.query.all():
+        por.setdefault(x.acompanamiento_id, []).append(x)
+    return {k: _avance_plan(v) for k, v in por.items()}
+
+
+@app.route('/admin/acompanamiento/<int:aid>/plan', methods=['GET', 'POST'])
+@admin_required
+def plan_acompanamiento(aid):
+    a = db.session.get(AcompanamientoEntidad, aid) or abort(404)
+    acciones = AccionPlan.query.filter_by(acompanamiento_id=aid).order_by(AccionPlan.pregunta).all()
+    if not acciones and request.method == 'GET':
+        if _crear_plan(a):
+            acciones = AccionPlan.query.filter_by(acompanamiento_id=aid).order_by(AccionPlan.pregunta).all()
+    if request.method == 'POST':
+        for x in acciones:
+            pre = f'a{x.id}_'
+            x.accion = (request.form.get(pre + 'accion') or '').strip()[:2000] or None
+            x.responsable = (request.form.get(pre + 'responsable') or '').strip()[:200] or None
+            x.fecha_compromiso = _fecha_form(request.form.get(pre + 'fecha'))
+            estado = request.form.get(pre + 'estado')
+            if estado in ESTADOS_ACCION:
+                x.estado = estado
+            x.actualizado = datetime.utcnow()
+        db.session.commit()
+        flash('Plan de trabajo guardado.', 'success')
+        return redirect(url_for('plan_acompanamiento', aid=aid))
+    grupos = []
+    for clave in _claves_acompanamiento(a):
+        items = [x for x in acciones if x.componente == clave]
+        if items:
+            grupos.append({'nombre': NOMBRE_COMPONENTE[clave], 'acciones': items, 'avance': _avance_plan(items)})
+    return render_template('admin_plan.html', a=a, grupos=grupos, avance=_avance_plan(acciones),
+                           estados=ESTADOS_ACCION, sin_plan=not acciones, hoy=date.today())
 
 
 @app.route('/admin/acompanamiento/<int:aid>/cerrar', methods=['POST'])
@@ -2706,6 +2797,7 @@ def cerrar_acompanamiento(aid):
 @admin_required
 def eliminar_acompanamiento(aid):
     a = db.session.get(AcompanamientoEntidad, aid) or abort(404)
+    AccionPlan.query.filter_by(acompanamiento_id=aid).delete()
     db.session.delete(a)
     db.session.commit()
     flash('Registro de acompañamiento eliminado.', 'success')
