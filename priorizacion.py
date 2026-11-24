@@ -104,7 +104,15 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
     componentes: lista de (clave, nombre) en orden.
     """
     ub, um = umbral_bajo / 100, umbral_medio / 100
-    ordenadas = sorted(entidades, key=lambda e: (e['ima'] if e['ima'] is not None else 999, e['nombre']))
+    def _orden(e):
+        """Nivel de madurez de menor a mayor. Desempate: más componentes en nivel bajo;
+        si persiste, el componente más débil más bajo; por último, el nombre."""
+        valores = [v for v in e['componentes'].values() if v is not None]
+        en_bajo = sum(1 for v in valores if v <= ub)
+        return (round(e['ima'], 4) if e['ima'] is not None else 999, -en_bajo,
+                min(valores) if valores else 999, e['nombre'])
+
+    ordenadas = sorted(entidades, key=_orden)
     n = len(ordenadas)
     nc = len(componentes)
     hoy = datetime.now()
@@ -528,6 +536,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
         ('Nivel de madurez', 'Promedio de los cinco componentes del Modelo de Gestión Documental y Administración de Archivos (MGDA): estratégico, administración de archivos, procesos de la gestión documental, tecnológico y cultural. Cada componente pesa 20 %.'),
         ('Clasificación (mapa de calor)', f'Bajo: 0 a {umbral_bajo} %. Medio: más de {umbral_bajo} hasta {umbral_medio} %. Alto: más de {umbral_medio} hasta 100 %. Se aplica igual a cada componente y al nivel de madurez.'),
         ('Prioridad de atención', 'Alta para las entidades en nivel bajo, media para las de nivel medio y baja para las de nivel alto. La columna «Prioridad» ordena a las entidades de menor a mayor nivel de madurez.'),
+        ('Desempate', 'Si dos entidades tienen el mismo nivel de madurez, va primero la que tenga más componentes en nivel bajo; si siguen empatadas, la que tenga el componente más débil con menor porcentaje.'),
         ('Componente más débil', 'El componente con menor porcentaje en la entidad. Si hay empate, se toma el primero en el orden del modelo.'),
         ('Componentes en nivel bajo', f'Cuántos componentes de la entidad están en {umbral_bajo} % o menos.'),
         ('Formulario', 'V04 corresponde al cuestionario vigente (72 preguntas). «Anterior» corresponde al formulario de 10 preguntas; sus resultados no son directamente comparables con los del V04.'),
