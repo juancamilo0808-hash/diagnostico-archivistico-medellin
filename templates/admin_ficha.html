@@ -184,9 +184,9 @@
     {% if acomp.lista %}
     <div class="table-responsive mb-3"><table class="table align-middle mb-0">
       <caption class="visually-hidden">Acompañamientos registrados</caption>
-      <thead><tr><th scope="col">Inicio</th><th scope="col">Componente</th><th scope="col">Tipo</th><th scope="col">Responsable</th><th scope="col">Estado</th><th scope="col">Cierre</th><th scope="col" class="text-end d-print-none"><span class="visually-hidden">Acciones</span></th></tr></thead>
+      <thead><tr><th scope="col">Inicio</th><th scope="col">Componentes</th><th scope="col">Tipo</th><th scope="col">Responsable</th><th scope="col">Estado</th><th scope="col">Cierre</th><th scope="col" class="text-end d-print-none"><span class="visually-hidden">Acciones</span></th></tr></thead>
       <tbody>{% for a in acomp.lista %}
-        <tr><td>{{ a.fecha_inicio.strftime('%d/%m/%Y') }}</td><td>{{ acomp.nombres.get(a.componente, a.componente) }}</td><td>{{ a.tipo }}</td><td>{{ a.responsable }}</td>
+        <tr><td>{{ a.fecha_inicio.strftime('%d/%m/%Y') }}</td><td>{{ a.componente|componentes_acomp }}</td><td>{{ a.tipo }}</td><td>{{ a.responsable }}</td>
           <td><span class="acomp-pill acomp-{{ 'curso' if a.estado == 'En curso' else 'cerrado' }}">{{ a.estado }}</span></td>
           <td>{{ a.fecha_cierre.strftime('%d/%m/%Y') if a.fecha_cierre else '—' }}</td>
           <td class="text-end d-print-none"><div class="accion-grupo">
@@ -207,12 +207,13 @@
     {% set hay_en_curso = acomp.lista|selectattr('estado', 'equalto', 'En curso')|list %}
     <details class="acomp-nuevo d-print-none" {% if not acomp.lista %}open{% endif %}>
       <summary class="accion">{% if hay_en_curso %}Registrar otro acompañamiento{% else %}Registrar acompañamiento{% endif %}</summary>
-      <form method="post" action="{{ url_for('registrar_acompanamiento', censo_id=censo.id) }}" class="row g-3 mt-1 acomp-form">
-        <div class="col-md-4"><label class="form-label small fw-semibold" for="acompComp">Componente que se trabaja</label>
-          <select class="form-select" id="acompComp" name="componente" required>{% if acomp.debiles|length != 1 %}<option value="" selected disabled>Seleccione el componente</option>{% endif %}{% for clave, nombre in acomp.componentes %}<option value="{{ clave }}" {% if acomp.debiles|length == 1 and clave in acomp.debiles %}selected{% endif %}>{{ nombre }}{% if acomp.debiles|length == 1 and clave in acomp.debiles %} (más débil){% endif %}</option>{% endfor %}</select>
-          {% if acomp.debiles|length > 1 %}<div class="form-text">Componente más débil: {{ acomp.texto_debil }}. Elija con cuál empezar.</div>{% endif %}</div>
-        <div class="col-md-4"><label class="form-label small fw-semibold" for="acompResp">Responsable</label><input class="form-control" id="acompResp" name="responsable" maxlength="200" required placeholder="Nombre del archivista"></div>
-        <div class="col-md-4"><label class="form-label small fw-semibold" for="acompIni">Fecha de inicio</label><input class="form-control" type="date" id="acompIni" name="fecha_inicio" value="{{ acomp.hoy }}" required></div>
+      <form method="post" action="{{ url_for('registrar_acompanamiento', censo_id=censo.id) }}" class="row g-3 mt-1 acomp-form" onsubmit="var ok=this.querySelector('input[name=componente]:checked');document.getElementById('acompCompError').hidden=!!ok;return !!ok;">
+        <fieldset class="col-12"><legend class="form-label small fw-semibold mb-1">Componentes que se trabajan <span class="text-secondary fw-normal">(uno o varios)</span></legend>
+          <div class="acomp-comps">{% for clave, nombre in acomp.componentes %}<div class="form-check form-check-inline"><input class="form-check-input" type="checkbox" name="componente" value="{{ clave }}" id="ac-{{ clave }}" {% if acomp.debiles|length == 1 and clave in acomp.debiles %}checked{% endif %}><label class="form-check-label" for="ac-{{ clave }}">{{ nombre }}{% if acomp.debiles|length == 1 and clave in acomp.debiles %} <span class="text-secondary">(más débil)</span>{% endif %}</label></div>{% endfor %}</div>
+          <div class="form-text">{% if acomp.debiles|length > 1 %}Componente más débil: {{ acomp.texto_debil }}. Marque con cuáles empezar.{% else %}Viene marcado el componente más débil; puede agregar otros.{% endif %}</div>
+          <div class="small text-danger mt-1" id="acompCompError" role="alert" hidden>Marque al menos un componente.</div></fieldset>
+        <div class="col-md-6"><label class="form-label small fw-semibold" for="acompResp">Responsable</label><input class="form-control" id="acompResp" name="responsable" maxlength="200" required placeholder="Nombre del archivista"></div>
+        <div class="col-md-6"><label class="form-label small fw-semibold" for="acompIni">Fecha de inicio</label><input class="form-control" type="date" id="acompIni" name="fecha_inicio" value="{{ acomp.hoy }}" required></div>
         <div class="col-12"><label class="form-label small fw-semibold" for="acompObs">Observaciones <span class="text-secondary fw-normal">(opcional)</span></label><textarea class="form-control" id="acompObs" name="observaciones" rows="2" maxlength="1000"></textarea></div>
         <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-2">
           <span class="small text-secondary">Tipo de acompañamiento: <strong>{{ acomp.tipo }}</strong></span>

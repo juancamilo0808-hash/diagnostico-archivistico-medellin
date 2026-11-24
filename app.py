@@ -2568,6 +2568,21 @@ def admin_eliminar_convalidacion(conv_id):
 # Acompañamiento a entidades priorizadas
 # ---------------------------------------------------------------------------
 NOMBRE_COMPONENTE = dict(SDA_COMPONENTES)
+NUM_COMPONENTE = {str(i): clave for i, (clave, _) in enumerate(SDA_COMPONENTES, start=1)}
+CLAVE_A_NUM = {clave: n for n, clave in NUM_COMPONENTE.items()}
+
+
+@app.template_filter('componentes_acomp')
+def componentes_acompanamiento(valor):
+    """Nombres de los componentes de un acompañamiento. Se guardan como números (\"1,3\");
+    los primeros registros guardaban la clave de un solo componente."""
+    nombres = []
+    for parte in (valor or '').split(','):
+        parte = parte.strip()
+        clave = NUM_COMPONENTE.get(parte, parte)
+        if clave in NOMBRE_COMPONENTE:
+            nombres.append(NOMBRE_COMPONENTE[clave])
+    return ', '.join(nombres) or (valor or '')
 
 
 def _diagnosticos_vigentes():
@@ -2640,7 +2655,7 @@ def admin_acompanamiento():
             mejora = None
             if a.estado == 'Cerrado' and a.fecha_cierre and actual and actual.id != a.censo_id and actual.fecha and actual.fecha.date() >= a.fecha_cierre:
                 mejora = round((actual.ima or 0) - (a.nivel_inicial or 0), 1)
-            filas.append({'a': a, 'componente': NOMBRE_COMPONENTE.get(a.componente, a.componente), 'mejora': mejora,
+            filas.append({'a': a, 'componente': componentes_acompanamiento(a.componente), 'mejora': mejora,
                           'ficha': actual.id if actual else a.censo_id})
     filas.sort(key=lambda f: (f['a'].estado != 'En curso', -(f['a'].fecha_inicio.toordinal())))
     pendientes = [{'nombre': _sda_nombre(r), 'id': r.id, 'ima': r.ima or 0}
@@ -2655,15 +2670,15 @@ def admin_acompanamiento():
 def registrar_acompanamiento(censo_id):
     censo = db.session.get(Censo, censo_id) or abort(404)
     _, actual, componentes = _puntajes_de(censo)
-    componente = request.form.get('componente', '')
+    elegidos = [c for c, _ in SDA_COMPONENTES if c in request.form.getlist('componente')]
     responsable = (request.form.get('responsable') or '').strip()
     inicio = _fecha_form(request.form.get('fecha_inicio'))
-    if componente not in NOMBRE_COMPONENTE or not responsable or not inicio:
-        flash('Complete el componente, el responsable y la fecha de inicio.', 'danger')
+    if not elegidos or not responsable or not inicio:
+        flash('Elija al menos un componente y complete el responsable y la fecha de inicio.', 'danger')
         return redirect(url_for('ficha_diagnostico', censo_id=censo_id) + '#acompanamiento')
     db.session.add(AcompanamientoEntidad(
         entidad_clave=_ficha_clave(censo), entidad_nombre=_sda_nombre(censo), censo_id=censo.id,
-        nivel_inicial=censo.ima or 0, componente=componente, tipo=_tipo_acompanamiento(componentes),
+        nivel_inicial=censo.ima or 0, componente=','.join(CLAVE_A_NUM[c] for c in elegidos), tipo=_tipo_acompanamiento(componentes),
         responsable=responsable[:200], fecha_inicio=inicio,
         observaciones=(request.form.get('observaciones') or '').strip() or None))
     db.session.commit()

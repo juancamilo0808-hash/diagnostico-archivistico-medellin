@@ -60,7 +60,7 @@
     {% if filas %}
     <div class="table-responsive"><table class="table ac-table mb-0">
       <caption class="visually-hidden">Acompañamientos registrados</caption>
-      <thead><tr><th scope="col">Entidad</th><th scope="col">Componente</th><th scope="col">Tipo</th><th scope="col">Responsable</th><th scope="col">Inicio</th><th scope="col">Estado</th><th scope="col" class="text-end">Nivel inicial</th><th scope="col" class="text-end">Mejora</th><th scope="col" class="text-end"><span class="visually-hidden">Acciones</span></th></tr></thead>
+      <thead><tr><th scope="col">Entidad</th><th scope="col">Componentes</th><th scope="col">Tipo</th><th scope="col">Responsable</th><th scope="col">Inicio</th><th scope="col">Estado</th><th scope="col" class="text-end">Nivel inicial</th><th scope="col" class="text-end">Mejora</th><th scope="col" class="text-end"><span class="visually-hidden">Acciones</span></th></tr></thead>
       <tbody>{% for f in filas %}{% set a = f.a %}
         <tr><td class="fw-semibold">{{ a.entidad_nombre }}</td><td>{{ f.componente }}</td><td>{{ a.tipo }}</td><td>{{ a.responsable }}</td><td>{{ a.fecha_inicio.strftime('%d/%m/%Y') }}</td>
           <td><span class="acomp-pill acomp-{{ 'curso' if a.estado == 'En curso' else 'cerrado' }}">{{ a.estado }}</span>{% if a.fecha_cierre %}<div class="small text-secondary">{{ a.fecha_cierre.strftime('%d/%m/%Y') }}</div>{% endif %}</td>
