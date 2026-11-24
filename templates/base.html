@@ -28,19 +28,18 @@
     <style>
       /* Menú en una sola fila: sin cortes de línea y más compacto en pantallas medianas. */
       .cda-nav .nav-link, .cda-nav .btn-nav, .brand-cda-line { white-space: nowrap; }
+      @media (min-width: 1200px) and (max-width: 1499.98px) {
+        .cda-nav .nav-link { padding: .55rem .5rem !important; font-size: .84rem; }
+      }
+      /* Tamaño del logo sin cambios */
       @media (min-width: 1400px) and (max-width: 1699.98px) {
-        .cda-nav .nav-link { padding: .55rem .5rem !important; font-size: .82rem; }
-        .cda-nav .btn-nav { padding: .5rem .7rem; font-size: .85rem; }
         .cda-nav .official-alcaldia-logo { height: 84px; }
         .cda-nav .brand-cda-line { font-size: .72rem; }
       }
       @media (min-width: 1400px) and (max-width: 1599.98px) {
-        .cda-nav .nav-link { padding: .5rem .38rem !important; font-size: .78rem; }
-        .cda-nav .nav-link > i { display: none; }
-        .cda-nav .btn-nav { padding: .45rem .6rem; font-size: .8rem; }
         .cda-nav .official-alcaldia-logo { height: 78px; }
       }
-      @media (max-width: 1399.98px) {
+      @media (max-width: 1199.98px) {
         .cda-nav .navbar-collapse { padding: .5rem 0 1rem; }
         .cda-nav .cda-dropdown { background: #0e3358; border-color: rgba(255,255,255,.2); box-shadow: none; }
         .cda-nav .cda-dropdown .dropdown-item { color: #fff; }
@@ -64,6 +63,7 @@
             <a class="govco-entidad" href="{{ url_for('mi_entidad') }}" title="Sesión de {{ entidad_sesion.correo }}"><i class="bi bi-building-check" aria-hidden="true"></i> <span class="d-none d-md-inline">{{ entidad_sesion.nombre|truncate(42, True, '…') }}</span><span class="d-md-none">Mi entidad</span></a>
             <form method="post" action="{{ url_for('salir_entidad') }}" class="m-0"><button type="submit" class="a11y-toggle">Salir</button></form>
             {% endif %}
+            <a class="govco-admin" href="{{ url_for('admin') }}"><i class="bi bi-lock" aria-hidden="true"></i> Administración</a>
             <button type="button" class="a11y-toggle" aria-expanded="false" aria-controls="a11yPanel">
                 <i class="bi bi-universal-access-circle" aria-hidden="true"></i> Accesibilidad
             </button>
@@ -82,7 +82,7 @@
     </div>
 
     <!-- NAVEGACIÓN INSTITUCIONAL -->
-    <nav class="navbar navbar-expand-xxl navbar-dark cda-nav" aria-label="Menú principal">
+    <nav class="navbar navbar-expand-xl navbar-dark cda-nav" aria-label="Menú principal">
         <div class="container-fluid cda-nav-inner">
 
             <a class="navbar-brand d-flex align-items-center gap-3"
@@ -119,32 +119,32 @@
             </button>
 
             <div class="collapse navbar-collapse" id="cdaMenu">
-                <div class="navbar-nav ms-auto align-items-xxl-center gap-xxl-1">
+                <div class="navbar-nav ms-auto align-items-xl-center gap-xl-1">
 
                     <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}"
                        href="{{ url_for('index') }}">
-                        <i class="bi bi-diagram-3"></i> Sistema Distrital
+                        Sistema Distrital
                     </a>
 
-                    <a class="nav-link {% if request.endpoint == 'censo' %}active{% endif %}"
+                    <a class="nav-link {% if request.endpoint in ('censo', 'acceso_entidad', 'mi_entidad', 'resultado') %}active{% endif %}"
                        href="{{ url_for('censo') }}">
-                        <i class="bi bi-file-earmark-text"></i> Diagnóstico
+                        Diagnóstico
                     </a>
 
                     <a class="nav-link {% if request.endpoint in ('servicios_en_linea', 'sistema_distrital_solicitud', 'sistema_distrital_tramite') %}active{% endif %}"
                        href="{{ url_for('servicios_en_linea') }}">
-                        <i class="bi bi-send-check"></i> Servicios en línea
+                        Servicios en línea
                     </a>
 
                     <a class="nav-link {% if request.endpoint == 'normatividad' %}active{% endif %}"
                        href="{{ url_for('normatividad') }}">
-                        <i class="bi bi-journal-text"></i> Normatividad
+                        Normatividad
                     </a>
 
                     <div class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {% if request.endpoint in ('patrimonio_documental', 'archivos_ddhh') %}active{% endif %}" href="{{ url_for('patrimonio_documental') }}"
                            role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-bank"></i> Patrimonio
+                            Patrimonio
                         </a>
                         <ul class="dropdown-menu cda-dropdown">
                             <li><a class="dropdown-item" href="{{ url_for('patrimonio_documental') }}"><i class="bi bi-bank"></i> Bienes de interés cultural (BIC-CDA)</a></li>
@@ -156,7 +156,7 @@
                     <div class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle {% if request.endpoint in ep_transp %}active{% endif %}" href="{{ url_for('transparencia') }}"
                            role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="bi bi-eye"></i> Transparencia
+                            Transparencia
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end cda-dropdown">
                             <li><a class="dropdown-item" href="{{ url_for('transparencia') }}">Transparencia y acceso a la información</a></li>
@@ -170,11 +170,7 @@
 
                     <a class="nav-link {% if request.endpoint in ('ayuda', 'guia_diagnostico') %}active{% endif %}"
                        href="{{ url_for('ayuda') }}">
-                        <i class="bi bi-question-circle"></i> Centro de ayuda
-                    </a>
-
-                    <a class="btn btn-nav" href="{{ url_for('admin') }}">
-                        <i class="bi bi-gear"></i> Administración
+                        Ayuda
                     </a>
 
                 </div>

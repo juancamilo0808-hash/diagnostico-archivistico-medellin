@@ -12,8 +12,9 @@
 <div class="container-fluid px-lg-5 py-4">
   <section class="ad-hero mb-4 d-flex justify-content-between flex-wrap gap-3 align-items-center">
     <div><div class="k">ADMINISTRACIÓN · TRANSPARENCIA</div><h1 class="h3 fw-bold mb-1">Actas y documentos del Consejo</h1><p class="mb-0 opacity-75">Lo que marque como publicado aparece de inmediato en Transparencia.</p></div>
-    <div class="d-flex gap-2 flex-wrap"><a class="btn btn-light fw-bold" href="{{ url_for('admin') }}"><i class="bi bi-arrow-left"></i> Panel</a><a class="btn btn-light fw-bold" href="{{ url_for('admin_convalidaciones') }}"><i class="bi bi-patch-check"></i> Convalidaciones</a><a class="btn btn-light fw-bold" href="{{ url_for('transparencia') }}" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Ver sitio público</a></div>
   </section>
+  {% from '_admin_nav.html' import admin_nav %}
+  {% call admin_nav('publicaciones') %}<a class="accion" href="{{ url_for('transparencia') }}" target="_blank" rel="noopener">Ver en el sitio público <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a>{% endcall %}
   <div class="row g-4">
     <div class="col-xl-5">
       {% set p = pub %}
@@ -52,8 +53,7 @@
               <td><div class="fw-semibold">{{ i.titulo }}</div><div class="small text-secondary">{{ categorias[i.categoria].singular }}{% if i.archivo_nombre %} · PDF {{ i.archivo_tamano|tamano }}{% endif %}</div></td>
               <td class="small text-nowrap">{{ i.fecha.strftime('%d/%m/%Y') if i.fecha else '—' }}</td>
               <td>{% if i.publicado %}<span class="badge text-bg-success">Publicado</span>{% else %}<span class="badge text-bg-secondary">Borrador</span>{% endif %}</td>
-              <td class="text-end text-nowrap"><a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin_publicaciones', editar=i.id) }}">Editar</a>
-                <form class="d-inline" method="post" action="{{ url_for('admin_eliminar_publicacion', pub_id=i.id) }}" onsubmit="return confirm('¿Eliminar este documento?')"><button class="btn btn-sm btn-outline-danger" type="submit">Eliminar</button></form></td>
+              <td class="text-end text-nowrap"><div class="accion-grupo"><a class="accion" href="{{ url_for('admin_publicaciones', editar=i.id) }}">Editar</a>{% from '_admin_nav.html' import menu_acciones %}{% call menu_acciones('este registro') %}<li><form method="post" action="{{ url_for('admin_eliminar_publicacion', pub_id=i.id) }}" onsubmit="return confirm('¿Eliminar este documento?')"><button class="dropdown-item text-danger" type="submit"><i class="bi bi-trash me-2" aria-hidden="true"></i>Eliminar</button></form></li>{% endcall %}</div></td>
             </tr>
           {% else %}
             <tr><td colspan="4" class="text-center text-secondary py-4">Aún no hay documentos. Publique la primera acta con el formulario.</td></tr>

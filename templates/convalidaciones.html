@@ -33,8 +33,8 @@
               {% if c.numero_concepto %}<div class="tp-meta">Concepto {{ c.numero_concepto }}</div>{% endif %}</td>
             <td><span class="tp-pill {{ clase }}">{{ c.estado_rusd }}</span>{% if c.fecha_rusd %}<div class="tp-meta">{{ c.fecha_rusd.strftime('%d/%m/%Y') }}</div>{% endif %}</td>
             <td class="text-nowrap">
-              {% if c.archivo_nombre %}<a class="btn btn-sm btn-outline-primary" href="{{ url_for('documento_convalidacion', conv_id=c.id) }}" target="_blank" rel="noopener"><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> PDF<span class="visually-hidden"> de la convalidación de {{ c.entidad }}</span></a>{{ huella(c.archivo_hash, "la convalidación de " ~ c.entidad) }}{% endif %}
-              {% if c.enlace %}<a class="btn btn-sm btn-outline-secondary" href="{{ c.enlace }}" target="_blank" rel="noopener">Ver instrumento<span class="visually-hidden"> de {{ c.entidad }}</span></a>{% endif %}
+              {% if c.archivo_nombre %}<a class="accion" href="{{ url_for('documento_convalidacion', conv_id=c.id) }}" target="_blank" rel="noopener"><i class="bi bi-download" aria-hidden="true"></i>PDF<span class="visually-hidden"> de la convalidación de {{ c.entidad }}</span></a>{{ huella(c.archivo_hash, "la convalidación de " ~ c.entidad) }}{% endif %}
+              {% if c.enlace %}<a class="accion" href="{{ c.enlace }}" target="_blank" rel="noopener">Ver instrumento <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i><span class="visually-hidden"> de {{ c.entidad }}</span></a>{% endif %}
               {% if not c.archivo_nombre and not c.enlace %}<span class="tp-meta">—</span>{% endif %}
             </td>
           </tr>

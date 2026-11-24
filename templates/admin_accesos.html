@@ -12,8 +12,9 @@
 <div class="container-fluid px-lg-5 py-4">
   <section class="ad-hero mb-4 d-flex justify-content-between flex-wrap gap-3 align-items-center">
     <div><div class="k">ADMINISTRACIÓN · SEGURIDAD</div><h1 class="h3 fw-bold mb-1">Accesos de entidades</h1><p class="mb-0 opacity-75">{% if modo == 'nit' %}NIT con el que cada entidad ingresa al diagnóstico.{% else %}Correos que pueden ingresar al diagnóstico con código de un solo uso.{% endif %}</p></div>
-    <a class="btn btn-light fw-bold" href="{{ url_for('admin') }}"><i class="bi bi-arrow-left"></i> Panel</a>
   </section>
+  {% from '_admin_nav.html' import admin_nav %}
+  {% call admin_nav('accesos') %}{% endcall %}
   <div class="row g-4">
     <div class="col-xl-4">
       <div class="ad-card p-4 mb-4">

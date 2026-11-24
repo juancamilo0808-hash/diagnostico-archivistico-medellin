@@ -31,8 +31,9 @@
 <div class="container-fluid px-lg-5 py-4">
   <section class="as-hero mb-4 d-flex justify-content-between flex-wrap gap-3 align-items-center">
     <div><div class="k">ADMINISTRACIÓN · SISTEMA DISTRITAL DE ARCHIVOS</div><h1 class="h3 fw-bold mb-1">Solicitudes de entidades</h1><p class="mb-0 opacity-75">{{ abiertas }} solicitud{{ 'es' if abiertas != 1 }} abierta{{ 's' if abiertas != 1 }}. Las observaciones que registre aquí las ve la entidad al consultar su solicitud.</p></div>
-    <div class="d-flex gap-2 flex-wrap"><a class="btn btn-light fw-bold" href="{{ url_for('admin') }}"><i class="bi bi-arrow-left"></i> Panel</a><a class="btn btn-light fw-bold" href="{{ url_for('admin_sistema_distrital') }}"><i class="bi bi-diagram-3"></i> Indicadores del Sistema</a></div>
   </section>
+  {% from '_admin_nav.html' import admin_nav %}
+  {% call admin_nav('solicitudes') %}{% endcall %}
 
   <form class="as-card p-3 mb-3 d-flex gap-2 flex-wrap align-items-end" method="get">
     <div><label class="form-label small fw-bold mb-1" for="ft">Tipo</label><select class="form-select" id="ft" name="tipo"><option value="">Todos</option>{% for k, c in tipos.items() %}<option value="{{ k }}" {% if filtro_tipo == k %}selected{% endif %}>{{ c.nombre }}</option>{% endfor %}</select></div>

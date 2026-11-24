@@ -1,0 +1,26 @@
+{% macro admin_nav(activa) %}
+<nav class="adm-nav mb-4" aria-label="Secciones de administración">
+  <div class="adm-nav-links">
+    <a href="{{ url_for('admin') }}" {% if activa=='diagnosticos' %}aria-current="page"{% endif %}>Diagnósticos</a>
+    <a href="{{ url_for('admin_sistema_distrital') }}" {% if activa=='indicadores' %}aria-current="page"{% endif %}>Indicadores</a>
+    <a href="{{ url_for('mapa_entidades') }}" {% if activa=='mapa' %}aria-current="page"{% endif %}>Mapa</a>
+    <div class="dropdown">
+      <button class="adm-nav-drop dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" {% if activa in ('publicaciones','convalidaciones') %}aria-current="page"{% endif %}>Publicaciones</button>
+      <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="{{ url_for('admin_publicaciones') }}">Actas y documentos</a></li>
+        <li><a class="dropdown-item" href="{{ url_for('admin_convalidaciones') }}">Convalidaciones</a></li>
+      </ul>
+    </div>
+    <a href="{{ url_for('admin_solicitudes') }}" {% if activa=='solicitudes' %}aria-current="page"{% endif %}>Solicitudes</a>
+    <a href="{{ url_for('admin_accesos') }}" {% if activa=='accesos' %}aria-current="page"{% endif %}>Accesos</a>
+  </div>
+  <div class="adm-nav-acciones">{{ caller() if caller is defined else '' }}</div>
+</nav>
+{% endmacro %}
+
+{% macro menu_acciones(etiqueta) %}
+<div class="dropdown d-inline-block">
+  <button class="btn-mas" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Más acciones de {{ etiqueta }}"><i class="bi bi-three-dots" aria-hidden="true"></i></button>
+  <ul class="dropdown-menu dropdown-menu-end">{{ caller() }}</ul>
+</div>
+{% endmacro %}

@@ -11,7 +11,8 @@
   .sda-hero h1 { font-weight:800; margin:.35rem 0 .6rem; color:#fff; }
   .sda-hero p { color:rgba(255,255,255,.82); max-width:760px; margin:0; }
   .sda-hero .meta { margin-top:1rem; font-size:.85rem; color:rgba(255,255,255,.7); }
-  .sda-kpis { margin-top:-3rem; }
+  .sda-kpis { margin-top:0; }
+  .sda-nav-wrap { margin-top:-3rem; position:relative; }
   .sda-kpi { background:#fff; border:1px solid var(--cda-border,#dce4ec); border-radius:14px; padding:1rem 1.1rem; height:100%; box-shadow:0 8px 24px rgba(9,41,71,.08); }
   .sda-kpi .v { font-size:1.9rem; font-weight:800; color:var(--cda-blue-dark,#092947); line-height:1.1; font-variant-numeric: tabular-nums; }
   .sda-kpi .l { font-size:.82rem; color:var(--cda-muted,#56687a); }
@@ -124,6 +125,8 @@
 </section>
 
 <div class="container pb-5">
+  {% from '_admin_nav.html' import admin_nav %}
+  <div class="sda-nav-wrap">{% call admin_nav('indicadores') %}<a class="accion" href="{{ url_for('api_sistema_distrital') }}"><i class="bi bi-filetype-json" aria-hidden="true"></i>Indicadores (JSON)</a>{% endcall %}</div>
   <div class="row g-3 sda-kpis">
     <div class="col-6 col-lg-3"><div class="sda-kpi"><div class="v">{{ d.n if ver else '—' }}</div><div class="l">Entidades con diagnóstico</div></div></div>
     <div class="col-6 col-lg-3"><div class="sda-kpi"><div class="v">{{ d.promedio if ver and d.promedio is not none else '—' }}</div><div class="l">Nivel de madurez promedio (%)</div></div></div>
@@ -268,11 +271,6 @@
     </div>
   </section>
 
-  <div class="mt-4 d-flex gap-2 flex-wrap">
-    <a class="btn btn-primary" href="{{ url_for('admin') }}"><i class="bi bi-arrow-left"></i> Volver al panel</a>
-    <a class="btn btn-outline-secondary" href="{{ url_for('admin_solicitudes') }}"><i class="bi bi-inbox"></i> Solicitudes de entidades</a>
-    <a class="btn btn-outline-secondary" href="{{ url_for('api_sistema_distrital') }}"><i class="bi bi-filetype-json"></i> Indicadores (JSON)</a>
-  </div>
   <p class="sda-note mt-4 mb-0"><strong>Nota metodológica:</strong> los indicadores se calculan automáticamente con la escala piloto del diagnóstico y orientan la priorización; no constituyen certificación de cumplimiento normativo. La estructura del Sistema es de referencia y puede ajustarse a la conformación oficial del Distrito.</p>
 </div>
 
