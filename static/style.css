@@ -717,3 +717,15 @@ a.strip-item:hover, a.strip-item:focus-visible { background: var(--cda-blue-ligh
 @media (max-width: 1199.98px) { .cda-nav .nav-link.active { box-shadow: inset 3px 0 0 var(--cda-gold, #f1c75b); padding-left: 1rem !important; } }
 .govco-admin { color: #fff; font-size: .85rem; font-weight: 600; text-decoration: none; padding: .3rem .7rem; border-radius: 999px; opacity: .9; }
 .govco-admin:hover, .govco-admin:focus { opacity: 1; background: rgba(255,255,255,.14); color: #fff; }
+/* Estado del acompañamiento */
+.acomp-pill { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .78rem; font-weight: 600; white-space: nowrap; }
+.acomp-no { background: #eef2f6; color: #475569; }
+.acomp-curso { background: #fff4d6; color: #7a5a00; }
+.acomp-cerrado { background: #e3f4ea; color: #14532d; }
+.acomp-nuevo { border-top: 1px solid #e4ebf1; padding-top: 1rem; }
+.acomp-nuevo > summary { cursor: pointer; list-style: none; }
+.acomp-nuevo > summary::-webkit-details-marker { display: none; }
+.acomp-nuevo > summary::before { content: "+"; display: inline-block; width: 1.1rem; font-weight: 700; }
+.acomp-nuevo[open] > summary::before { content: "−"; }
+.acomp-obs td { border-top: 0; }
+table .accion-grupo { flex-wrap: nowrap; }

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Acompañamiento a entidades · Administración{% endblock %}
+{% block content %}
+<style>
+  .ad-hero { background: linear-gradient(125deg,#062d4e,#0b527c 68%,#167d91); color:#fff; border-radius:22px; padding:26px 30px; }
+  .ad-hero .k { letter-spacing:.14em; font-size:.75rem; font-weight:800; opacity:.8; }
+  .ad-card { background:#fff; border:1px solid #e4ebf1; border-radius:16px; padding:22px; }
+  .ad-card h2 { font-size:1.05rem; font-weight:700; color:#123852; margin-bottom:.2rem; }
+  .ac-kpi { background:#fff; border:1px solid #e4ebf1; border-radius:16px; padding:18px 20px; height:100%; }
+  .ac-kpi .v { font-size:1.9rem; font-weight:800; color:#0b3a5c; line-height:1.1; }
+  .ac-kpi .l { font-size:.85rem; color:#526273; margin-top:.25rem; }
+  .ac-kpi .f { font-size:.78rem; color:#55657a; margin-top:.35rem; }
+  .ac-bar { height:8px; border-radius:6px; background:#e8eef4; overflow:hidden; margin-top:.6rem; }
+  .ac-bar span { display:block; height:100%; background:#0b6a8f; }
+  .ac-table td, .ac-table th { vertical-align: middle; font-size:.9rem; }
+</style>
+<div class="container-fluid px-lg-5 py-4">
+  <section class="ad-hero mb-4">
+    <div class="k">ADMINISTRACIÓN · SEGUIMIENTO</div>
+    <h1 class="h3 fw-bold mb-1">Acompañamiento a entidades</h1>
+    <p class="mb-0 opacity-75">Registro del acompañamiento técnico a las entidades priorizadas y de su resultado en el siguiente diagnóstico.</p>
+  </section>
+  {% from '_admin_nav.html' import admin_nav, menu_acciones %}
+  {% call admin_nav('acompanamiento') %}{% endcall %}
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4"><div class="ac-kpi">
+      <div class="v">{{ (('%.1f'|format(ind.porcentaje)).replace('.', ',') ~ ' %') if ind.porcentaje is not none else '—' }}</div>
+      <div class="l">Atención prioritaria</div>
+      <div class="ac-bar" role="presentation"><span style="width: {{ ind.porcentaje or 0 }}%"></span></div>
+      <div class="f">{{ ind.atendidas }} de {{ ind.prioritarias }} entidades de prioridad alta con acompañamiento</div>
+    </div></div>
+    <div class="col-md-4"><div class="ac-kpi">
+      <div class="v">{{ ind.en_curso }}</div>
+      <div class="l">Acompañamientos en curso</div>
+      <div class="f">{{ ind.cerrados }} cerrado{{ 's' if ind.cerrados != 1 }}</div>
+    </div></div>
+    <div class="col-md-4"><div class="ac-kpi">
+      <div class="v">{{ (('%+.1f'|format(ind.mejora_promedio)).replace('.', ',') ~ ' pts') if ind.mejora_promedio is not none else '—' }}</div>
+      <div class="l">Mejora promedio</div>
+      <div class="f">{% if ind.medidas %}Nivel de madurez nuevo − nivel inicial, en {{ ind.medidas }} entidad{{ 'es' if ind.medidas != 1 }} con nuevo diagnóstico{% else %}Se calcula cuando una entidad acompañada hace un nuevo diagnóstico{% endif %}</div>
+    </div></div>
+  </div>
+
+  {% if pendientes %}
+  <section class="ad-card mb-4">
+    <h2>Prioridad alta sin acompañamiento</h2>
+    <p class="small text-secondary">Entidades en nivel bajo (40 % o menos) que aún no tienen acompañamiento registrado.</p>
+    <div class="table-responsive"><table class="table ac-table mb-0">
+      <caption class="visually-hidden">Entidades de prioridad alta sin acompañamiento</caption>
+      <thead><tr><th scope="col">Entidad</th><th scope="col" class="text-end">Nivel de madurez</th><th scope="col" class="text-end"><span class="visually-hidden">Acción</span></th></tr></thead>
+      <tbody>{% for p in pendientes %}<tr><td class="fw-semibold">{{ p.nombre }}</td><td class="text-end">{{ ('%.1f'|format(p.ima)).replace('.', ',') }} %</td><td class="text-end"><a class="accion" href="{{ url_for('ficha_diagnostico', censo_id=p.id) }}#acompanamiento">Registrar acompañamiento</a></td></tr>{% endfor %}</tbody>
+    </table></div>
+  </section>
+  {% endif %}
+
+  <section class="ad-card">
+    <h2>Acompañamientos registrados</h2>
+    <p class="small text-secondary">Los acompañamientos se registran y se cierran desde la ficha de cada entidad.</p>
+    {% if filas %}
+    <div class="table-responsive"><table class="table ac-table mb-0">
+      <caption class="visually-hidden">Acompañamientos registrados</caption>
+      <thead><tr><th scope="col">Entidad</th><th scope="col">Componente</th><th scope="col">Tipo</th><th scope="col">Responsable</th><th scope="col">Inicio</th><th scope="col">Estado</th><th scope="col" class="text-end">Nivel inicial</th><th scope="col" class="text-end">Mejora</th><th scope="col" class="text-end"><span class="visually-hidden">Acciones</span></th></tr></thead>
+      <tbody>{% for f in filas %}{% set a = f.a %}
+        <tr><td class="fw-semibold">{{ a.entidad_nombre }}</td><td>{{ f.componente }}</td><td>{{ a.tipo }}</td><td>{{ a.responsable }}</td><td>{{ a.fecha_inicio.strftime('%d/%m/%Y') }}</td>
+          <td><span class="acomp-pill acomp-{{ 'curso' if a.estado == 'En curso' else 'cerrado' }}">{{ a.estado }}</span>{% if a.fecha_cierre %}<div class="small text-secondary">{{ a.fecha_cierre.strftime('%d/%m/%Y') }}</div>{% endif %}</td>
+          <td class="text-end">{{ ('%.1f'|format(a.nivel_inicial or 0)).replace('.', ',') }} %</td>
+          <td class="text-end">{% if f.mejora is not none %}<span style="color: {{ '#14532d' if f.mejora > 0 else ('#b42318' if f.mejora < 0 else '#526273') }}">{{ ('%+.1f'|format(f.mejora)).replace('.', ',') }} pts</span>{% elif a.estado == 'Cerrado' %}<span class="small text-secondary">Falta nuevo diagnóstico</span>{% else %}—{% endif %}</td>
+          <td class="text-end"><div class="accion-grupo"><a class="accion" href="{{ url_for('ficha_diagnostico', censo_id=f.ficha) }}#acompanamiento">Ver ficha</a>{% call menu_acciones(a.entidad_nombre) %}<li><form method="post" action="{{ url_for('eliminar_acompanamiento', aid=a.id) }}" onsubmit="return confirm('¿Eliminar este registro de acompañamiento?')"><button class="dropdown-item text-danger" type="submit"><i class="bi bi-trash me-2" aria-hidden="true"></i>Eliminar</button></form></li>{% endcall %}</div></td></tr>
+      {% endfor %}</tbody>
+    </table></div>
+    {% else %}
+    <div class="text-center text-secondary py-4"><i class="bi bi-person-check fs-2 d-block mb-2" aria-hidden="true"></i>Aún no hay acompañamientos. Regístrelos desde la ficha de cada entidad o desde la lista de prioridad alta.</div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -2,7 +2,7 @@ from flask import Flask, render_template, render_template as flask_render_templa
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect as sqlalchemy_inspect
 from sqlalchemy.orm import deferred
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from functools import wraps
 from io import BytesIO
@@ -1117,7 +1117,8 @@ def admin():
     return render_template('admin.html',registros=registros,promedio=promedio,niveles=niveles,
         sectores=sectores,semaforos=semaforos,ranking=ranking,instrumentos_labels=instrumentos_labels,
         instrumentos_valores=instrumentos_valores,semaforo_fn=semaforo,evolucion=evolucion,
-        resumen_evolucion=resumen_evolucion)
+        resumen_evolucion=resumen_evolucion, clave_de=_ficha_clave,
+        estados_acomp={k: _estado_acompanamiento(v) for k, v in _acompanamientos_por_entidad().items()})
 
 
 @app.route('/admin/eliminar-diagnostico/<int:censo_id>', methods=['POST'])
@@ -1146,6 +1147,7 @@ def eliminar_diagnostico(censo_id):
 def exportar_priorizacion():
     """Matriz de priorización: diagnóstico más reciente de cada entidad, por componente."""
     vistos, entidades = set(), []
+    acomp = _acompanamientos_por_entidad()
     for r in Censo.query.order_by(Censo.fecha.desc(), Censo.id.desc()).all():
         clave = (r.codigo_entidad or '').strip() or clave_entidad(_sda_nombre(r))
         if clave in vistos:
@@ -1167,6 +1169,7 @@ def exportar_priorizacion():
             'naturaleza': (r.naturaleza or '').strip() or 'Sin dato',
             'fecha': r.fecha, 'version': cq.VERSION if cq.es_v04(respuestas) else 'Anterior',
             'ima': r.ima or 0, 'componentes': componentes, 'conteos': conteos,
+            'acompanamiento': _estado_acompanamiento(acomp.get(clave)),
         })
     salida = generar_matriz_priorizacion(entidades, SDA_COMPONENTES, UMBRAL_BAJO, UMBRAL_MEDIO)
     nombre = f"Matriz_priorizacion_CDA_{datetime.now():%Y-%m-%d}.xlsx"
@@ -2072,7 +2075,11 @@ def ficha_diagnostico(censo_id):
     censo = db.session.get(Censo, censo_id) or abort(404)
     contexto = _contexto_ficha(censo)
     opciones = sorted(Censo.query.all(), key=lambda x: (_sda_nombre(x).lower(), -x.id))
-    return render_template('admin_ficha.html', vista='admin', opciones=opciones, **contexto)
+    _, _, componentes = _puntajes_de(censo)
+    acomp = {'lista': _acompanamientos_por_entidad().get(_ficha_clave(censo), []),
+             'debil': _componente_mas_debil(componentes), 'tipo': _tipo_acompanamiento(componentes),
+             'componentes': SDA_COMPONENTES, 'nombres': NOMBRE_COMPONENTE, 'hoy': date.today().isoformat()}
+    return render_template('admin_ficha.html', vista='admin', opciones=opciones, acomp=acomp, **contexto)
 
 
 @app.route('/mi-diagnostico/<int:censo_id>')
@@ -2162,6 +2169,25 @@ class ConvalidacionCDA(db.Model):
     publicado = db.Column(db.Boolean, default=True, nullable=False)
     creado = db.Column(db.DateTime, default=datetime.utcnow)
     actualizado = db.Column(db.DateTime, default=datetime.utcnow)
+
+
+class AcompanamientoEntidad(db.Model):
+    """Acompañamiento técnico del Consejo a una entidad priorizada (paso 5 del ciclo de la matriz)."""
+    __tablename__ = 'acompanamiento_entidad'
+    id = db.Column(db.Integer, primary_key=True)
+    entidad_clave = db.Column(db.String(120), nullable=False, index=True)
+    entidad_nombre = db.Column(db.String(300), nullable=False)
+    censo_id = db.Column(db.Integer, nullable=False)              # diagnóstico con el que se inició
+    nivel_inicial = db.Column(db.Float)                           # nivel de madurez de ese diagnóstico
+    componente = db.Column(db.String(60), nullable=False)
+    tipo = db.Column(db.String(20), nullable=False)               # Integral | Puntual
+    responsable = db.Column(db.String(200), nullable=False)
+    fecha_inicio = db.Column(db.Date, nullable=False)
+    fecha_cierre = db.Column(db.Date)
+    estado = db.Column(db.String(20), nullable=False, default='En curso')   # En curso | Cerrado
+    observaciones = db.Column(db.Text)
+    observacion_cierre = db.Column(db.Text)
+    creado = db.Column(db.DateTime, default=datetime.utcnow)
 
 
 def _fecha_form(valor):
@@ -2515,6 +2541,138 @@ def admin_eliminar_convalidacion(conv_id):
     db.session.commit()
     flash('Registro de convalidación eliminado.', 'success')
     return redirect(url_for('admin_convalidaciones'))
+
+
+# ---------------------------------------------------------------------------
+# Acompañamiento a entidades priorizadas
+# ---------------------------------------------------------------------------
+NOMBRE_COMPONENTE = dict(SDA_COMPONENTES)
+
+
+def _diagnosticos_vigentes():
+    """Diagnóstico más reciente de cada entidad (clave -> registro)."""
+    vigentes = {}
+    for r in Censo.query.order_by(Censo.fecha.desc(), Censo.id.desc()).all():
+        vigentes.setdefault(_ficha_clave(r), r)
+    return vigentes
+
+
+def _acompanamientos_por_entidad():
+    """Acompañamientos de cada entidad, el más reciente primero (clave -> lista)."""
+    por_clave = {}
+    for a in AcompanamientoEntidad.query.order_by(AcompanamientoEntidad.fecha_inicio.desc(), AcompanamientoEntidad.id.desc()).all():
+        por_clave.setdefault(a.entidad_clave, []).append(a)
+    return por_clave
+
+
+def _estado_acompanamiento(lista):
+    if not lista:
+        return 'Sin iniciar'
+    return 'En curso' if any(a.estado == 'En curso' for a in lista) else 'Cerrado'
+
+
+def _tipo_acompanamiento(componentes):
+    """Integral si 3 o más componentes están en nivel bajo; puntual en los demás casos."""
+    en_bajo = sum(1 for v in componentes.values() if v is not None and v * 100 <= UMBRAL_BAJO)
+    return 'Integral' if en_bajo >= 3 else 'Puntual'
+
+
+def _componente_mas_debil(componentes):
+    validos = [(v, clave) for clave, _ in SDA_COMPONENTES for v in [componentes.get(clave)] if v is not None]
+    return min(validos, key=lambda x: x[0])[1] if validos else SDA_COMPONENTES[0][0]
+
+
+def _indicadores_acompanamiento():
+    """Atención prioritaria y mejora, con el diagnóstico vigente de cada entidad."""
+    vigentes = _diagnosticos_vigentes()
+    por_clave = _acompanamientos_por_entidad()
+    prioritarias = [(k, r) for k, r in vigentes.items() if (r.ima or 0) <= UMBRAL_BAJO]
+    atendidas = [k for k, r in prioritarias if any(a.censo_id == r.id or (a.fecha_inicio and r.fecha and a.fecha_inicio >= r.fecha.date()) for a in por_clave.get(k, []))]
+    mejoras = []
+    for k, lista in por_clave.items():
+        cerrado = next((a for a in lista if a.estado == 'Cerrado' and a.fecha_cierre), None)
+        actual = vigentes.get(k)
+        if cerrado and actual and actual.id != cerrado.censo_id and actual.fecha and actual.fecha.date() >= cerrado.fecha_cierre:
+            mejoras.append(round((actual.ima or 0) - (cerrado.nivel_inicial or 0), 1))
+    return {
+        'prioritarias': len(prioritarias), 'atendidas': len(atendidas),
+        'porcentaje': round(len(atendidas) / len(prioritarias) * 100, 1) if prioritarias else None,
+        'en_curso': sum(1 for l in por_clave.values() if _estado_acompanamiento(l) == 'En curso'),
+        'cerrados': sum(1 for l in por_clave.values() for a in l if a.estado == 'Cerrado'),
+        'medidas': len(mejoras), 'mejora_promedio': round(sum(mejoras) / len(mejoras), 1) if mejoras else None,
+    }
+
+
+@app.route('/admin/acompanamiento')
+@admin_required
+def admin_acompanamiento():
+    vigentes = _diagnosticos_vigentes()
+    por_clave = _acompanamientos_por_entidad()
+    filas = []
+    for k, lista in por_clave.items():
+        actual = vigentes.get(k)
+        for a in lista:
+            mejora = None
+            if a.estado == 'Cerrado' and a.fecha_cierre and actual and actual.id != a.censo_id and actual.fecha and actual.fecha.date() >= a.fecha_cierre:
+                mejora = round((actual.ima or 0) - (a.nivel_inicial or 0), 1)
+            filas.append({'a': a, 'componente': NOMBRE_COMPONENTE.get(a.componente, a.componente), 'mejora': mejora,
+                          'ficha': actual.id if actual else a.censo_id})
+    filas.sort(key=lambda f: (f['a'].estado != 'En curso', -(f['a'].fecha_inicio.toordinal())))
+    pendientes = [{'nombre': _sda_nombre(r), 'id': r.id, 'ima': r.ima or 0}
+                  for k, r in sorted(vigentes.items(), key=lambda kv: kv[1].ima or 0)
+                  if (r.ima or 0) <= UMBRAL_BAJO and _estado_acompanamiento(por_clave.get(k)) == 'Sin iniciar']
+    return render_template('admin_acompanamiento.html', filas=filas, pendientes=pendientes,
+                           ind=_indicadores_acompanamiento())
+
+
+@app.route('/admin/diagnostico/<int:censo_id>/acompanamiento', methods=['POST'])
+@admin_required
+def registrar_acompanamiento(censo_id):
+    censo = db.session.get(Censo, censo_id) or abort(404)
+    _, actual, componentes = _puntajes_de(censo)
+    componente = request.form.get('componente', '')
+    responsable = (request.form.get('responsable') or '').strip()
+    inicio = _fecha_form(request.form.get('fecha_inicio'))
+    if componente not in NOMBRE_COMPONENTE or not responsable or not inicio:
+        flash('Complete el componente, el responsable y la fecha de inicio.', 'danger')
+        return redirect(url_for('ficha_diagnostico', censo_id=censo_id) + '#acompanamiento')
+    db.session.add(AcompanamientoEntidad(
+        entidad_clave=_ficha_clave(censo), entidad_nombre=_sda_nombre(censo), censo_id=censo.id,
+        nivel_inicial=censo.ima or 0, componente=componente, tipo=_tipo_acompanamiento(componentes),
+        responsable=responsable[:200], fecha_inicio=inicio,
+        observaciones=(request.form.get('observaciones') or '').strip() or None))
+    db.session.commit()
+    flash('Acompañamiento registrado.', 'success')
+    return redirect(url_for('ficha_diagnostico', censo_id=censo_id) + '#acompanamiento')
+
+
+@app.route('/admin/acompanamiento/<int:aid>/cerrar', methods=['POST'])
+@admin_required
+def cerrar_acompanamiento(aid):
+    a = db.session.get(AcompanamientoEntidad, aid) or abort(404)
+    cierre = _fecha_form(request.form.get('fecha_cierre'))
+    destino = request.form.get('volver') or url_for('admin_acompanamiento')
+    if not destino.startswith('/') or destino.startswith('//'):
+        destino = url_for('admin_acompanamiento')
+    if not cierre or cierre < a.fecha_inicio:
+        flash('Indique una fecha de cierre igual o posterior a la de inicio.', 'danger')
+        return redirect(destino)
+    a.estado, a.fecha_cierre = 'Cerrado', cierre
+    a.observacion_cierre = (request.form.get('observacion_cierre') or '').strip() or None
+    db.session.commit()
+    flash('Acompañamiento cerrado. Para medir la mejora, la entidad debe hacer un nuevo diagnóstico.', 'success')
+    return redirect(destino)
+
+
+@app.route('/admin/acompanamiento/<int:aid>/eliminar', methods=['POST'])
+@admin_required
+def eliminar_acompanamiento(aid):
+    a = db.session.get(AcompanamientoEntidad, aid) or abort(404)
+    db.session.delete(a)
+    db.session.commit()
+    flash('Registro de acompañamiento eliminado.', 'success')
+    destino = request.form.get('volver') or url_for('admin_acompanamiento')
+    return redirect(destino if destino.startswith('/') and not destino.startswith('//') else url_for('admin_acompanamiento'))
 
 
 @app.errorhandler(404)

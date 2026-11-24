@@ -132,7 +132,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
     for _, nombre in componentes:
         cols += [f'{nombre} (%)', f'{nombre} · nivel']
     cols += ['Nivel de madurez (%)', 'Clasificación', 'Prioridad de atención', 'Componente más débil',
-             'Componentes en nivel bajo', 'Brecha hasta 100 %']
+             'Componentes en nivel bajo', 'Brecha hasta 100 %', 'Acompañamiento']
     total_cols = len(cols)
     _titulo(m, 'Matriz de priorización de entidades',
             f'Consejo Distrital de Archivos de Medellín · Diagnóstico Territorial Archivístico · '
@@ -177,6 +177,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
         m.cell(row=r, column=col + 4, value='=' + '+'.join(f'({l}{r}<={ub})*ISNUMBER({l}{r})' for l in letras_pct))
         bc = m.cell(row=r, column=col + 5, value=f'=1-{letra_ima}{r}')
         bc.number_format = '0.0%'
+        m.cell(row=r, column=col + 6, value=e.get('acompanamiento') or 'Sin iniciar')
         for j in range(2, total_cols + 2):
             cel = m.cell(row=r, column=j)
             cel.border = CAJA
@@ -208,6 +209,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
     for j in range(2, total_cols + 2):
         m.column_dimensions[get_column_letter(j)].width = anchos.get(j, 13)
     m.column_dimensions[col_debil].width = 26
+    m.column_dimensions[get_column_letter(total_cols + 1)].width = 16
     m.column_dimensions['A'].width = 2
     m.freeze_panes = f'D{fila0 + 1}'
     m.sheet_properties.tabColor = AZUL
@@ -536,6 +538,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
         ('Nivel de madurez', 'Promedio de los cinco componentes del Modelo de Gestión Documental y Administración de Archivos (MGDA): estratégico, administración de archivos, procesos de la gestión documental, tecnológico y cultural. Cada componente pesa 20 %.'),
         ('Clasificación (mapa de calor)', f'Bajo: 0 a {umbral_bajo} %. Medio: más de {umbral_bajo} hasta {umbral_medio} %. Alto: más de {umbral_medio} hasta 100 %. Se aplica igual a cada componente y al nivel de madurez.'),
         ('Prioridad de atención', 'Alta para las entidades en nivel bajo, media para las de nivel medio y baja para las de nivel alto. La columna «Prioridad» ordena a las entidades de menor a mayor nivel de madurez.'),
+        ('Acompañamiento', 'Estado del acompañamiento técnico registrado en la herramienta: sin iniciar, en curso o cerrado.'),
         ('Desempate', 'Si dos entidades tienen el mismo nivel de madurez, va primero la que tenga más componentes en nivel bajo; si siguen empatadas, la que tenga el componente más débil con menor porcentaje.'),
         ('Componente más débil', 'El componente con menor porcentaje en la entidad. Si hay empate, se toma el primero en el orden del modelo.'),
         ('Componentes en nivel bajo', f'Cuántos componentes de la entidad están en {umbral_bajo} % o menos.'),

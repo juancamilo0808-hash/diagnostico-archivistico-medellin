@@ -176,6 +176,52 @@
   </section>
   {% endfor %}
 
+  {% if vista == 'admin' and acomp is defined %}
+  {% from '_admin_nav.html' import menu_acciones %}
+  <section class="fx-card mb-3" id="acompanamiento">
+    <h2>Acompañamiento</h2>
+    <p class="fx-sub">Seguimiento técnico del Consejo a esta entidad. El tipo se asigna solo: integral si tiene 3 o más componentes en nivel bajo (40 % o menos); puntual en los demás casos.</p>
+    {% if acomp.lista %}
+    <div class="table-responsive mb-3"><table class="table align-middle mb-0">
+      <caption class="visually-hidden">Acompañamientos registrados</caption>
+      <thead><tr><th scope="col">Inicio</th><th scope="col">Componente</th><th scope="col">Tipo</th><th scope="col">Responsable</th><th scope="col">Estado</th><th scope="col">Cierre</th><th scope="col" class="text-end d-print-none"><span class="visually-hidden">Acciones</span></th></tr></thead>
+      <tbody>{% for a in acomp.lista %}
+        <tr><td>{{ a.fecha_inicio.strftime('%d/%m/%Y') }}</td><td>{{ acomp.nombres.get(a.componente, a.componente) }}</td><td>{{ a.tipo }}</td><td>{{ a.responsable }}</td>
+          <td><span class="acomp-pill acomp-{{ 'curso' if a.estado == 'En curso' else 'cerrado' }}">{{ a.estado }}</span></td>
+          <td>{{ a.fecha_cierre.strftime('%d/%m/%Y') if a.fecha_cierre else '—' }}</td>
+          <td class="text-end d-print-none"><div class="accion-grupo">
+            {% if a.estado == 'En curso' %}<button class="accion" type="button" data-bs-toggle="collapse" data-bs-target="#cerrar{{ a.id }}" aria-expanded="false" aria-controls="cerrar{{ a.id }}">Cerrar</button>{% endif %}
+            {% call menu_acciones('el acompañamiento') %}<li><form method="post" action="{{ url_for('eliminar_acompanamiento', aid=a.id) }}" onsubmit="return confirm('¿Eliminar este registro de acompañamiento?')"><input type="hidden" name="volver" value="{{ url_for('ficha_diagnostico', censo_id=censo.id) }}#acompanamiento"><button class="dropdown-item text-danger" type="submit"><i class="bi bi-trash me-2" aria-hidden="true"></i>Eliminar</button></form></li>{% endcall %}
+          </div></td></tr>
+        {% if a.observaciones or a.observacion_cierre %}<tr class="acomp-obs"><td colspan="7" class="small text-secondary pt-0">{% if a.observaciones %}<strong>Observaciones:</strong> {{ a.observaciones }}{% endif %}{% if a.observacion_cierre %} · <strong>Cierre:</strong> {{ a.observacion_cierre }}{% endif %}</td></tr>{% endif %}
+        {% if a.estado == 'En curso' %}<tr class="collapse d-print-none" id="cerrar{{ a.id }}"><td colspan="7">
+          <form method="post" action="{{ url_for('cerrar_acompanamiento', aid=a.id) }}" class="row g-2 align-items-end acomp-form">
+            <input type="hidden" name="volver" value="{{ url_for('ficha_diagnostico', censo_id=censo.id) }}#acompanamiento">
+            <div class="col-sm-3"><label class="form-label small fw-semibold" for="fc{{ a.id }}">Fecha de cierre</label><input class="form-control form-control-sm" type="date" id="fc{{ a.id }}" name="fecha_cierre" value="{{ acomp.hoy }}" min="{{ a.fecha_inicio.isoformat() }}" required></div>
+            <div class="col-sm-6"><label class="form-label small fw-semibold" for="oc{{ a.id }}">Resultado del acompañamiento <span class="text-secondary fw-normal">(opcional)</span></label><input class="form-control form-control-sm" id="oc{{ a.id }}" name="observacion_cierre" maxlength="500"></div>
+            <div class="col-sm-3"><button class="btn btn-primary btn-sm w-100" type="submit">Cerrar acompañamiento</button></div>
+          </form></td></tr>{% endif %}
+      {% endfor %}</tbody>
+    </table></div>
+    {% endif %}
+    {% set hay_en_curso = acomp.lista|selectattr('estado', 'equalto', 'En curso')|list %}
+    <details class="acomp-nuevo d-print-none" {% if not acomp.lista %}open{% endif %}>
+      <summary class="accion">{% if hay_en_curso %}Registrar otro acompañamiento{% else %}Registrar acompañamiento{% endif %}</summary>
+      <form method="post" action="{{ url_for('registrar_acompanamiento', censo_id=censo.id) }}" class="row g-3 mt-1 acomp-form">
+        <div class="col-md-4"><label class="form-label small fw-semibold" for="acompComp">Componente que se trabaja</label>
+          <select class="form-select" id="acompComp" name="componente" required>{% for clave, nombre in acomp.componentes %}<option value="{{ clave }}" {% if clave == acomp.debil %}selected{% endif %}>{{ nombre }}{% if clave == acomp.debil %} (más débil){% endif %}</option>{% endfor %}</select></div>
+        <div class="col-md-4"><label class="form-label small fw-semibold" for="acompResp">Responsable</label><input class="form-control" id="acompResp" name="responsable" maxlength="200" required placeholder="Nombre del archivista"></div>
+        <div class="col-md-4"><label class="form-label small fw-semibold" for="acompIni">Fecha de inicio</label><input class="form-control" type="date" id="acompIni" name="fecha_inicio" value="{{ acomp.hoy }}" required></div>
+        <div class="col-12"><label class="form-label small fw-semibold" for="acompObs">Observaciones <span class="text-secondary fw-normal">(opcional)</span></label><textarea class="form-control" id="acompObs" name="observaciones" rows="2" maxlength="1000"></textarea></div>
+        <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <span class="small text-secondary">Tipo de acompañamiento: <strong>{{ acomp.tipo }}</strong></span>
+          <button class="btn btn-primary" type="submit">Registrar acompañamiento</button>
+        </div>
+      </form>
+    </details>
+  </section>
+  {% endif %}
+
   <section class="fx-card mb-3">
     <h2>Historial de la entidad</h2>
     <p class="fx-sub">{% if historial|length > 1 %}La entidad tiene {{ historial|length }} diagnósticos; el más reciente va primero.{% else %}Es el único diagnóstico registrado de esta entidad.{% endif %}</p>
