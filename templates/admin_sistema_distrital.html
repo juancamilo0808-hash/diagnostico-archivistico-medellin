@@ -116,7 +116,7 @@
   {% from '_admin_nav.html' import admin_nav %}
   <div class="sda-nav-wrap">{% call admin_nav('indicadores') %}<a class="accion" href="{{ url_for('api_sistema_distrital') }}"><i class="bi bi-filetype-json" aria-hidden="true"></i>Indicadores (JSON)</a>{% endcall %}</div>
   <div class="row g-3 sda-kpis">
-    <div class="col-6 col-lg-3"><div class="sda-kpi"><div class="v">{{ d.n if ver else '—' }}</div><div class="l">Entidades con diagnóstico</div></div></div>
+    <div class="col-6 col-lg-3"><div class="sda-kpi"><div class="v">{{ d.n if ver else '—' }}</div><div class="l">Entidades con diagnóstico{% if ver and total_directorio %} · cobertura {{ num(d.n / total_directorio * 100) }} % del directorio{% endif %}</div></div></div>
     <div class="col-6 col-lg-3"><div class="sda-kpi"><div class="v">{{ (num(d.promedio) ~ ' %') if ver and d.promedio is not none else '—' }}</div><div class="l">Nivel de madurez promedio</div></div></div>
     <div class="col-6 col-lg-3"><div class="sda-kpi"><div class="v">{{ (num(d.niveles_pct.Bajo) ~ ' %') if ver else '—' }}</div><div class="l">Entidades con clasificación baja</div></div></div>
     <div class="col-6 col-lg-3"><div class="sda-kpi"><div class="v">{{ d.en_curso if d else '—' }}</div><div class="l">Diagnósticos en curso</div></div></div>

@@ -107,18 +107,6 @@
     </div>
   </section>
 
-  {% if cifras %}
-  <section class="ch-sec" aria-labelledby="t-cif" data-panel="sobre">
-    <h2 id="t-cif">El Sistema en cifras</h2>
-    <p class="sub">Datos que se actualizan con la información registrada en la herramienta.</p>
-    <div class="ch-strip">
-      <a class="ch-num" href="{{ url_for('censo') }}"><b>{{ cifras.entidades }}</b><span>entidades del Distrito en el directorio</span></a>
-      <a class="ch-num" href="{{ url_for('censo') }}"><b>{{ cifras.diagnosticos }}</b><span>entidades con diagnóstico</span></a>
-      <a class="ch-num" href="{{ url_for('convalidaciones_publicas') }}"><b>{{ cifras.convalidaciones }}</b><span>TRD y TVD convalidadas</span></a>
-      <a class="ch-num" href="{{ url_for('actas_publicas') }}"><b>{{ cifras.actas }}</b><span>actas publicadas</span></a>
-    </div>
-  </section>
-  {% endif %}
 
   <section class="ch-sec" id="panel-integrantes" role="tabpanel" aria-labelledby="tab-integrantes" data-panel="integrantes"><span id="integrantes"></span>
     <h2 id="t-int">Integrantes</h2>

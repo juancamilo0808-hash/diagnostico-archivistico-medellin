@@ -1561,7 +1561,7 @@ def admin_sistema_distrital():
         app.logger.exception('No fue posible calcular los indicadores de acompañamiento')
         acomp = None
     return render_template('admin_sistema_distrital.html', datos=datos, publicable=bool(datos),
-                           es_admin=True, minimo=0, acomp=acomp)
+                           es_admin=True, minimo=0, acomp=acomp, total_directorio=len(obtener_directorio()))
 
 
 @app.route('/api/admin/sistema-distrital/indicadores')
