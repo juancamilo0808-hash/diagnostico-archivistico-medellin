@@ -341,6 +341,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
     g1.type = 'bar'
     g1.style = 10
     g1.title = 'Promedio por componente'
+    g1.roundedCorners = False
     g1.y_axis.title = None
     g1.y_axis.number_format = '0%'
     g1.y_axis.scaling.min = 0
@@ -357,6 +358,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
     s.add_chart(g1, f'B{base_top + 5 + top}')
 
     g2 = DoughnutChart()
+    g2.roundedCorners = False
     g2.title = 'Entidades por nivel de madurez'
     g2.add_data(Reference(s, min_col=10, min_row=11, max_row=14), titles_from_data=True)
     g2.set_categories(Reference(s, min_col=8, min_row=12, max_row=14))
@@ -439,22 +441,27 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
     f.conditional_formatting.add(f'F{base + 1}:F{rt}', CellIsRule(operator='greaterThan', formula=['0'], font=Font(color=ALTO_TXT, bold=True)))
 
     g3 = BarChart()
-    g3.type = 'col'
+    g3.type = 'bar'                       # barras horizontales: los nombres largos caben a la izquierda
     g3.style = 10
-    g3.title = 'Entidad frente al promedio'
-    g3.y_axis.number_format = '0%'
-    g3.y_axis.scaling.min = 0
-    g3.y_axis.scaling.max = 1
-    g3.add_data(Reference(f, min_col=3, max_col=3, min_row=base, max_row=rt), titles_from_data=True)
-    g3.add_data(Reference(f, min_col=5, max_col=5, min_row=base, max_row=rt), titles_from_data=True)
-    g3.set_categories(Reference(f, min_col=2, min_row=base + 1, max_row=rt))
+    g3.roundedCorners = False
+    g3.title = 'Resultado por componente frente al promedio'
+    g3.add_data(Reference(f, min_col=3, max_col=3, min_row=base, max_row=rt - 1), titles_from_data=True)
+    g3.add_data(Reference(f, min_col=5, max_col=5, min_row=base, max_row=rt - 1), titles_from_data=True)
+    g3.set_categories(Reference(f, min_col=2, min_row=base + 1, max_row=rt - 1))
     g3.series[0].graphicalProperties.solidFill = AZUL_MEDIO
+    g3.series[0].graphicalProperties.line.noFill = True
     g3.series[1].graphicalProperties.solidFill = DORADO
-    g3.legend.position = 'b'
+    g3.series[1].graphicalProperties.line.noFill = True
+    g3.dataLabels = _etiquetas('0.0%')
+    g3.gapWidth = 60
+    g3.x_axis.scaling.orientation = 'maxMin'   # mismo orden que la tabla, de arriba abajo
     g3.x_axis.delete = False
-    g3.y_axis.delete = False
+    g3.y_axis.delete = True                     # los valores van sobre las barras
+    g3.y_axis.scaling.min = 0
+    g3.y_axis.scaling.max = 1.1
     g3.y_axis.majorGridlines = None
-    g3.height, g3.width = 9, 19
+    g3.legend.position = 't'
+    g3.height, g3.width = 10, 19
     f.add_chart(g3, f'B{rt + 3}')
     for col, w in {'A': 2, 'B': 30, 'C': 16, 'D': 16, 'E': 22, 'F': 14}.items():
         f.column_dimensions[col].width = w
