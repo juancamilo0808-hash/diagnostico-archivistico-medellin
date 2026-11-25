@@ -349,6 +349,8 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
     g1.add_data(Reference(s, min_col=3, min_row=11, max_row=fin_comp), titles_from_data=True)
     g1.set_categories(Reference(s, min_col=2, min_row=12, max_row=fin_comp))
     g1.legend = None
+    g1.x_axis.delete = False
+    g1.y_axis.delete = False
     g1.series[0].graphicalProperties.solidFill = AZUL_MEDIO
     g1.dataLabels = _etiquetas('0.0%')
     g1.height, g1.width = 7.5, 15
@@ -405,8 +407,10 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
         f.conditional_formatting.add('C13', CellIsRule(operator='equal', formula=[f'"{texto}"'], fill=_relleno(fondo), font=Font(color=tinta, bold=True)))
 
     base = 16
-    for j, h in enumerate(['Componente', 'Resultado', 'Clasificación', 'Promedio del Distrito', 'Diferencia'], start=2):
+    for j, h in enumerate(['Componente', 'Resultado de la entidad', 'Clasificación', 'Promedio de las entidades diagnosticadas', 'Diferencia (puntos)'], start=2):
         _encabezado(f.cell(row=base, column=j, value=h))
+        f.cell(row=base, column=j).alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    f.row_dimensions[base].height = 44
     for i, (clave, nombre) in enumerate(componentes):
         r = base + 1 + i
         pct = col_comp[clave][0]
@@ -414,13 +418,13 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
         c = f.cell(row=r, column=3, value=dato(pct)); c.number_format = '0.0%'
         f.cell(row=r, column=4, value=_nivel_formula(f'C{r}', ub, um))
         c = f.cell(row=r, column=5, value=f"=Resumen!C{12 + i}"); c.number_format = '0.0%'
-        c = f.cell(row=r, column=6, value=f'=IF(AND(ISNUMBER(C{r}),ISNUMBER(E{r})),C{r}-E{r},"")'); c.number_format = '+0.0%;-0.0%;0.0%'
+        c = f.cell(row=r, column=6, value=f'=IF(AND(ISNUMBER(C{r}),ISNUMBER(E{r})),ROUND((C{r}-E{r})*100,1),"")'); c.number_format = '+0.0;-0.0;0.0'
     rt = base + 1 + nc
     f.cell(row=rt, column=2, value='Nivel de madurez')
     c = f.cell(row=rt, column=3, value=dato(col_ima)); c.number_format = '0.0%'
     f.cell(row=rt, column=4, value=_nivel_formula(f'C{rt}', ub, um))
     c = f.cell(row=rt, column=5, value=f'=Resumen!C{tr}'); c.number_format = '0.0%'
-    c = f.cell(row=rt, column=6, value=f'=IF(AND(ISNUMBER(C{rt}),ISNUMBER(E{rt})),C{rt}-E{rt},"")'); c.number_format = '+0.0%;-0.0%;0.0%'
+    c = f.cell(row=rt, column=6, value=f'=IF(AND(ISNUMBER(C{rt}),ISNUMBER(E{rt})),ROUND((C{rt}-E{rt})*100,1),"")'); c.number_format = '+0.0;-0.0;0.0'
     for r in range(base + 1, rt + 1):
         for j in range(2, 7):
             cel = f.cell(row=r, column=j)
@@ -437,7 +441,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
     g3 = BarChart()
     g3.type = 'col'
     g3.style = 10
-    g3.title = 'Entidad frente al promedio del Distrito'
+    g3.title = 'Entidad frente al promedio'
     g3.y_axis.number_format = '0%'
     g3.y_axis.scaling.min = 0
     g3.y_axis.scaling.max = 1
@@ -447,9 +451,12 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
     g3.series[0].graphicalProperties.solidFill = AZUL_MEDIO
     g3.series[1].graphicalProperties.solidFill = DORADO
     g3.legend.position = 'b'
-    g3.height, g3.width = 8, 17
+    g3.x_axis.delete = False
+    g3.y_axis.delete = False
+    g3.y_axis.majorGridlines = None
+    g3.height, g3.width = 9, 19
     f.add_chart(g3, f'B{rt + 3}')
-    for col, w in {'A': 2, 'B': 30, 'C': 22, 'D': 16, 'E': 20, 'F': 14}.items():
+    for col, w in {'A': 2, 'B': 30, 'C': 16, 'D': 16, 'E': 22, 'F': 14}.items():
         f.column_dimensions[col].width = w
     f.sheet_properties.tabColor = AZUL_MEDIO
 
@@ -580,7 +587,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
     wb.calculation.forceFullCalc = True
 
     # Imprimir la ficha solo con la entidad elegida: área de impresión de la ficha.
-    ficha.print_area = f'B2:F{rt + 20}'
+    ficha.print_area = f'B2:F{rt + 24}'
 
     salida = BytesIO()
     wb.save(salida)
