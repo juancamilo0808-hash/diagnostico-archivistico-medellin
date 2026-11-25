@@ -59,10 +59,12 @@
   /* Preguntas del cuestionario V04 */
   .dq { border:0; border-top:1px solid #e6edf3; padding:1.1rem 0 .9rem; margin:0; min-width:0; }
   .dq:first-of-type { border-top:0; padding-top:.3rem; }
-  .dq-t { float:none; width:100%; font-size:1rem; font-weight:700; color:#0b2d50; line-height:1.4; margin-bottom:.6rem; display:flex; gap:.6rem; }
-  .dq-n { flex:0 0 auto; min-width:2rem; height:2rem; padding:0 .4rem; display:grid; place-items:center; border-radius:10px; background:#eaf3fb; color:#123b65; font-weight:800; font-size:.9rem; }
+  .dq-t { float:none; width:100%; font-size:1rem; font-weight:600; color:#0b2d50; line-height:1.4; margin-bottom:.6rem; display:flex; gap:.6rem; }
+  .dq-n { flex:0 0 auto; min-width:2rem; height:2rem; padding:0 .4rem; display:grid; place-items:center; border-radius:10px; background:#eaf3fb; color:#123b65; font-weight:700; font-size:.9rem; }
   .dq-opts { display:flex; flex-wrap:wrap; gap:.4rem; margin-left:2.6rem; }
-  .dq-opts .btn { border-radius:999px; font-weight:700; padding:.35rem 1rem; }
+  .dq, .dq * { font-family:'Open Sans', Arial, sans-serif; }
+  .dq .bi { font-family: bootstrap-icons !important; }
+  .dq-opts .btn { border-radius:999px; font-weight:600; font-size:.92rem; padding:.35rem 1rem; }
   .dq .child, .dq-help, .dq-crit { margin-left:2.6rem; }
   .dq .child { background:#f7fafc; border-left:3px solid #c99a2e; border-radius:0 10px 10px 0; padding:.7rem .9rem; }
   .dq-help { font-size:.86rem; color:#334155; margin-bottom:.6rem; }
@@ -138,7 +140,7 @@
     <noscript><div class="alert alert-warning small">Su navegador tiene JavaScript desactivado: el formulario se muestra completo y el avance no se guarda automáticamente.</div></noscript>
 
     <div class="wizard-step is-active" data-step="1" data-step-label="Caracterización">
-    <div class="section-header mt-4" data-step-header="1"><div><h2>IDENTIFICACIÓN Y CARACTERIZACIÓN INSTITUCIONAL</h2></div></div>
+    <div class="section-header mt-4" data-step-header="1"><div><h2>Identificación y caracterización institucional</h2></div></div>
     <section class="card form-card mb-4" data-step-panel="1"><div class="card-body">
       <p class="dq-nota"><i class="bi bi-info-circle me-1" aria-hidden="true"></i>{{ cuestionario.NOTA_CARACTERIZACION }}</p>
       <div class="row g-3">
@@ -186,7 +188,7 @@
 
     {% for comp in cuestionario.COMPONENTES %}
     <div class="wizard-step" data-step="{{ loop.index + 1 }}" data-step-label="{{ comp.num }}. {{ comp.nombre }}">
-    <div class="section-header mt-4" data-step-header="{{ loop.index + 1 }}"><div><h2>COMPONENTE {{ comp.num }}. {{ comp.nombre|upper }} <span class="dq-peso">{{ comp.peso }} %</span></h2></div></div>
+    <div class="section-header mt-4" data-step-header="{{ loop.index + 1 }}"><div><h2>Componente {{ comp.num }}. {{ comp.nombre }} <span class="dq-peso">{{ comp.peso }} %</span></h2></div></div>
     {% for sub in comp.subcomponentes %}
     <section class="card form-card mb-4"><div class="card-body">
       <h3 class="dq-sub">{{ sub.nombre }}</h3>
