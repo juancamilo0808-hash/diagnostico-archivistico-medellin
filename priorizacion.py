@@ -15,6 +15,9 @@ from openpyxl import Workbook
 from openpyxl.chart import BarChart, DoughnutChart, Reference
 from openpyxl.chart.label import DataLabelList
 from openpyxl.chart.series import DataPoint
+from openpyxl.chart.text import RichText, Text
+from openpyxl.chart.title import Title
+from openpyxl.drawing.text import CharacterProperties, Font as FuenteDibujo, Paragraph, ParagraphProperties, RegularTextRun
 from openpyxl.formatting.rule import CellIsRule, DataBarRule, FormulaRule
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
@@ -73,6 +76,37 @@ def _etiquetas(formato=None):
     if formato:
         e.numFmt = formato
     return e
+
+
+def _props_texto(sz=900, negrita=False, color='374151'):
+    return CharacterProperties(sz=sz, b=negrita, solidFill=color, latin=FuenteDibujo(typeface='Arial'))
+
+
+def _rich(sz=900, negrita=False, color='374151'):
+    cp = _props_texto(sz, negrita, color)
+    return RichText(p=[Paragraph(pPr=ParagraphProperties(defRPr=cp), endParaRPr=cp)])
+
+
+def _pulir_grafico(g, titulo):
+    """Título fuera del área del gráfico, letra Arial uniforme y leyenda sin superponerse."""
+    cp = _props_texto(1100, True, '0B2D50')
+    g.title = Title(tx=Text(rich=RichText(p=[Paragraph(pPr=ParagraphProperties(defRPr=cp), r=[RegularTextRun(rPr=cp, t=titulo)])])), overlay=False)
+    g.roundedCorners = False
+    if g.legend is not None:
+        g.legend.overlay = False
+        g.legend.txPr = _rich(900)
+    for eje in (getattr(g, 'x_axis', None), getattr(g, 'y_axis', None)):
+        if eje is not None:
+            eje.txPr = _rich(900)
+    if getattr(g, 'dataLabels', None) is not None:
+        g.dataLabels.txPr = _rich(900, False, '1F2937')
+
+
+def _normalizar_texto(valor):
+    """Quita espacios sobrantes y pone mayúscula inicial («cultura» → «Cultura») para que
+    los resúmenes no separen el mismo grupo por cómo se escribió."""
+    t = ' '.join(str(valor or '').split())
+    return t[:1].upper() + t[1:] if t else ''
 
 
 def _nivel_formula(ref, umbral_bajo, umbral_medio):
@@ -143,7 +177,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
     for _, nombre in componentes:
         cols += [f'{nombre} (%)', f'{nombre} · nivel']
     cols += ['Nivel de madurez (%)', 'Clasificación', 'Prioridad de atención', 'Componente más débil',
-             'Componentes en nivel bajo', 'Brecha hasta 100 %', 'Acompañamiento']
+             'Componentes en nivel bajo', 'Acompañamiento']
     total_cols = len(cols)
     _titulo(m, 'Matriz de priorización de entidades',
             f'Consejo Distrital de Archivos de Medellín · Diagnóstico Territorial Archivístico · '
@@ -153,7 +187,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
     fila0 = PRIMERA_FILA
     for j, nombre in enumerate(cols, start=2):
         _encabezado(m.cell(row=fila0, column=j, value=nombre), AZUL if 'nivel' not in nombre.lower() or nombre.startswith('Nivel de madurez') else AZUL_MEDIO)
-    m.row_dimensions[fila0].height = 46
+    m.row_dimensions[fila0].height = 62
 
     col_comp = {}  # clave -> (letra %, letra nivel)
     for i, e in enumerate(ordenadas):
@@ -161,11 +195,11 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
         m.cell(row=r, column=2, value=i + 1)
         m.cell(row=r, column=3, value=e['nombre'])
         m.cell(row=r, column=4, value=e.get('nit') or '')
-        m.cell(row=r, column=5, value=e.get('sector') or 'Sin sector')
+        m.cell(row=r, column=5, value=_normalizar_texto(e.get('sector')) or 'Sin sector')
         m.cell(row=r, column=6, value=e.get('naturaleza') or 'Sin dato')
         c = m.cell(row=r, column=7, value=e['fecha'].replace(tzinfo=None) if e.get('fecha') else None)
         c.number_format = 'dd/mm/yyyy'
-        m.cell(row=r, column=8, value=e.get('version') or '')
+        m.cell(row=r, column=8, value='Anterior' if e.get('version') == 'Anterior' else 'Actual')
         col = 9
         for clave, _ in componentes:
             v = e['componentes'].get(clave)
@@ -185,9 +219,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
         # Componente más débil: el de menor porcentaje; si varios empatan, se nombran todos.
         m.cell(row=r, column=col + 3, value=e.get('componente_debil') or _mas_debil(e['componentes'], componentes))
         m.cell(row=r, column=col + 4, value='=' + '+'.join(f'({l}{r}<={ub})*ISNUMBER({l}{r})' for l in letras_pct))
-        bc = m.cell(row=r, column=col + 5, value=f'=1-{letra_ima}{r}')
-        bc.number_format = '0.0%'
-        m.cell(row=r, column=col + 6, value=e.get('acompanamiento') or 'Sin iniciar')
+        m.cell(row=r, column=col + 5, value=e.get('acompanamiento') or 'Sin iniciar')
         for j in range(2, total_cols + 2):
             cel = m.cell(row=r, column=j)
             cel.border = CAJA
@@ -217,7 +249,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
                                          CellIsRule(operator='equal', formula=[f'"{texto}"'], fill=_relleno(fondo), font=Font(color=tinta, bold=True)))
     anchos = {2: 10, 3: 42, 4: 14, 5: 24, 6: 22, 7: 13, 8: 12}
     for j in range(2, total_cols + 2):
-        m.column_dimensions[get_column_letter(j)].width = anchos.get(j, 13)
+        m.column_dimensions[get_column_letter(j)].width = anchos.get(j, 15)
     m.column_dimensions[col_debil].width = 34
     m.column_dimensions[get_column_letter(total_cols + 1)].width = 16
     m.column_dimensions['A'].width = 2
@@ -351,10 +383,14 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
     g1.set_categories(Reference(s, min_col=2, min_row=12, max_row=fin_comp))
     g1.legend = None
     g1.x_axis.delete = False
-    g1.y_axis.delete = False
+    g1.x_axis.scaling.orientation = 'maxMin'
+    g1.y_axis.delete = True
+    g1.y_axis.scaling.max = 1.1
+    g1.gapWidth = 70
     g1.series[0].graphicalProperties.solidFill = AZUL_MEDIO
     g1.dataLabels = _etiquetas('0.0%')
     g1.height, g1.width = 7.5, 15
+    _pulir_grafico(g1, 'Promedio por componente')
     s.add_chart(g1, f'B{base_top + 5 + top}')
 
     g2 = DoughnutChart()
@@ -369,6 +405,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
     g2.dataLabels = _etiquetas()
     g2.holeSize = 55
     g2.height, g2.width = 7.5, 11
+    _pulir_grafico(g2, 'Entidades por nivel de madurez')
     s.add_chart(g2, f'E{base_top + 5 + top}')
     s.sheet_properties.tabColor = DORADO
 
@@ -460,8 +497,9 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
     g3.y_axis.scaling.min = 0
     g3.y_axis.scaling.max = 1.1
     g3.y_axis.majorGridlines = None
-    g3.legend.position = 't'
     g3.height, g3.width = 10, 19
+    g3.legend.position = 'b'
+    _pulir_grafico(g3, 'Resultado por componente frente al promedio')
     f.add_chart(g3, f'B{rt + 3}')
     for col, w in {'A': 2, 'B': 30, 'C': 16, 'D': 16, 'E': 22, 'F': 14}.items():
         f.column_dimensions[col].width = w
@@ -511,7 +549,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
     # ----------------------------------------------- Respuestas por componente
     q = respuestas
     _titulo(q, 'Respuestas por componente',
-            'Cuántas respuestas Sí, Parcialmente, No y N/A dio cada entidad en cada componente (cuestionario V04).', 3 + 4 * nc)
+            'Cuántas respuestas Sí, Parcialmente, No y N/A dio cada entidad en cada componente.', 3 + 4 * nc)
     q.merge_cells(start_row=6, start_column=2, end_row=7, end_column=2)
     _encabezado(q.cell(row=6, column=2, value='Entidad'))
     _encabezado(q.cell(row=7, column=2))
@@ -538,7 +576,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
             q.cell(row=fila_q, column=j).border = CAJA
         fila_q += 1
     if fila_q == 8:
-        q.cell(row=8, column=2, value='No hay diagnósticos con el cuestionario V04.').font = _f(10, italic=True, color=GRIS)
+        q.cell(row=8, column=2, value='No hay diagnósticos con el cuestionario vigente.').font = _f(10, italic=True, color=GRIS)
     else:
         for k in range(nc):
             c0 = 3 + k * 4
@@ -566,7 +604,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
         ('Desempate', 'Si dos entidades tienen el mismo nivel de madurez, va primero la que tenga más componentes en nivel bajo; si siguen empatadas, la que tenga el componente más débil con menor porcentaje.'),
         ('Componente más débil', 'El componente con menor porcentaje en la entidad. Si varios empatan en el mínimo, se nombran todos; si empatan los cinco, se indica «Todos los componentes».'),
         ('Componentes en nivel bajo', f'Cuántos componentes de la entidad están en {umbral_bajo} % o menos.'),
-        ('Formulario', 'V04 corresponde al cuestionario vigente (72 preguntas). «Anterior» corresponde al formulario de 10 preguntas; sus resultados no son directamente comparables con los del V04.'),
+        ('Formulario', '«Actual»: diagnóstico hecho con el cuestionario vigente. «Anterior»: formulario de 10 preguntas usado antes; sus resultados no son comparables con los actuales.'),
         ('Tablas dinámicas', 'La matriz está en formato de tabla de Excel («TablaPriorizacion»): para crear una tabla dinámica propia, ubíquese en la matriz y use Insertar > Tabla dinámica. Las hojas «Resumen», «Ficha por entidad» y «Por sector y naturaleza» se recalculan solas con fórmulas.'),
         ('Alcance', 'Los resultados se calculan con las respuestas de las entidades y no constituyen una certificación de cumplimiento normativo; deben validarse con las evidencias en la revisión técnica.'),
     ]
@@ -579,7 +617,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
         for c in (ca, cb):
             c.alignment = Alignment(vertical='top', wrap_text=True)
             c.border = CAJA
-        t.row_dimensions[r].height = 34
+        t.row_dimensions[r].height = 15 * max(1, -(-len(b) // 115)) + 8   # alto según el largo del texto
 
     for hoja in wb.worksheets:
         hoja.sheet_view.zoomScale = 90
