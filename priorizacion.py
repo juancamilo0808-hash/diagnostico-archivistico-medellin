@@ -109,6 +109,18 @@ def _normalizar_texto(valor):
     return t[:1].upper() + t[1:] if t else ''
 
 
+def _frente_al_promedio(r):
+    """«31,8 puntos por encima» / «24,4 puntos por debajo» (FIXED usa la coma decimal del Excel del usuario)."""
+    d = f'ROUND((C{r}-E{r})*100,1)'
+    return (f'=IF(AND(ISNUMBER(C{r}),ISNUMBER(E{r})),IF({d}>0,FIXED({d},1)&" puntos por encima",'
+            f'IF({d}<0,FIXED(-{d},1)&" puntos por debajo","Igual al promedio")),"")')
+
+
+def _puesto(r, rango):
+    """Puesto de la entidad entre todas (1 = mejor resultado): «2 de 7»."""
+    return f'=IF(ISNUMBER(C{r}),RANK(C{r},{rango},0)&" de "&COUNT({rango}),"")'
+
+
 def _nivel_formula(ref, umbral_bajo, umbral_medio):
     return (f'=IF({ref}="","Sin dato",IF({ref}<={umbral_bajo},"Bajo",'
             f'IF({ref}<={umbral_medio},"Medio","Alto")))')
@@ -411,10 +423,10 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
 
     # -------------------------------------------------------- Ficha por entidad
     f = ficha
-    _titulo(f, 'Ficha por entidad', 'Elija una entidad en la celda amarilla: los resultados y el gráfico se actualizan solos.', 6)
+    _titulo(f, 'Ficha por entidad', 'Elija una entidad en la celda amarilla: los resultados y el gráfico se actualizan solos.', 7)
     f['B6'] = 'Entidad'
     f['B6'].font = _f(11, True, AZUL)
-    f.merge_cells('C6:F6')
+    f.merge_cells('C6:G6')
     f['C6'] = ordenadas[0]['nombre'] if n else ''
     f['C6'].fill = _relleno('FFF7D6')
     f['C6'].font = _f(12, True, AZUL)
@@ -446,7 +458,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
         f.conditional_formatting.add('C13', CellIsRule(operator='equal', formula=[f'"{texto}"'], fill=_relleno(fondo), font=Font(color=tinta, bold=True)))
 
     base = 16
-    for j, h in enumerate(['Componente', 'Resultado de la entidad', 'Clasificación', 'Promedio de las entidades diagnosticadas', 'Diferencia (puntos)'], start=2):
+    for j, h in enumerate(['Componente', 'Resultado de la entidad', 'Clasificación', 'Promedio de las entidades', 'Frente al promedio', 'Puesto entre las entidades'], start=2):
         _encabezado(f.cell(row=base, column=j, value=h))
         f.cell(row=base, column=j).alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
     f.row_dimensions[base].height = 44
@@ -457,15 +469,17 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
         c = f.cell(row=r, column=3, value=dato(pct)); c.number_format = '0.0%'
         f.cell(row=r, column=4, value=_nivel_formula(f'C{r}', ub, um))
         c = f.cell(row=r, column=5, value=f"=Resumen!C{12 + i}"); c.number_format = '0.0%'
-        c = f.cell(row=r, column=6, value=f'=IF(AND(ISNUMBER(C{r}),ISNUMBER(E{r})),ROUND((C{r}-E{r})*100,1),"")'); c.number_format = '+0.0;-0.0;0.0'
+        f.cell(row=r, column=6, value=_frente_al_promedio(r))
+        f.cell(row=r, column=7, value=_puesto(r, ref(pct)))
     rt = base + 1 + nc
     f.cell(row=rt, column=2, value='Nivel de madurez')
     c = f.cell(row=rt, column=3, value=dato(col_ima)); c.number_format = '0.0%'
     f.cell(row=rt, column=4, value=_nivel_formula(f'C{rt}', ub, um))
     c = f.cell(row=rt, column=5, value=f'=Resumen!C{tr}'); c.number_format = '0.0%'
-    c = f.cell(row=rt, column=6, value=f'=IF(AND(ISNUMBER(C{rt}),ISNUMBER(E{rt})),ROUND((C{rt}-E{rt})*100,1),"")'); c.number_format = '+0.0;-0.0;0.0'
+    f.cell(row=rt, column=6, value=_frente_al_promedio(rt))
+    f.cell(row=rt, column=7, value=_puesto(rt, R_IMA))
     for r in range(base + 1, rt + 1):
-        for j in range(2, 7):
+        for j in range(2, 8):
             cel = f.cell(row=r, column=j)
             cel.border = CAJA
             cel.font = _f(10, r == rt)
@@ -474,8 +488,8 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
                 cel.fill = _relleno(FONDO)
     _reglas_nivel(f, f'D{base + 1}:D{rt}')
     _reglas_porcentaje(f, f'C{base + 1}:C{rt}', f'C{base + 1}', ub, um)
-    f.conditional_formatting.add(f'F{base + 1}:F{rt}', CellIsRule(operator='lessThan', formula=['0'], font=Font(color=BAJO_TXT, bold=True)))
-    f.conditional_formatting.add(f'F{base + 1}:F{rt}', CellIsRule(operator='greaterThan', formula=['0'], font=Font(color=ALTO_TXT, bold=True)))
+    f.conditional_formatting.add(f'F{base + 1}:F{rt}', FormulaRule(formula=[f'ISNUMBER(SEARCH("debajo",F{base + 1}))'], font=Font(color=BAJO_TXT, bold=True)))
+    f.conditional_formatting.add(f'F{base + 1}:F{rt}', FormulaRule(formula=[f'ISNUMBER(SEARCH("encima",F{base + 1}))'], font=Font(color=ALTO_TXT, bold=True)))
 
     g3 = BarChart()
     g3.type = 'bar'                       # barras horizontales: los nombres largos caben a la izquierda
@@ -501,7 +515,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
     g3.legend.position = 'b'
     _pulir_grafico(g3, 'Resultado por componente frente al promedio')
     f.add_chart(g3, f'B{rt + 3}')
-    for col, w in {'A': 2, 'B': 30, 'C': 16, 'D': 16, 'E': 22, 'F': 14}.items():
+    for col, w in {'A': 2, 'B': 30, 'C': 15, 'D': 14, 'E': 15, 'F': 26, 'G': 16}.items():
         f.column_dimensions[col].width = w
     f.sheet_properties.tabColor = AZUL_MEDIO
 
@@ -600,6 +614,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
         ('Nivel de madurez', 'Promedio de los cinco componentes del Modelo de Gestión Documental y Administración de Archivos (MGDA): estratégico, administración de archivos, procesos de la gestión documental, tecnológico y cultural. Cada componente pesa 20 %.'),
         ('Clasificación (mapa de calor)', f'Bajo: 0 a {umbral_bajo} %. Medio: más de {umbral_bajo} hasta {umbral_medio} %. Alto: más de {umbral_medio} hasta 100 %. Se aplica igual a cada componente y al nivel de madurez.'),
         ('Prioridad de atención', 'Alta para las entidades en nivel bajo, media para las de nivel medio y baja para las de nivel alto. La columna «Prioridad» ordena a las entidades de menor a mayor nivel de madurez.'),
+        ('Ficha por entidad', 'Compara cada componente de la entidad elegida con el promedio de todas las entidades de la matriz. «Frente al promedio» dice cuántos puntos está por encima o por debajo; «Puesto» indica su lugar entre las entidades (1 = mejor resultado).'),
         ('Acompañamiento', 'Estado del acompañamiento técnico registrado en la herramienta: sin iniciar, en curso o cerrado.'),
         ('Desempate', 'Si dos entidades tienen el mismo nivel de madurez, va primero la que tenga más componentes en nivel bajo; si siguen empatadas, la que tenga el componente más débil con menor porcentaje.'),
         ('Componente más débil', 'El componente con menor porcentaje en la entidad. Si varios empatan en el mínimo, se nombran todos; si empatan los cinco, se indica «Todos los componentes».'),
@@ -632,7 +647,7 @@ def generar_matriz_priorizacion(entidades, componentes, umbral_bajo=40, umbral_m
     wb.calculation.forceFullCalc = True
 
     # Imprimir la ficha solo con la entidad elegida: área de impresión de la ficha.
-    ficha.print_area = f'B2:F{rt + 24}'
+    ficha.print_area = f'B2:G{rt + 24}'
 
     salida = BytesIO()
     wb.save(salida)
