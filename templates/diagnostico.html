@@ -20,9 +20,12 @@
 
   .wizard-progress { margin-bottom: 1rem; }
   .wizard-pills { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .4rem; list-style: none; padding: 0; margin: 0 0 .6rem; }
-  .wizard-pill { display: flex; align-items: center; gap: .45rem; padding: .45rem .55rem; border: 1px solid var(--cda-border, #dce4ec); border-radius: 10px; background: #fff; color: var(--cda-muted, #56687a); font-size: .78rem; line-height: 1.2; min-width: 0; }
+  .wizard-pills > li { min-width: 0; }
+  .wizard-hint { font-size: .82rem; color: var(--cda-muted, #56687a); margin: 0 0 .5rem; }
+  .wizard-pill { width: 100%; text-align: left; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: .45rem; padding: .45rem .55rem; border: 1px solid var(--cda-border, #dce4ec); border-radius: 10px; background: #fff; color: var(--cda-muted, #56687a); font-size: .78rem; line-height: 1.2; min-width: 0; }
   .wizard-pill-letter { flex: 0 0 26px; height: 26px; display: grid; place-items: center; border-radius: 50%; background: var(--cda-blue-light, #eaf3fb); color: var(--cda-blue, #123b65); font-weight: 800; }
   .wizard-pill-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .wizard-pill:hover, .wizard-pill:focus-visible { border-color: var(--cda-blue, #123b65); color: var(--cda-blue-dark, #092947); }
   .wizard-pill.is-done .wizard-pill-letter { background: var(--cda-green, #27845b); color: #fff; }
   .wizard-pill.is-current { border-color: var(--cda-blue, #123b65); color: var(--cda-blue-dark, #092947); font-weight: 700; box-shadow: 0 0 0 2px rgba(18,59,101,.12); }
   .wizard-pill.is-current .wizard-pill-letter { background: var(--cda-blue, #123b65); color: #fff; }
@@ -123,13 +126,14 @@
   <form id="censoForm" method="POST" novalidate>
     <input type="hidden" name="borrador_id" id="borrador_id" value="">
 
-    <div class="wizard-progress wizard-js-only" aria-hidden="true">
+    <nav class="wizard-progress wizard-js-only" aria-label="Secciones del diagnóstico">
+      <p class="wizard-hint">Puede pasar a cualquier sección para revisar sus preguntas. Al guardar, la herramienta le indicará si falta alguna respuesta.</p>
       <ol class="wizard-pills">
-        <li class="wizard-pill is-current" data-pill="1"><span class="wizard-pill-letter">C</span><span class="wizard-pill-text">Caracterización</span></li>
-        {% for comp in cuestionario.COMPONENTES %}<li class="wizard-pill" data-pill="{{ loop.index + 1 }}"><span class="wizard-pill-letter">{{ comp.num }}</span><span class="wizard-pill-text">{{ comp.nombre }}</span></li>{% endfor %}
+        <li><button type="button" class="wizard-pill is-current" data-pill="1" aria-label="Ir a Caracterización"><span class="wizard-pill-letter">C</span><span class="wizard-pill-text">Caracterización</span></button></li>
+        {% for comp in cuestionario.COMPONENTES %}<li><button type="button" class="wizard-pill" data-pill="{{ loop.index + 1 }}" aria-label="Ir al componente {{ comp.num }}. {{ comp.nombre }}"><span class="wizard-pill-letter">{{ comp.num }}</span><span class="wizard-pill-text">{{ comp.nombre }}</span></button></li>{% endfor %}
       </ol>
-      <div class="wizard-bar"><span id="wizardBar"></span></div>
-    </div>
+      <div class="wizard-bar" aria-hidden="true"><span id="wizardBar"></span></div>
+    </nav>
     <div id="autosaveStatus" class="autosave-status wizard-js-only" role="status" aria-live="polite" data-state="idle">Los cambios se guardarán automáticamente mientras diligencia el formulario.</div>
     <noscript><div class="alert alert-warning small">Su navegador tiene JavaScript desactivado: el formulario se muestra completo y el avance no se guarda automáticamente.</div></noscript>
 
@@ -347,11 +351,23 @@
   form.querySelectorAll('.wizard-final-only').forEach(el=>el.classList.toggle('is-visible',last));
   counter.textContent=`Sección ${currentStep} de ${STEP_COUNT}`+(active&&active.dataset.stepLabel?` · ${active.dataset.stepLabel}`:'');
   bar.style.width=(currentStep/STEP_COUNT*100).toFixed(2)+'%';
-  pills.forEach(p=>{const i=Number(p.dataset.pill);p.classList.toggle('is-current',i===currentStep);p.classList.toggle('is-done',i<currentStep);});
+  marcarSecciones();
   autosave.rememberStep(currentStep);
   if(scroll)form.scrollIntoView({behavior:'smooth',block:'start'});
   if(focus&&active){const h=active.querySelector('h2');if(h){h.tabIndex=-1;h.focus({preventScroll:true});}}
  }
+
+ function marcarSecciones(){
+  pills.forEach(p=>{const i=Number(p.dataset.pill);const st=steps[i-1];
+   const completa=st?invalidFields(st).length===0:false;
+   p.classList.toggle('is-current',i===currentStep);p.classList.toggle('is-done',completa&&i!==currentStep);
+   if(i===currentStep)p.setAttribute('aria-current','step');else p.removeAttribute('aria-current');});
+ }
+ pills.forEach(p=>p.addEventListener('click',()=>{
+  const n=Number(p.dataset.pill);if(n===currentStep)return;
+  autosave.flush().catch(()=>{});showStep(n);
+ }));
+ form.addEventListener('change',()=>marcarSecciones());
 
  btnNext.addEventListener('click',async()=>{
   const active=steps[currentStep-1];
